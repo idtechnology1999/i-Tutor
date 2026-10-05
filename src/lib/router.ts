@@ -13,7 +13,6 @@ export type AppView =
   | 'dashboard'
   | 'cbt'
   | 'syllabus'
-  | 'diagnostic'
   | 'setup'
   // Account
   | 'signup'
@@ -33,7 +32,6 @@ export const VIEW_PATHS: Record<AppView, string> = {
   home: '/',
   cbt: '/cbt-simulation',
   syllabus: '/syllabus',
-  diagnostic: '/diagnostic',
   dashboard: '/dashboard',
   setup: '/setup',
   signup: '/register',
