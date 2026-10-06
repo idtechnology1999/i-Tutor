@@ -13,7 +13,6 @@ import {
 interface Props {
   profile: UserProfile;
   onLaunchCBT: () => void;
-  onLaunchDiagnostic: () => void;
   onOpenSyllabus: () => void;
   onOpenTutor: () => void;
 }
@@ -21,7 +20,6 @@ interface Props {
 export const DashboardView: React.FC<Props> = ({
   profile,
   onLaunchCBT,
-  onLaunchDiagnostic,
   onOpenSyllabus,
   onOpenTutor,
 }) => {

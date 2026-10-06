@@ -3,7 +3,6 @@ import { OwlBookLogo, ArrowRightIcon } from '../Icons';
 
 interface HomePageViewProps {
   onLaunchCBT: () => void;
-  onLaunchDiagnostic: () => void;
   onOpenSyllabus: () => void;
   onGoToDashboard: () => void;
   onOpenTutor: () => void;

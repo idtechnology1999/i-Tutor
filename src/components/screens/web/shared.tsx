@@ -97,7 +97,7 @@ export const DefaultAside: React.FC<{
   heading: string;
   body: string;
   points: string[];
-  footnote?: string;
+  footnote?: React.ReactNode;
 }> = ({ heading, body, points, footnote }) => (
   <div className="auth__panel">
     <h2 className="auth__panel-title">{heading}</h2>
@@ -123,7 +123,7 @@ export const DefaultAside: React.FC<{
         <dd>Study records stay on your device and in your own candidate portal.</dd>
       </div>
     </dl>
-    {footnote ? <p className="auth__panel-foot">{footnote}</p> : null}
+    {footnote ? <div className="auth__panel-footnote">{footnote}</div> : null}
   </div>
 );
 
