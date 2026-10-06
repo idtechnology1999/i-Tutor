@@ -8,7 +8,6 @@ import { HomePageView } from './components/web/HomePageView';
 import { DashboardView } from './components/web/DashboardView';
 import { CBTExamView } from './components/web/CBTExamView';
 import { SyllabusView } from './components/web/SyllabusView';
-import { DiagnosticView } from './components/web/DiagnosticView';
 import { SetupWizardView } from './components/web/SetupWizardView';
 import { AITutorDrawer } from './components/web/AITutorDrawer';
 import { RegistrationFlow } from './components/screens/web/RegistrationFlow';
@@ -68,7 +67,6 @@ export function App() {
       home: 'i-Tutor — The tutor that shows you why the answer is right',
       cbt: 'CBT Simulation — i-Tutor',
       syllabus: 'Syllabus & Past Questions — i-Tutor',
-      diagnostic: 'Diagnostic — i-Tutor',
       dashboard: 'Student Portal — i-Tutor',
       setup: 'Candidate Profile — i-Tutor',
       signup: 'Create your account — i-Tutor',
@@ -108,7 +106,6 @@ export function App() {
         {activeView === 'home' && (
           <HomePageView
             onLaunchCBT={() => goTo('cbt')}
-            onLaunchDiagnostic={() => goTo('diagnostic')}
             onOpenSyllabus={() => goTo('syllabus')}
             onGoToDashboard={() => goTo('dashboard')}
             onOpenTutor={() => setIsTutorOpen(true)}
@@ -119,23 +116,12 @@ export function App() {
           <DashboardView
             profile={profile}
             onLaunchCBT={() => goTo('cbt')}
-            onLaunchDiagnostic={() => goTo('diagnostic')}
             onOpenSyllabus={() => goTo('syllabus')}
             onOpenTutor={() => setIsTutorOpen(true)}
           />
         )}
 
         {activeView === 'syllabus' && <SyllabusView />}
-
-        {activeView === 'diagnostic' && (
-          <DiagnosticView
-            onFinish={(score) => {
-              handleUpdateProfile({ diagnosticCompleted: true, diagnosticScore: score });
-              goTo('dashboard');
-            }}
-            onCancel={() => goTo('dashboard')}
-          />
-        )}
 
         {activeView === 'setup' && (
           <SetupWizardView
