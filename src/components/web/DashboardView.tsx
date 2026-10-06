@@ -381,7 +381,7 @@ export const DashboardView: React.FC<Props> = ({
 
             <button
               type="button"
-              onClick={onLaunchDiagnostic}
+              onClick={onLaunchCBT}
               className="btn-solid-teal"
               style={{ width: '100%' }}
             >
@@ -397,7 +397,7 @@ export const DashboardView: React.FC<Props> = ({
               </h3>
               <button
                 type="button"
-                onClick={onLaunchDiagnostic}
+                onClick={onLaunchCBT}
                 style={{
                   background: 'none',
                   border: 'none',

@@ -21,7 +21,6 @@ const NAV_ITEMS: { label: string; view: AppView }[] = [
   { label: 'Overview', view: 'home' },
   { label: 'CBT Simulation', view: 'cbt' },
   { label: 'Syllabus', view: 'syllabus' },
-  { label: 'Diagnostic', view: 'diagnostic' },
   { label: 'Portal', view: 'dashboard' },
 ];
 

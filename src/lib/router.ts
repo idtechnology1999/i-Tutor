@@ -137,7 +137,6 @@ const SCREEN_IDS: Record<string, AppView> = {
   a12_goals: 'goals',
   a13_permissions: 'permissions',
   a14_diagnostic: 'baseline',
-  diagnostic_quiz: 'diagnostic',
   home_dashboard: 'dashboard',
 };
 

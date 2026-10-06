@@ -275,7 +275,7 @@ export const RegistrationFlow: React.FC<Props> = ({
           trackLabel={TRACK_LABELS[profile.track]}
           targetScore={profile.targetScore}
           onBack={() => onNavigate('permissions')}
-          onStart={() => onNavigate('diagnostic')}
+          onStart={onFinish}
           onSkip={onFinish}
         />
       );

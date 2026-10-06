@@ -152,19 +152,16 @@ const COLOPHON_COLUMNS: Array<{ heading: string; items: string[]; action?: 'syll
 
 export const HomePageView: React.FC<HomePageViewProps> = ({
   onLaunchCBT,
-  onLaunchDiagnostic,
   onOpenSyllabus,
   onGoToDashboard,
   onOpenTutor,
 }) => {
-  const runAction = (action?: 'syllabus' | 'cbt' | 'diagnostic' | 'tutor' | 'dashboard') => {
+  const runAction = (action?: 'syllabus' | 'cbt' | 'tutor' | 'dashboard') => {
     switch (action) {
       case 'syllabus':
         return onOpenSyllabus();
       case 'cbt':
         return onLaunchCBT();
-      case 'diagnostic':
-        return onLaunchDiagnostic();
       case 'tutor':
         return onOpenTutor();
       case 'dashboard':
@@ -212,10 +209,10 @@ export const HomePageView: React.FC<HomePageViewProps> = ({
                 <button
                   type="button"
                   className="btn btn--outline"
-                  onClick={onLaunchDiagnostic}
+                  onClick={onLaunchCBT}
                   id="hero-diagnostic-btn"
                 >
-                  Run the diagnostic
+                  Run a mock test
                 </button>
               </div>
 
