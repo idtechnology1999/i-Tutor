@@ -45,24 +45,11 @@ const ENTRIES = [
       'WAEC, NECO and UTME papers',
       'Solutions keyed to the official scheme',
     ],
-    action: 'diagnostic' as const,
+    action: 'syllabus' as const,
     cta: 'Open the syllabus index',
   },
   {
     folio: '02',
-    label: 'Diagnostic',
-    title: 'A ten-minute baseline that ranks the gaps',
-    body: 'Calibrated questions map accuracy, pace and conceptual depth onto the sub-topics costing marks, then return a drill list ordered by impact rather than by syllabus sequence.',
-    facts: [
-      'Ten minutes, forty questions',
-      'Projected aggregate against published cut-offs',
-      'Drill list ordered by expected gain',
-    ],
-    action: 'diagnostic' as const,
-    cta: 'Run the diagnostic',
-  },
-  {
-    folio: '03',
     label: 'CBT hall',
     title: 'The terminal, reproduced',
     body: 'The same interface, the approved eight-key calculator and a hard two-hour clock. Answers are marked live so pacing errors surface in the mock rather than on the day.',
@@ -102,7 +89,7 @@ const STAND_POINTS = [
   'Syllabi aligned to the 2024\u20132026 WAEC scheme',
 ];
 
-const COLOPHON_COLUMNS: Array<{ heading: string; items: string[]; action?: 'syllabus' | 'cbt' | 'diagnostic' | 'tutor' | 'dashboard' }> = [
+const COLOPHON_COLUMNS: Array<{ heading: string; items: string[]; action?: 'syllabus' | 'cbt' | 'tutor' | 'dashboard' }> = [
   {
     heading: 'Subjects',
     items: [
@@ -121,7 +108,6 @@ const COLOPHON_COLUMNS: Array<{ heading: string; items: string[]; action?: 'syll
     items: [
       'CBT hall',
       'Eight-key calculator',
-      'Diagnostic',
       'Study tutor',
       'Goal & streak tracker',
     ],
@@ -192,8 +178,8 @@ export const HomePageView: React.FC<HomePageViewProps> = ({
               <p className="bs-standfirst" data-reveal data-reveal-delay={70}>
                 i-Tutor holds twenty years of verified WAEC, NECO and UTME
                 papers with the marking scheme attached to each solution, a
-                ten-minute diagnostic that ranks your gaps, and a CBT hall
-                built on the approved eight-key calculator.
+                syllabus index ordered by topic, and a CBT hall built on the
+                approved eight-key calculator.
               </p>
 
               <div className="bs-actions" data-reveal data-reveal-delay={130}>
@@ -452,12 +438,11 @@ export const HomePageView: React.FC<HomePageViewProps> = ({
           <div className="bs-stand__text">
             <p className="bs-kicker bs-kicker--invert">Begin</p>
             <h2 className="bs-headline bs-headline--2">
-              Sit a mock, or measure the gap first.
+              Sit a mock before the real paper.
             </h2>
             <p className="bs-standfirst bs-standfirst--invert">
-              Both run without an account. The diagnostic takes ten minutes and
-              returns a projected aggregate; the mock takes two hours and returns
-              a marked paper.
+              It runs without an account: two hours, one hundred and eighty
+              questions, and a marked paper that shows where the clock went.
             </p>
           </div>
           <div className="bs-stand__actions">
@@ -468,9 +453,9 @@ export const HomePageView: React.FC<HomePageViewProps> = ({
             <button
               type="button"
               className="btn btn--ghost-dark"
-              onClick={onLaunchDiagnostic}
+              onClick={onOpenSyllabus}
             >
-              Run the diagnostic
+              Browse the syllabus
             </button>
             <button
               type="button"

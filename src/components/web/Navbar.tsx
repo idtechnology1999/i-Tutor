@@ -199,16 +199,6 @@ export const Navbar: React.FC<Props> = ({
                 Register
               </a>
             )}
-            <a
-              href={pathForView('diagnostic')}
-              onClick={(event) => {
-                event.preventDefault();
-                goToPath(pathForView('diagnostic'));
-              }}
-              className="btn btn--outline btn--block"
-            >
-              Take the 10-minute diagnostic
-            </a>
           </div>
         </div>
       )}
