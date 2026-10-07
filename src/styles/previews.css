@@ -1,0 +1,739 @@
+/* =============================================================================
+   Product previews (CBT screen, tutor chat) + refinements found in the
+   screenshot review. Loaded after site.css, before motion.css.
+   ============================================================================= */
+
+/* ---------------------------------------------------------- Refinements */
+
+/* Figures read as numbers, not code: proportional face, tabular digits.
+   (Geist Mono also lacks the ₦ glyph.) */
+.lp-proof b,
+.lp-plan__price,
+.lp-hero__score-value,
+.auth-photo__stats dt {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
+}
+
+.lp-hero__grid {
+  grid-template-columns: 1.18fr 0.92fr;
+  gap: clamp(40px, 5vw, 72px);
+}
+
+.lp-hero__title {
+  font-size: clamp(2.5rem, 1.25rem + 3.5vw, 3.65rem);
+  letter-spacing: -0.04em;
+  line-height: 1.03;
+}
+
+.lp-h2 {
+  letter-spacing: -0.032em;
+}
+
+/* Tall phones: don't stretch the register rows apart. */
+@media (max-width: 960px) {
+  .auth--photo,
+  .auth--photo .auth__frame {
+    min-height: 0;
+  }
+
+  .auth--photo .auth__frame {
+    align-content: start;
+  }
+}
+
+/* ------------------------------------------------------------- Showcase */
+
+.lp-showcase__copy {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(32px, 6vw, 96px);
+  align-items: end;
+  margin-bottom: clamp(32px, 4vw, 48px);
+}
+
+.lp-showcase__copy h3 {
+  font-size: clamp(1.5rem, 1.2rem + 1vw, 2rem);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.lp-showcase__copy p {
+  margin-top: 14px;
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  color: var(--ink-2);
+  max-width: 48ch;
+}
+
+.lp-showcase__copy .lp-ticks {
+  margin-top: 0;
+}
+
+.lp-showcase__copy .lp-link {
+  margin-top: 24px;
+}
+
+.lp-showcase__frame {
+  padding: clamp(8px, 1.4vw, 16px);
+  border-radius: 28px;
+  background: linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.4) 100%);
+  border: 1px solid var(--rule);
+  box-shadow: 0 40px 80px -48px rgba(11, 31, 30, 0.45);
+}
+
+.lp-showcase + .lp-feature {
+  margin-top: clamp(80px, 10vw, 136px);
+}
+
+/* ------------------------------------------------------------ CBT screen */
+
+.pv-cbt {
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: 18px;
+  overflow: hidden;
+  font-size: 0.9375rem;
+}
+
+.pv-cbt__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 12px 10px 10px;
+  background: var(--brand);
+  color: #fff;
+}
+
+.pv-cbt__tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pv-cbt__tabs span {
+  padding: 7px 14px;
+  border-radius: 9px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
+}
+
+.pv-cbt__tabs span.is-active {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.pv-cbt__right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+}
+
+.pv-cbt__timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  font-size: 0.9375rem;
+  padding: 6px 12px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.pv-cbt__timer.is-low {
+  background: var(--accent);
+  color: var(--ink);
+}
+
+.pv-cbt__submit {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 9px;
+  border: 0;
+  background: #fff;
+  color: var(--brand);
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.pv-cbt__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  min-height: 440px;
+}
+
+.pv-cbt__main {
+  padding: clamp(20px, 3vw, 36px);
+  display: flex;
+  flex-direction: column;
+}
+
+.pv-cbt__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--ink-3);
+  font-size: 0.875rem;
+}
+
+.pv-cbt__meta b {
+  color: var(--ink);
+}
+
+.pv-cbt__stem {
+  margin: 22px 0 22px;
+  font-size: clamp(1.125rem, 1rem + 0.4vw, 1.3rem);
+  line-height: 1.5;
+  font-weight: 500;
+  color: var(--ink);
+  animation: pv-swap 420ms var(--ease-ios, ease) both;
+}
+
+.pv-cbt__options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.pv-opt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--rule-2);
+  background: #fff;
+  text-align: left;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  animation: pv-swap 460ms var(--ease-ios, ease) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+  transition: border-color 160ms ease, background-color 160ms ease, transform 500ms var(--spring, ease);
+}
+
+.pv-opt:hover {
+  border-color: var(--ink-3);
+}
+
+.pv-opt:active {
+  transform: scale(0.98);
+  transition-duration: 120ms;
+}
+
+.pv-opt__key {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: var(--mist);
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--ink-2);
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+/* Exam mode: a choice is just "picked" — never marked right or wrong. */
+.pv-opt.is-picked {
+  border-color: var(--brand);
+  background: var(--brand-tint);
+}
+
+.pv-opt.is-picked .pv-opt__key {
+  background: var(--brand);
+  color: #fff;
+}
+
+@keyframes pv-swap {
+  from {
+    opacity: 0;
+    transform: translate3d(12px, 0, 0);
+  }
+}
+
+.pv-cbt__nav {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 28px;
+}
+
+.pv-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--rule-2);
+  background: #fff;
+  color: var(--ink);
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: border-color 160ms ease, background-color 160ms ease, transform 500ms var(--spring, ease);
+}
+
+.pv-btn:hover:not(:disabled) {
+  border-color: var(--ink-3);
+}
+
+.pv-btn:active:not(:disabled) {
+  transform: scale(0.95);
+  transition-duration: 120ms;
+}
+
+.pv-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.pv-btn--flag.is-on {
+  border-color: var(--accent);
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.pv-btn--next {
+  margin-left: auto;
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+
+.pv-btn--next:hover:not(:disabled) {
+  background: var(--brand-2);
+  border-color: var(--brand-2);
+}
+
+.pv-cbt__side {
+  border-left: 1px solid var(--rule);
+  background: var(--mist);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pv-cbt__side-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.pv-cbt__grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 5px;
+}
+
+.pv-cbt__grid button {
+  aspect-ratio: 1;
+  border-radius: 7px;
+  border: 1px solid var(--rule-2);
+  background: #fff;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-3);
+  padding: 0;
+  transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease, transform 500ms var(--spring, ease);
+}
+
+.pv-cbt__grid button.is-done {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+
+.pv-cbt__grid button.is-flag {
+  background: var(--warn-bg);
+  border-color: var(--accent);
+  color: var(--warn);
+}
+
+.pv-cbt__grid button.is-current {
+  border: 2px solid var(--brand);
+  color: var(--brand);
+  font-weight: 700;
+  transform: scale(1.08);
+}
+
+.pv-cbt__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 0.75rem;
+  color: var(--ink-3);
+}
+
+.pv-cbt__legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pv-cbt__legend i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  border: 1px solid var(--rule-2);
+  background: #fff;
+}
+
+.pv-cbt__legend i.is-done {
+  background: var(--brand);
+  border-color: var(--brand);
+}
+
+.pv-cbt__legend i.is-flag {
+  background: var(--warn-bg);
+  border-color: var(--accent);
+}
+
+.pv-btn--calc {
+  margin-top: auto;
+  width: 100%;
+}
+
+/* ------------------------------------------------------------ Tutor chat */
+
+.lp-feature__media--stage {
+  aspect-ratio: auto;
+  min-height: 560px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: clamp(16px, 2.4vw, 28px);
+}
+
+.lp-feature__media--stage > img {
+  position: absolute;
+  inset: 0;
+  object-position: 30% 50%;
+}
+
+.lp-feature__media--stage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(200deg, rgba(6, 22, 21, 0) 30%, rgba(6, 22, 21, 0.45) 100%);
+  pointer-events: none;
+}
+
+.pv-chat {
+  position: relative;
+  z-index: 1;
+  width: min(400px, 100%);
+  display: flex;
+  flex-direction: column;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.84);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 30px 60px -30px rgba(6, 22, 21, 0.6);
+  overflow: hidden;
+}
+
+.pv-chat__head {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+  align-items: center;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgba(11, 31, 30, 0.08);
+}
+
+.pv-chat__avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--brand);
+  color: #fff;
+}
+
+.pv-chat__head strong {
+  display: block;
+  font-size: 0.9375rem;
+  line-height: 1.2;
+}
+
+.pv-chat__head span {
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+}
+
+.pv-chat__modes {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.pv-chat__modes span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ink-2);
+  background: rgba(11, 31, 30, 0.05);
+}
+
+.pv-chat__modes span.is-active {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.pv-chat__quote {
+  margin: 12px 14px 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid var(--rule);
+}
+
+.pv-chat__quote p {
+  margin-top: 8px;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.pv-chat__log {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  min-height: 236px;
+}
+
+.pv-msg {
+  max-width: 86%;
+  padding: 9px 13px;
+  border-radius: 18px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  animation: msg-in 480ms var(--spring, ease) both;
+  transform-origin: bottom left;
+}
+
+.pv-msg--you {
+  align-self: flex-end;
+  background: var(--brand);
+  color: #fff;
+  border-bottom-right-radius: 6px;
+  transform-origin: bottom right;
+}
+
+.pv-msg--tutor {
+  align-self: flex-start;
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-bottom-left-radius: 6px;
+}
+
+.pv-msg--typing {
+  display: inline-flex;
+  gap: 4px;
+  padding: 13px 14px;
+}
+
+.pv-msg--typing i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink-3);
+  animation: typing 1s ease-in-out infinite;
+}
+
+.pv-msg--typing i:nth-child(2) {
+  animation-delay: 150ms;
+}
+
+.pv-msg--typing i:nth-child(3) {
+  animation-delay: 300ms;
+}
+
+@keyframes typing {
+  0%,
+  60%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes msg-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85) translate3d(0, 8px, 0);
+  }
+}
+
+.pv-chat__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.pv-chat__chips button {
+  padding: 7px 12px;
+  border-radius: 99px;
+  border: 1px solid var(--brand);
+  background: #fff;
+  color: var(--brand);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  animation: msg-in 480ms var(--spring, ease) both;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.pv-chat__chips button:nth-child(2) {
+  animation-delay: 80ms;
+}
+
+.pv-chat__chips button:nth-child(3) {
+  animation-delay: 160ms;
+}
+
+.pv-chat__chips button:hover {
+  background: var(--brand);
+  color: #fff;
+}
+
+.pv-chat__input {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 12px 12px;
+  padding: 6px 6px 6px 16px;
+  border-radius: 99px;
+  background: #fff;
+  border: 1px solid var(--rule);
+  font-size: 0.875rem;
+  color: var(--ink-3);
+}
+
+.pv-chat__send {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--brand);
+  color: #fff;
+}
+
+/* ------------------------------------------------------------ Responsive */
+
+@media (max-width: 1024px) {
+  .lp-showcase__copy {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .pv-cbt__body {
+    grid-template-columns: 1fr;
+  }
+
+  .pv-cbt__side {
+    border-left: 0;
+    border-top: 1px solid var(--rule);
+  }
+
+  .pv-cbt__grid {
+    grid-template-columns: repeat(10, 1fr);
+  }
+
+  .pv-btn--calc {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .pv-cbt__options {
+    grid-template-columns: 1fr;
+  }
+
+  .pv-cbt__submit {
+    display: none;
+  }
+
+  .pv-cbt__bar {
+    padding: 8px;
+  }
+
+  .pv-cbt__tabs span {
+    padding: 6px 10px;
+  }
+
+  .pv-cbt__main {
+    padding: 18px;
+  }
+
+  .pv-cbt__grid {
+    grid-template-columns: repeat(8, 1fr);
+  }
+
+  .pv-btn {
+    padding: 0 10px;
+  }
+
+  .lp-showcase__frame {
+    padding: 6px;
+    border-radius: 22px;
+    margin-inline: -6px;
+  }
+
+  .lp-feature__media--stage {
+    min-height: 0;
+    padding: 180px 10px 10px;
+  }
+
+  .lp-feature__media--stage {
+    background: var(--brand);
+  }
+
+  .lp-feature__media--stage > img {
+    inset: 0 0 auto 0;
+    height: 300px;
+    object-position: 25% 62%;
+  }
+
+  .pv-cbt__tabs {
+    -webkit-mask-image: linear-gradient(90deg, #000 78%, transparent);
+    mask-image: linear-gradient(90deg, #000 78%, transparent);
+  }
+
+  .pv-chat {
+    width: 100%;
+  }
+}

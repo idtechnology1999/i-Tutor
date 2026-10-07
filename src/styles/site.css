@@ -53,7 +53,7 @@
 
 .brand__name {
   font-family: var(--font-display);
-  font-weight: 650;
+  font-weight: 600;
   font-size: 1.125rem;
   letter-spacing: -0.02em;
 }
@@ -159,7 +159,7 @@
   border: 0;
   background: var(--brand-tint);
   color: var(--brand);
-  font-weight: 650;
+  font-weight: 600;
   font-size: 0.9375rem;
 }
 
@@ -323,7 +323,7 @@
 
 .lp-h2 {
   font-size: clamp(1.875rem, 1.3rem + 2vw, 2.75rem);
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1.1;
   letter-spacing: -0.03em;
 }
@@ -539,7 +539,7 @@
 
 .lp-hero__title {
   font-size: clamp(2.5rem, 1.4rem + 4.2vw, 4.25rem);
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1.02;
   letter-spacing: -0.045em;
 }
@@ -1002,7 +1002,7 @@
 
 .lp-feature__copy h3 {
   font-size: clamp(1.5rem, 1.2rem + 1vw, 2rem);
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: -0.025em;
   line-height: 1.15;
 }
@@ -1042,7 +1042,7 @@
 
 .lp-mini h4 {
   font-size: 1.125rem;
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: -0.015em;
 }
 
@@ -1151,7 +1151,7 @@
 
 .lp-steps h4 {
   font-size: 1.125rem;
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: -0.015em;
 }
 
@@ -1282,7 +1282,7 @@
 
 .lp-plan h4 {
   font-size: 1.125rem;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .lp-plan__tag {
@@ -1446,7 +1446,7 @@
 .lp-cta__copy h2 {
   color: #fff;
   font-size: clamp(1.875rem, 1.3rem + 2vw, 2.75rem);
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: -0.03em;
   line-height: 1.08;
 }
@@ -1728,7 +1728,7 @@
 
 .auth__title {
   font-size: clamp(1.875rem, 1.4rem + 1.6vw, 2.5rem);
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1.08;
   letter-spacing: -0.035em;
   color: var(--ink);

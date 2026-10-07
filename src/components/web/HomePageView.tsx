@@ -22,6 +22,7 @@ import {
   WifiOff,
 } from 'lucide-react';
 import { BrandMark } from './BrandMark';
+import { CbtPreview, TutorPreview } from './ProductPreviews';
 
 interface HomePageViewProps {
   onLaunchCBT: () => void;
@@ -35,7 +36,6 @@ interface HomePageViewProps {
    hero is not waiting on a third-party CDN. */
 const PHOTO = {
   hero: '/images/student-cbt-focus.jpg',
-  lab: '/images/cbt-lab-rows.jpg',
   tutor: '/images/teacher-guiding.jpg',
   terminals: '/images/students-at-terminals.jpg',
 };
@@ -389,8 +389,8 @@ export const HomePageView: React.FC<HomePageViewProps> = ({
             <span>teachers check every item</span>
           </div>
           <div>
-            <b>0 MB</b>
-            <span>data needed once downloaded</span>
+            <b>100%</b>
+            <span>works offline once downloaded</span>
           </div>
         </div>
       </section>
@@ -442,50 +442,43 @@ export const HomePageView: React.FC<HomePageViewProps> = ({
             </h2>
           </header>
 
-          <article className="lp-feature">
-            <figure className="lp-feature__media" data-reveal="scale">
-              <img
-                src={PHOTO.lab}
-                alt="Rows of students sitting at desktop computers in a school CBT centre"
-                width={1280}
-                height={960}
-                loading="lazy"
-                decoding="async"
-              />
-              <div className="lp-feature__chip">
-                <Calculator size={16} aria-hidden />
-                Calculator, navigator &amp; flagging built in
+          <article className="lp-showcase">
+            <div className="lp-showcase__copy">
+              <div data-reveal>
+                <span className="lp-feature__icon">
+                  <GraduationCap size={22} aria-hidden />
+                </span>
+                <h3>A CBT that feels like the real one</h3>
+                <p>
+                  Same layout as the JAMB screen: subject tabs, a hard
+                  countdown, the question navigator, flagging and the on-screen
+                  calculator. Go on &mdash; click around.
+                </p>
               </div>
-            </figure>
-            <div className="lp-feature__copy" data-reveal data-reveal-delay={80}>
-              <span className="lp-feature__icon">
-                <GraduationCap size={22} aria-hidden />
-              </span>
-              <h3>A CBT that feels like the real one</h3>
-              <p>
-                Same screen layout, a hard countdown, question navigator, flag
-                for review and the on-screen calculator. Sit full four-subject
-                mocks or a quick 20-question topic test.
-              </p>
-              <ul className="lp-ticks">
-                <li>
-                  <Check size={16} aria-hidden /> Keyboard shortcuts: A–D, N, P, F
-                </li>
-                <li>
-                  <Check size={16} aria-hidden /> Auto-submit when time runs out
-                </li>
-                <li>
-                  <Check size={16} aria-hidden /> Full scorecard and review after
-                </li>
-              </ul>
-              <button type="button" className="lp-link" onClick={onLaunchCBT}>
-                Start a mock exam <ArrowRight size={16} aria-hidden />
-              </button>
+              <div data-reveal data-reveal-delay={80}>
+                <ul className="lp-ticks">
+                  <li>
+                    <Check size={16} aria-hidden /> Full four-subject mocks or 20-question topic tests
+                  </li>
+                  <li>
+                    <Calculator size={16} aria-hidden /> Keyboard shortcuts: A–D, N, P, F
+                  </li>
+                  <li>
+                    <Check size={16} aria-hidden /> Auto-submit, then a full scorecard and review
+                  </li>
+                </ul>
+                <button type="button" className="lp-link" onClick={onLaunchCBT}>
+                  Start a mock exam <ArrowRight size={16} aria-hidden />
+                </button>
+              </div>
+            </div>
+            <div className="lp-showcase__frame" data-reveal="scale" data-reveal-delay={60}>
+              <CbtPreview />
             </div>
           </article>
 
           <article className="lp-feature lp-feature--flip">
-            <figure className="lp-feature__media" data-reveal="scale">
+            <figure className="lp-feature__media lp-feature__media--stage" data-reveal="scale">
               <img
                 src={PHOTO.tutor}
                 alt="A teacher explaining something on a computer screen to a group of students"
@@ -494,13 +487,7 @@ export const HomePageView: React.FC<HomePageViewProps> = ({
                 loading="lazy"
                 decoding="async"
               />
-              <div className="lp-chat" aria-hidden>
-                <p className="lp-chat__you">I picked C. Why is it wrong?</p>
-                <p className="lp-chat__tutor">
-                  Good question. What is the car&rsquo;s starting speed, and
-                  which equation uses it?
-                </p>
-              </div>
+              <TutorPreview />
             </figure>
             <div className="lp-feature__copy" data-reveal data-reveal-delay={80}>
               <span className="lp-feature__icon">
