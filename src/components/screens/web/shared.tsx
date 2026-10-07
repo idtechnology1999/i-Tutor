@@ -49,6 +49,8 @@ interface AuthShellProps {
   children: React.ReactNode;
   footer?: React.ReactNode;
   narrow?: boolean;
+  /** Split-screen layout: form on the left, a full-height photo on the right. */
+  photo?: boolean;
 }
 
 /**
@@ -65,8 +67,9 @@ export const AuthShell: React.FC<AuthShellProps> = ({
   children,
   footer,
   narrow,
+  photo,
 }) => (
-  <div className="auth">
+  <div className={`auth${photo ? ' auth--photo' : ''}`}>
     <div className="auth__frame">
       <div className="auth__main">
         <header className={`auth__head${narrow ? ' auth__head--narrow' : ''}`}>
@@ -125,6 +128,35 @@ export const DefaultAside: React.FC<{
     </dl>
     {footnote ? <div className="auth__panel-footnote">{footnote}</div> : null}
   </div>
+);
+
+/**
+ * Photo panel for the split-screen account pages. Real photographs from a
+ * Nigerian school CBT lab (James Rhoda, Wikimedia Commons, CC BY-SA 4.0).
+ */
+export const PhotoAside: React.FC<{
+  src: string;
+  alt: string;
+  caption: string;
+  stats?: Array<{ value: string; label: string }>;
+}> = ({ src, alt, caption, stats }) => (
+  <figure className="auth-photo">
+    <img src={src} alt={alt} width={1280} height={960} decoding="async" />
+    <figcaption className="auth-photo__caption">
+      <p>{caption}</p>
+      {stats ? (
+        <dl className="auth-photo__stats">
+          {stats.map((stat) => (
+            <div key={stat.label}>
+              <dt>{stat.value}</dt>
+              <dd>{stat.label}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+      <span className="auth-photo__credit">Photo: James Rhoda / Wikimedia Commons, CC BY-SA 4.0</span>
+    </figcaption>
+  </figure>
 );
 
 /** Segmented progress rail for the onboarding sequence. */

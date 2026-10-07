@@ -8,7 +8,7 @@ import {
   LockIcon,
 } from '../../Icons';
 import { normalizeNigerianPhone } from '../../../utils/phone';
-import { AuthShell, DefaultAside, FormField } from './shared';
+import { AuthShell, FormField, PhotoAside } from './shared';
 
 interface Props {
   onBack: () => void;
@@ -74,19 +74,15 @@ export const A06_Login: React.FC<Props> = ({
 
   return (
     <AuthShell
+      photo
       eyebrow="Welcome back"
-      title="Log in to your candidate account"
-      lede="Pick up your diagnostic, your drill list and your mock history where you left off."
+      title="Log in to i-Teacher"
+      lede="Pick up your mocks, weak topics and tutor sessions where you left off."
       aside={
-        <DefaultAside
-          heading="Returning candidate"
-          body="Your study record is tied to this login, so your mastery matrix and past mock scores travel with you across devices."
-          points={[
-            'Diagnostic results restored automatically',
-            'Mock papers remain available offline',
-            'No re-verification needed on this device',
-          ]}
-          footnote="New here? Registration takes under a minute and needs no card details."
+        <PhotoAside
+          src="/images/student-cbt-focus.jpg"
+          alt="A student concentrating at a computer in a school CBT lab"
+          caption="Your progress follows you — phone, laptop or the cyber-café computer."
         />
       }
       footer={
@@ -99,7 +95,7 @@ export const A06_Login: React.FC<Props> = ({
           </p>
           <p className="auth__foot-back">
             <button type="button" className="link-inline" onClick={onBack}>
-              Back to the i-Tutor overview
+              Back to i-Teacher home
             </button>
           </p>
         </>

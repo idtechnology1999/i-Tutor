@@ -64,22 +64,22 @@ export function App() {
 
   useEffect(() => {
     const titles: Record<AppView, string> = {
-      home: 'i-Tutor — The tutor that shows you why the answer is right',
-      cbt: 'CBT Simulation — i-Tutor',
-      syllabus: 'Syllabus & Past Questions — i-Tutor',
-      dashboard: 'Student Portal — i-Tutor',
-      setup: 'Candidate Profile — i-Tutor',
-      signup: 'Create your account — i-Tutor',
-      otp: 'Verify your contact — i-Tutor',
-      login: 'Log in — i-Tutor',
-      forgot: 'Reset your password — i-Tutor',
-      reset: 'Set a new password — i-Tutor',
-      track: 'Step 1 · Exam track — i-Tutor',
-      subjects: 'Step 2 · Subjects — i-Tutor',
-      institution: 'Step 3 · Institution & course — i-Tutor',
-      goals: 'Step 4 · Exam date & goal — i-Tutor',
-      permissions: 'Step 5 · Reminders & offline — i-Tutor',
-      baseline: 'Step 6 · Placement test — i-Tutor',
+      home: 'i-Teacher — UTME & Post-UTME practice that teaches',
+      cbt: 'CBT Simulation — i-Teacher',
+      syllabus: 'Syllabus & Past Questions — i-Teacher',
+      dashboard: 'Student Portal — i-Teacher',
+      setup: 'Candidate Profile — i-Teacher',
+      signup: 'Create your account — i-Teacher',
+      otp: 'Verify your contact — i-Teacher',
+      login: 'Log in — i-Teacher',
+      forgot: 'Reset your password — i-Teacher',
+      reset: 'Set a new password — i-Teacher',
+      track: 'Step 1 · Exam track — i-Teacher',
+      subjects: 'Step 2 · Subjects — i-Teacher',
+      institution: 'Step 3 · Institution & course — i-Teacher',
+      goals: 'Step 4 · Exam date & goal — i-Teacher',
+      permissions: 'Step 5 · Reminders & offline — i-Teacher',
+      baseline: 'Step 6 · Placement test — i-Teacher',
     };
     document.title = titles[activeView];
   }, [activeView]);
@@ -150,7 +150,7 @@ export function App() {
         <footer className="app-footer">
           <div className="container app-footer__inner">
             <div>
-              <strong>i-Tutor</strong> &middot; Study platform for Nigerian
+              <strong>i-Teacher</strong> &middot; Study platform for Nigerian
               WAEC, NECO, UTME and Post-UTME candidates
             </div>
             <div className="footer-compliance-tags" style={{ color: 'var(--slate-400)' }}>

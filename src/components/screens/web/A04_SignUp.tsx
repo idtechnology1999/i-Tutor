@@ -1,17 +1,17 @@
 import React, { useMemo, useState } from 'react';
 import {
-  EyeIcon,
-  EyeOffIcon,
-  CheckIcon,
-  AlertCircleIcon,
-  UserIcon,
-  SmartphoneIcon,
-} from '../../Icons';
+  Eye as EyeIcon,
+  EyeOff as EyeOffIcon,
+  Check as CheckIcon,
+  CircleAlert as AlertCircleIcon,
+  UserRound as UserIcon,
+  AtSign as SmartphoneIcon,
+} from 'lucide-react';
 import {
   normalizeNigerianPhone,
   calculatePasswordStrength,
 } from '../../../utils/phone';
-import { AuthShell, DefaultAside, FormField } from './shared';
+import { AuthShell, FormField, PhotoAside } from './shared';
 
 interface Props {
   onBack: () => void;
@@ -44,6 +44,8 @@ export const A04_SignUp: React.FC<Props> = ({
   const [consentTouched, setConsentTouched] = useState(false);
 
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  // Bumped on each failed submit; the form replays its shake animation.
+  const [shakeCount, setShakeCount] = useState(0);
 
   const isNameValid = fullName.trim().split(/\s+/).filter(Boolean).length >= 2;
   const phoneValidation = normalizeNigerianPhone(phoneOrEmail);
@@ -78,6 +80,7 @@ export const A04_SignUp: React.FC<Props> = ({
     setPhoneTouched(true);
     setPasswordTouched(true);
     setConsentTouched(true);
+    if (!isFormValid) setShakeCount((n) => n + 1);
     if (!isFormValid || isLoading) return;
     onSubmit({
       fullName: fullName.trim(),
@@ -90,29 +93,20 @@ export const A04_SignUp: React.FC<Props> = ({
 
   return (
     <AuthShell
-      eyebrow="Create account"
-      title="Create your candidate account"
-      lede="Takes under a minute. We verify your phone or email before anything else, so no one else can register with your number."
+      photo
+      eyebrow="Free to start · No card needed"
+      title="Create your account"
+      lede="Takes under a minute. We’ll send a one-time code to confirm it’s really you."
       aside={
-        <DefaultAside
-          heading="Why we ask for this"
-          body="i-Tutor keys your question bank, drill list and mock history to one candidate record. The contact detail is how we prove the account is yours."
-          points={[
-            'One-time code sent before the account opens',
-            'No payment details required to start',
-            'Export or delete your record at any time',
+        <PhotoAside
+          src="/images/students-at-terminals.jpg"
+          alt="Secondary-school students in white uniforms working at computers in a CBT lab"
+          caption="Practise on a screen that feels like the real CBT hall — then learn from every question you miss."
+          stats={[
+            { value: '2,400+', label: 'verified past questions' },
+            { value: '4', label: 'UTME subjects live' },
+            { value: 'Offline', label: 'once downloaded' },
           ]}
-          footnote={
-            <>
-              <strong>Passwords</strong><br />
-              Hashed with a per-account salt. Never readable by us.<br /><br />
-              <strong>Verification</strong><br />
-              A one-time code confirms your phone or email before the account opens.<br /><br />
-              <strong>Your data</strong><br />
-              Study records stay on your device and in your own candidate portal.<br /><br />
-              Already registered? Use your existing candidate login instead.
-            </>
-          }
         />
       }
       footer={
@@ -125,13 +119,17 @@ export const A04_SignUp: React.FC<Props> = ({
           </p>
           <p className="auth__foot-back">
             <button type="button" className="link-inline" onClick={onBack}>
-              Back to the i-Tutor overview
+              Back to i-Teacher home
             </button>
           </p>
         </>
       }
     >
-      <form className="auth__form" onSubmit={handleSubmit} noValidate>
+      <form
+        className={`auth__form${shakeCount % 2 ? ' is-shake-a' : shakeCount ? ' is-shake-b' : ''}`}
+        onSubmit={handleSubmit}
+        noValidate
+      >
         {submitAttempted && !isFormValid ? (
           <div className="form-banner is-error" role="alert">
             <AlertCircleIcon size={16} />
@@ -286,7 +284,7 @@ export const A04_SignUp: React.FC<Props> = ({
               <a href="/privacy" className="link-inline">
                 privacy policy
               </a>
-              , and consent to i-Tutor storing my study record.
+              , and consent to i-Teacher storing my study record.
             </span>
           </label>
           {consentError ? (
@@ -301,7 +299,7 @@ export const A04_SignUp: React.FC<Props> = ({
           className="btn btn--primary btn--block"
           disabled={isLoading}
         >
-          {isLoading ? loadingMessage || 'Sending your code…' : 'Continue'}
+          {isLoading ? loadingMessage || 'Sending your code…' : 'Create account'}
         </button>
 
         <p className="auth__switch">

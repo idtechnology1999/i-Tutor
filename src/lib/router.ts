@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { withViewTransition } from './ui';
 
 /**
  * Minimal History API router.
@@ -155,7 +156,8 @@ export const useRouter = () => {
   );
 
   useEffect(() => {
-    const onPopState = () => setPath(normalise(window.location.pathname));
+    const onPopState = () =>
+      withViewTransition(() => setPath(normalise(window.location.pathname)));
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
@@ -169,7 +171,7 @@ export const useRouter = () => {
     } else {
       window.history.pushState({}, '', next);
     }
-    setPath(next);
+    withViewTransition(() => setPath(next));
   }, []);
 
   return { path, view: viewForPath(path), navigate };
