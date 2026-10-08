@@ -11,6 +11,7 @@ import './styles/exam-start.css'
 import './styles/ask-ai.css'
 import './styles/news.css'
 import './styles/admin.css'
+import './styles/courses.css'
 import App from './App.tsx'
 
 createRoot(document.getElementById('root')!).render(

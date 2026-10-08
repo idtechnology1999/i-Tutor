@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, ScanText, Search, Trash2 } from 'lucide-react';
-import { CMS_SUBJECTS, EXAM_TYPES, cms, paperSize, takenExams, useCms } from '../../lib/cms';
+import { CMS_SUBJECTS, EXAM_FULL_NAME, EXAM_LABEL, EXAM_TYPES, cms, paperSize, useCms } from '../../lib/cms';
 import type { CmsQuestion, CmsSubject, QuestionDraft } from '../../lib/cms';
 import type { AdminNav, BankScope, QuestionFilter } from './AdminApp';
 import { PageHead, StatusChip } from './AdminApp';
@@ -30,9 +30,10 @@ export const AdminQuestions: React.FC<{
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [editing, setEditing] = useState<CmsQuestion | 'new' | null>(null);
 
-  const subject = scope.subject;
-  const year = scope.year;
-  const inSubject = questions.filter((q) => subject === 'All' || q.subject === subject);
+  const { exam, subject, year } = scope;
+  const examName = EXAM_LABEL[exam];
+  const inExam = questions.filter((q) => q.examType === exam);
+  const inSubject = inExam.filter((q) => subject === 'All' || q.subject === subject);
   const inScope = inSubject.filter((q) => year === null || q.year === year);
 
   const term = search.trim().toLowerCase();
@@ -51,18 +52,24 @@ export const AdminQuestions: React.FC<{
     review: inScope.filter((q) => q.needsReview || q.status === 'draft').length,
   };
 
-  const yearCount = (y: number) => inSubject.filter((q) => q.year === y).length;
-  const undated = inSubject.filter((q) => q.year === null).length;
-  const label = `${subject === 'All' ? 'All subjects' : subject}${year ? ` ${year}` : ''}`;
-  // One paper per subject + exam + year.
-  const taken = subject !== 'All' && year ? takenExams(questions, subject, year) : [];
-  const allTaken = taken.length === EXAM_TYPES.length;
-  const addLabel = subject === 'All' ? 'Add past questions' : `Add past questions to ${subject}${year ? ` ${year}` : ''}`;
+  const subjectName = subject === 'All' ? 'all subjects' : subject;
+  const label = `${examName} ${subject === 'All' ? '' : `${subject} `}${year ?? ''}`.trim();
+  // One paper per exam + subject + year.
+  const existing = subject !== 'All' && year ? paperSize(questions, subject, exam, year) : 0;
+  const canAdd = subject !== 'All' && year !== null && existing === 0;
+  const addLabel =
+    subject === 'All'
+      ? 'Choose a subject first'
+      : year === null
+        ? 'Choose a year first'
+        : existing
+          ? `${label} is already added`
+          : `Add ${label} past questions`;
 
-  const openImport = () =>
-    nav.go('import', {
-      preset: subject === 'All' ? null : { subject: subject as CmsSubject, year },
-    });
+  const openImport = () => {
+    if (!canAdd) return;
+    nav.go('import', { preset: { exam, subject: subject as CmsSubject, year } });
+  };
 
   const setScope = (patch: Partial<BankScope>) => {
     setSelected(new Set());
@@ -107,7 +114,7 @@ export const AdminQuestions: React.FC<{
 
   const saveEdit = (draft: QuestionDraft, publish: boolean) => {
     if (editing === 'new') {
-      cms.addQuestions([draft], `Added a ${draft.subject} question by hand.`);
+      cms.addQuestions([draft], `Added a ${EXAM_LABEL[draft.examType]} ${draft.subject} question by hand.`);
     } else if (editing) {
       cms.updateQuestion(editing.id, draft);
     }
@@ -117,33 +124,50 @@ export const AdminQuestions: React.FC<{
 
   return (
     <div className="adm-page">
-      <PageHead title="Past questions" sub="Choose a subject and year, then add that year’s paper — the AI arranges it for you." />
+      <PageHead
+        title="Past questions"
+        sub="Each exam has its own past questions. Choose the exam, subject and year, then add that paper — the AI arranges it for you."
+      />
 
       <section className="adm-card adm-scope">
         <div className="adm-field">
-          <span>Subject</span>
-          <div className="adm-pills" role="radiogroup" aria-label="Subject">
-            {['All', ...CMS_SUBJECTS].map((s) => {
-              const n = s === 'All' ? questions.length : questions.filter((q) => q.subject === s).length;
-              return (
-                <button
-                  key={s}
-                  type="button"
-                  role="radio"
-                  aria-checked={subject === s}
-                  className={subject === s ? 'is-on' : ''}
-                  onClick={() => setScope({ subject: s, year: null })}
-                >
-                  {s === 'All' ? 'All subjects' : s}
-                  <small>{n}</small>
-                </button>
-              );
-            })}
+          <span>Exam</span>
+          <div className="adm-exams" role="radiogroup" aria-label="Exam">
+            {EXAM_TYPES.map((t) => (
+              <button
+                key={t}
+                type="button"
+                role="radio"
+                aria-checked={exam === t}
+                className={exam === t ? 'is-on' : ''}
+                onClick={() => setScope({ exam: t, year: null })}
+                title={EXAM_FULL_NAME[t]}
+              >
+                <strong>{EXAM_LABEL[t]}</strong>
+                <small>{questions.filter((q) => q.examType === t).length} questions</small>
+              </button>
+            ))}
           </div>
         </div>
 
         <div className="adm-scope__row">
-          <label className="adm-field adm-scope__year">
+          <label className="adm-field adm-scope__pick">
+            <span>Subject</span>
+            <select className="adm-input" value={subject} onChange={(e) => setScope({ subject: e.target.value, year: null })}>
+              <option value="All">All subjects ({inExam.length})</option>
+              {CMS_SUBJECTS.map((s) => {
+                const n = inExam.filter((q) => q.subject === s).length;
+                return (
+                  <option key={s} value={s}>
+                    {s}
+                    {n ? ` (${n})` : ''}
+                  </option>
+                );
+              })}
+            </select>
+          </label>
+
+          <label className="adm-field adm-scope__pick">
             <span>Year</span>
             <select
               className="adm-input"
@@ -152,11 +176,11 @@ export const AdminQuestions: React.FC<{
             >
               <option value="">All years ({inSubject.length})</option>
               {YEARS.map((y) => {
-                const n = yearCount(y);
+                const n = inSubject.filter((q) => q.year === y).length;
                 return (
                   <option key={y} value={y}>
                     {y}
-                    {n ? ` — ${n} question${n === 1 ? '' : 's'}` : ' — none yet'}
+                    {n ? ` — ${n} question${n === 1 ? '' : 's'}` : subject === 'All' ? '' : ' — none yet'}
                   </option>
                 );
               })}
@@ -167,28 +191,15 @@ export const AdminQuestions: React.FC<{
             type="button"
             className="adm-btn adm-btn--primary adm-btn--lg adm-scope__add"
             onClick={openImport}
-            disabled={allTaken}
+            disabled={!canAdd}
           >
-            <ScanText size={20} aria-hidden /> {allTaken ? `${label} is complete` : addLabel}
+            <ScanText size={20} aria-hidden /> {addLabel}
           </button>
         </div>
-        {taken.length > 0 && (
-          <p className="adm-scope__taken">
-            <span>Already added for {year}:</span>
-            {taken.map((t) => (
-              <span key={t} className="adm-chip is-live">
-                {t} ({paperSize(questions, subject, t, year)})
-              </span>
-            ))}
-            {!allTaken && (
-              <span className="adm-muted">
-                You can still add {EXAM_TYPES.filter((t) => !taken.includes(t)).join(', ')}.
-              </span>
-            )}
+        {existing > 0 && (
+          <p className="adm-muted">
+            This paper is already in the bank. Each exam’s paper can be added once per year — edit its questions below.
           </p>
-        )}
-        {undated > 0 && year === null && (
-          <p className="adm-muted">{undated} question{undated === 1 ? ' has' : 's have'} no year yet — open one to add it.</p>
         )}
       </section>
 
@@ -209,7 +220,7 @@ export const AdminQuestions: React.FC<{
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={`Search ${label} questions`}
+            placeholder={`Search ${examName} ${subjectName} questions`}
             aria-label="Search questions"
           />
         </label>
@@ -237,9 +248,11 @@ export const AdminQuestions: React.FC<{
           <p>
             {search
               ? 'Try a different word.'
-              : 'Paste the whole paper for this year (or just the questions you want) and the AI will arrange them for you to check and publish.'}
+              : canAdd
+                ? 'Paste the whole paper for this year (or just the questions you want) and the AI will arrange them for you to check and publish.'
+                : 'Choose a subject and a year above, then add that paper.'}
           </p>
-          {!search && (
+          {!search && canAdd && (
             <button type="button" className="adm-btn adm-btn--primary" onClick={openImport}>
               <ScanText size={18} aria-hidden /> {addLabel}
             </button>
@@ -264,7 +277,7 @@ export const AdminQuestions: React.FC<{
               <button type="button" className="adm-row__main" onClick={() => setEditing(q)}>
                 <span className="adm-row__q">{q.question || <em>Untitled question</em>}</span>
                 <span className="adm-row__meta">
-                  {q.examType}
+                  {EXAM_LABEL[q.examType]}
                   {q.year ? ` ${q.year}` : ''}
                   {q.topic ? ` · ${q.topic}` : ''}
                   {q.answerSource === 'ai' ? ' · AI-suggested answer' : ''}
@@ -300,7 +313,12 @@ export const AdminQuestions: React.FC<{
         <QuestionEditor
           initial={
             editing === 'new'
-              ? { ...blankQuestion(), ...(subject !== 'All' ? { subject: subject as CmsSubject } : {}), ...(year ? { year } : {}) }
+              ? {
+                  ...blankQuestion(),
+                  examType: exam,
+                  ...(subject !== 'All' ? { subject: subject as CmsSubject } : {}),
+                  ...(year ? { year } : {}),
+                }
               : editing
           }
           isNew={editing === 'new'}

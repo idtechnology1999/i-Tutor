@@ -9,6 +9,9 @@ import {
   ChevronRight,
   Clock3,
   Flag,
+  GraduationCap,
+  Leaf,
+  BookOpen,
   FlaskConical,
   Languages,
   Layers,
@@ -24,7 +27,7 @@ import {
 import type { DiagnosticQuestion, UserProfile } from '../../types';
 import { DIAGNOSTIC_QUESTIONS } from '../../data/nigerian-curriculum';
 import { ExamCalculator } from './ExamCalculator';
-import { EXAM_SUBJECTS, toExamQuestion, useCms } from '../../lib/cms';
+import { CMS_SUBJECTS, toExamQuestion, useCms } from '../../lib/cms';
 
 interface Props {
   profile: UserProfile;
@@ -32,16 +35,37 @@ interface Props {
   onOpenTutor?: () => void;
   /** Subject the student tapped to get here, pre-selected in the setup. */
   presetSubject?: DiagnosticQuestion['subject'];
+  /** Course mock: the four JAMB subjects for a course. */
+  presetCourse?: { name: string; subjects: string[] };
 }
 
-type Subject = DiagnosticQuestion['subject'];
-type Choice = Subject | 'all';
-const SUBJECTS: Subject[] = ['English', 'Mathematics', 'Physics', 'Chemistry'];
+type Subject = string;
+/** 'all', 'course', or a subject name. */
+type Choice = string;
+const CORE_SUBJECTS: Subject[] = ['English', 'Mathematics', 'Physics', 'Chemistry'];
+// Display order: JAMB's usual subject order, unknown subjects last.
+const orderOf = (s: string) => {
+  const i = (CMS_SUBJECTS as readonly string[]).indexOf(s);
+  return i < 0 ? 99 : i;
+};
+const bySubjectOrder = (a: string, b: string) => orderOf(a) - orderOf(b) || a.localeCompare(b);
+
+const SUBJECT_LOOK: Record<string, { note: string; icon: typeof Layers }> = {
+  English: { note: 'Use of English', icon: Languages },
+  Mathematics: { note: 'Algebra, calculus…', icon: Sigma },
+  Physics: { note: 'Motion, waves…', icon: Atom },
+  Chemistry: { note: 'Organic, moles…', icon: FlaskConical },
+  Biology: { note: 'Cells, genetics…', icon: Leaf },
+};
 const COUNT_STEPS = [5, 10, 20, 40, 60];
 const SECONDS_PER_QUESTION = 60;
 
-const poolFor = (bank: DiagnosticQuestion[], choice: Choice) =>
-  choice === 'all' ? bank : bank.filter((q) => q.subject === choice);
+const poolFor = (bank: DiagnosticQuestion[], choice: Choice, courseSubjects: string[] = []) =>
+  choice === 'all'
+    ? bank
+    : choice === 'course'
+      ? bank.filter((q) => courseSubjects.includes(q.subject))
+      : bank.filter((q) => q.subject === choice);
 
 // Sensible counts for the pool size, always ending with "all of them".
 const countOptions = (available: number) => {
@@ -65,17 +89,19 @@ const minutesLabel = (count: number) => {
   return rest ? `${Math.floor(mins / 60)} hr ${rest} min` : `${mins / 60} hr`;
 };
 
-export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, presetSubject }) => {
+export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, presetSubject, presetCourse }) => {
   // Published questions from the CMS, in the four CBT subjects.
   const { questions: cmsQuestions } = useCms();
   const bank = cmsQuestions
-    .filter((q) => q.status === 'published' && EXAM_SUBJECTS.includes(q.subject))
+    .filter((q) => q.status === 'published' && q.examType === 'UTME')
     .map(toExamQuestion);
+  const courseSubjects = presetCourse?.subjects ?? [];
 
   // Setup: nothing runs until the student has chosen and pressed Start.
   const [config, setConfig] = useState<null | { choice: Choice; count: number }>(null);
-  const [pickChoice, setPickChoice] = useState<Choice>(presetSubject ?? 'all');
-  const [pickCount, setPickCount] = useState(() => poolFor(bank, presetSubject ?? 'all').length);
+  const startChoice: Choice = presetCourse ? 'course' : (presetSubject ?? 'all');
+  const [pickChoice, setPickChoice] = useState<Choice>(startChoice);
+  const [pickCount, setPickCount] = useState(() => poolFor(bank, startChoice, courseSubjects).length);
 
   const [activeSubject, setActiveSubject] = useState<Subject>('English');
   const [currentQIndex, setCurrentQIndex] = useState(0);
@@ -90,8 +116,8 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
 
   const tabsRef = useRef<HTMLElement>(null);
 
-  const examQuestions = config ? poolFor(bank, config.choice).slice(0, config.count) : [];
-  const examSubjects = SUBJECTS.filter((s) => examQuestions.some((q) => q.subject === s));
+  const examQuestions = config ? poolFor(bank, config.choice, courseSubjects).slice(0, config.count) : [];
+  const examSubjects = [...new Set(examQuestions.map((q) => q.subject))].sort(bySubjectOrder);
 
   // Keep the chosen subject tab visible when the strip scrolls on phones.
   useEffect(() => {
@@ -116,10 +142,10 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
   }, [running, finished]);
 
   const startExam = () => {
-    const pool = poolFor(bank, pickChoice);
+    const pool = poolFor(bank, pickChoice, courseSubjects);
     const count = Math.min(pickCount, pool.length);
     const chosen = pool.slice(0, count);
-    const first = SUBJECTS.find((s) => chosen.some((q) => q.subject === s)) ?? 'English';
+    const first = [...new Set(chosen.map((q) => q.subject))].sort(bySubjectOrder)[0] ?? 'English';
     setAnswers({});
     setFlagged({});
     setCurrentQIndex(0);
@@ -177,15 +203,22 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
 
   /* ================================================================== Setup */
   if (!running) {
-    const pool = poolFor(bank, pickChoice);
+    const pool = poolFor(bank, pickChoice, courseSubjects);
     const options = countOptions(pool.length);
     const count = Math.min(pickCount, pool.length);
+    // Subjects: the core four always, plus any others that have JAMB questions.
+    const subjectIds = [...new Set([...CORE_SUBJECTS, ...bank.map((q) => q.subject)])].sort(bySubjectOrder);
     const choices: Array<{ id: Choice; label: string; note: string; icon: typeof Layers }> = [
+      ...(presetCourse
+        ? [{ id: 'course', label: presetCourse.name, note: presetCourse.subjects.join(', '), icon: GraduationCap }]
+        : []),
       { id: 'all', label: 'All subjects', note: 'Full mixed mock', icon: Layers },
-      { id: 'English', label: 'English', note: 'Use of English', icon: Languages },
-      { id: 'Mathematics', label: 'Mathematics', note: 'Algebra, calculus…', icon: Sigma },
-      { id: 'Physics', label: 'Physics', note: 'Motion, waves…', icon: Atom },
-      { id: 'Chemistry', label: 'Chemistry', note: 'Organic, moles…', icon: FlaskConical },
+      ...subjectIds.map((sid) => ({
+        id: sid,
+        label: sid,
+        note: SUBJECT_LOOK[sid]?.note ?? 'JAMB past questions',
+        icon: SUBJECT_LOOK[sid]?.icon ?? BookOpen,
+      })),
     ];
     const chosen = choices.find((c) => c.id === pickChoice) ?? choices[0];
     const ChosenIcon = chosen.icon;
@@ -205,7 +238,7 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
             <p className="xs__eyebrow">
               <Timer size={16} aria-hidden /> Timed like the real CBT
             </p>
-            <h1>Set up your exam</h1>
+            <h1>{presetCourse ? `${presetCourse.name} practice` : 'Set up your exam'}</h1>
             <p className="xs__lead">
               Choose a subject and how many questions you want. The timer only starts when you
               press <b>Start exam</b>.
@@ -223,14 +256,14 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
                   {choices.map((c, i) => {
                     const Icon = c.icon;
                     const on = pickChoice === c.id;
-                    const n = poolFor(bank, c.id).length;
+                    const n = poolFor(bank, c.id, courseSubjects).length;
                     return (
                       <button
                         key={c.id}
                         type="button"
                         role="radio"
                         aria-checked={on}
-                        className={`xs__subject${on ? ' is-on' : ''}${c.id === 'all' ? ' xs__subject--all' : ''}`}
+                        className={`xs__subject${on ? ' is-on' : ''}${c.id === 'all' || c.id === 'course' ? ' xs__subject--all' : ''}`}
                         style={{ ['--i' as string]: i }}
                         onClick={() => {
                           setPickChoice(c.id);

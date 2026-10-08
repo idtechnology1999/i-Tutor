@@ -66,6 +66,7 @@ const PAGES = {
   home: { label: 'Go to my home page', view: 'dashboard' as AppView },
   upgrade: { label: 'See Premium plans', view: 'upgrade' as AppView },
   profile: { label: 'Open my profile', view: 'setup' as AppView },
+  course: { label: 'Practise for my course', view: 'course' as AppView },
   signup: { label: 'Create a free account', view: 'signup' as AppView },
   login: { label: 'Log in', view: 'login' as AppView },
 };
@@ -87,7 +88,12 @@ const GUIDE: Array<{ test: RegExp; text: string; links: NavLink[] }> = [
     links: [PAGES.questions],
   },
   {
-    test: /\b(profile|goal|course|school|university|subjects?|account|settings|log ?out)\b/,
+    test: /\b(course|engineering|medicine|law|pharmacy|nursing|accounting|subject combination|which subjects)\b/,
+    text: 'Open Practise for my course and pick your course. You’ll see the four JAMB subjects it needs and can start a practice exam with just those subjects.',
+    links: [PAGES.course],
+  },
+  {
+    test: /\b(profile|goal|school|university|subjects?|account|settings|log ?out)\b/,
     text: 'Your profile shows your plan, your goal (course and school) and your subjects. Tap Change to update your goal.',
     links: [PAGES.profile],
   },

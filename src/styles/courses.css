@@ -1,0 +1,439 @@
+/* =============================================================================
+   Exam bodies (JAMB, WAEC, NECO, GCE…) and course practice — student pages
+   plus the matching admin pieces.
+   ============================================================================= */
+
+/* ------------------------------------------- Student: Past questions bar */
+
+.pq__exams {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--mist);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pq__exams::-webkit-scrollbar {
+  display: none;
+}
+
+.pq__exams button {
+  flex: 1 0 auto;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 11px;
+  background: none;
+  color: var(--ink-2);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.pq__exams button.is-on {
+  background: #fff;
+  color: var(--brand);
+  box-shadow: 0 1px 2px rgba(11, 31, 30, 0.08), 0 4px 12px -6px rgba(11, 31, 30, 0.25);
+}
+
+.pq__filters {
+  display: flex;
+  gap: 10px;
+}
+
+.pq__filters .pq__search {
+  flex: 1;
+  min-width: 0;
+}
+
+.pq__year {
+  flex: none;
+  width: 150px;
+  min-height: 52px;
+  padding: 0 12px;
+  border-radius: 14px;
+  border: 1px solid var(--rule-2);
+  background: #fff;
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* ------------------------------------------------- Student: course page */
+
+.course__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
+  gap: 24px;
+  align-items: start;
+}
+
+.course__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.course__list ul {
+  display: grid;
+  gap: 8px;
+}
+
+.course__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  border: 1.5px solid var(--rule);
+  background: #fff;
+  text-align: left;
+  color: var(--ink);
+  transition: border-color 160ms ease, background-color 160ms ease, transform 450ms var(--spring, ease);
+}
+
+.course__item:hover {
+  border-color: var(--rule-2);
+}
+
+.course__item:active {
+  transform: scale(0.985);
+}
+
+.course__item.is-on {
+  border-color: var(--brand);
+  background: var(--brand-tint);
+}
+
+.course__item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.course__item-text strong {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.course__item-text small {
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.course__empty {
+  color: var(--ink-3);
+  padding: 12px 4px;
+}
+
+.course__card {
+  position: sticky;
+  top: 84px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px;
+  border-radius: 24px;
+  background: #fff;
+  border: 1px solid var(--rule);
+  box-shadow: 0 30px 60px -40px rgba(11, 31, 30, 0.4);
+  animation: field-in 360ms var(--ease-ios, ease) both;
+}
+
+.course__icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: var(--brand);
+  color: #fff;
+}
+
+.course__faculty {
+  font-size: 0.875rem;
+  color: var(--ink-3);
+  margin-top: 4px;
+}
+
+.course__card h2 {
+  margin-top: -6px;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.course__lead {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.course__subjects {
+  display: grid;
+  gap: 6px;
+}
+
+.course__subjects li {
+  display: grid;
+  grid-template-columns: 26px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--mist);
+}
+
+.course__num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--brand);
+}
+
+.course__subjects strong {
+  font-size: 0.9875rem;
+  font-weight: 600;
+}
+
+.course__subjects li > span:last-child {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ok);
+}
+
+.course__subjects li > span.is-empty {
+  color: var(--ink-3);
+}
+
+.course__note {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--info-bg);
+  color: var(--info);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.course__note svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.course__mine {
+  align-self: center;
+}
+
+.course__fine {
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+  text-align: center;
+  line-height: 1.45;
+}
+
+@media (max-width: 860px) {
+  .course__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* On phones the chosen course comes first, the list below it. */
+  .course__card {
+    position: static;
+    order: -1;
+  }
+}
+
+@media (max-width: 520px) {
+  .pq__filters {
+    flex-direction: column;
+  }
+
+  .pq__year {
+    width: 100%;
+  }
+}
+
+/* ----------------------------------------------------- Admin: exam bar */
+
+.adm-exams {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.adm-exams button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1.5px solid var(--rule);
+  background: #fff;
+  text-align: left;
+  color: var(--ink);
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+
+.adm-exams button:hover {
+  border-color: var(--rule-2);
+}
+
+.adm-exams button.is-on {
+  border-color: var(--brand);
+  background: var(--brand-tint);
+}
+
+.adm-exams strong {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.adm-exams button.is-on strong {
+  color: var(--brand);
+}
+
+.adm-exams small {
+  font-size: 0.75rem;
+  color: var(--ink-3);
+}
+
+.adm-scope__pick {
+  flex: 1 1 200px;
+}
+
+.adm-scope__pick .adm-input {
+  min-height: 52px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .adm-exams {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .adm-scope__pick {
+    flex: 1 1 100%;
+  }
+}
+
+/* -------------------------------------------------- Admin: courses page */
+
+.adm-courses {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+}
+
+.adm-courses button {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--rule);
+  background: #fff;
+  text-align: left;
+  color: var(--ink);
+  transition: border-color 140ms ease, box-shadow 200ms ease;
+}
+
+.adm-courses button:hover {
+  border-color: var(--rule-2);
+  box-shadow: 0 14px 30px -24px rgba(11, 31, 30, 0.45);
+}
+
+.adm-courses__top {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.adm-courses__top strong {
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.adm-courses__subjects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.adm-courses__subject {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 10px;
+  border-radius: 99px;
+  background: var(--mist);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.adm-courses__subject b {
+  min-width: 22px;
+  padding: 0 6px;
+  border-radius: 99px;
+  background: var(--ok-bg);
+  color: var(--ok);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.adm-courses__subject.is-empty b {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.adm-courses__foot {
+  margin-top: auto;
+  font-size: 0.8125rem;
+  color: var(--ok);
+}
+
+.adm-courses__foot.is-warn {
+  color: var(--warn);
+}
+
+.adm-course-subjects {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 520px) {
+  .adm-course-subjects {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Leave room for the sticky header when scrolled into view. */
+.course__card {
+  scroll-margin-top: 80px;
+}

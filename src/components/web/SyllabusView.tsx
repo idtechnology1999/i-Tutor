@@ -1,62 +1,106 @@
 import React, { useState } from 'react';
 import { BadgeCheck, Check, MessageSquareText, RotateCcw, Search, X } from 'lucide-react';
-import { useCms } from '../../lib/cms';
+import { EXAM_FULL_NAME, EXAM_LABEL, EXAM_TYPES, useCms } from '../../lib/cms';
+import type { ExamType } from '../../lib/cms';
 
 interface Props {
   onOpenTutor?: () => void;
 }
 
-const SUBJECTS = ['Physics', 'Chemistry', 'Mathematics', 'English', 'Biology', 'Economics'];
+// Always offered, even before questions exist, so the layout stays familiar.
+const CORE_SUBJECTS = ['English', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Economics'];
 
 export const SyllabusView: React.FC<Props> = ({ onOpenTutor }) => {
-  const [selectedSubject, setSelectedSubject] = useState('Physics');
+  const [exam, setExam] = useState<ExamType>('UTME');
+  const [selectedSubject, setSelectedSubject] = useState('English');
+  const [year, setYear] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   // The option the student tried for each question.
   const [tried, setTried] = useState<Record<number, string>>({});
 
   const { questions } = useCms();
   const published = questions.filter((q) => q.status === 'published');
+  const inExam = published.filter((q) => q.examType === exam);
+  const subjects = [...new Set([...CORE_SUBJECTS, ...inExam.map((q) => q.subject)])];
+  const inSubject = inExam.filter((q) => q.subject === selectedSubject);
+  const years = [...new Set(inSubject.map((q) => q.year).filter((y): y is number => y !== null))].sort((a, b) => b - a);
   const query = searchQuery.trim().toLowerCase();
-  const filteredQuestions = published.filter((q) => {
-    const matchesSubject = q.subject.toLowerCase() === selectedSubject.toLowerCase();
-    const matchesSearch =
-      !query || q.question.toLowerCase().includes(query) || q.topic.toLowerCase().includes(query);
-    return matchesSubject && matchesSearch;
+  const filteredQuestions = inSubject.filter((q) => {
+    if (year !== null && q.year !== year) return false;
+    return !query || q.question.toLowerCase().includes(query) || q.topic.toLowerCase().includes(query);
   });
+  const examName = EXAM_LABEL[exam];
 
   return (
     <div className="ui-page pq">
       <header className="pq__head">
         <h1>Past questions</h1>
-        <p>Pick a subject, choose an answer, and we’ll show you if it’s right — and why.</p>
+        <p>Choose the exam and subject, pick an answer, and we’ll show you if it’s right — and why.</p>
       </header>
 
+      <div className="pq__exams" role="tablist" aria-label="Exam">
+        {EXAM_TYPES.map((t) => (
+          <button
+            key={t}
+            type="button"
+            role="tab"
+            aria-selected={exam === t}
+            className={exam === t ? 'is-on' : ''}
+            onClick={() => {
+              setExam(t);
+              setYear(null);
+            }}
+            title={EXAM_FULL_NAME[t]}
+          >
+            {EXAM_LABEL[t]}
+          </button>
+        ))}
+      </div>
+
       <div className="pq__subjects" role="tablist" aria-label="Subjects">
-        {SUBJECTS.map((s) => (
+        {subjects.map((s) => (
           <button
             key={s}
             type="button"
             role="tab"
             aria-selected={selectedSubject === s}
             className={selectedSubject === s ? 'is-on' : ''}
-            onClick={() => setSelectedSubject(s)}
+            onClick={() => {
+              setSelectedSubject(s);
+              setYear(null);
+            }}
           >
             {s}
-            <small>{published.filter((q) => q.subject === s).length}</small>
+            <small>{inExam.filter((q) => q.subject === s).length}</small>
           </button>
         ))}
       </div>
 
-      <label className="pq__search">
-        <Search size={18} aria-hidden />
-        <input
-          type="search"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={`Search ${selectedSubject} questions`}
-          aria-label={`Search ${selectedSubject} questions`}
-        />
-      </label>
+      <div className="pq__filters">
+        <label className="pq__search">
+          <Search size={18} aria-hidden />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={`Search ${examName} ${selectedSubject} questions`}
+            aria-label={`Search ${examName} ${selectedSubject} questions`}
+          />
+        </label>
+        <select
+          className="pq__year"
+          value={year ?? ''}
+          onChange={(e) => setYear(e.target.value ? Number(e.target.value) : null)}
+          aria-label="Year"
+        >
+          <option value="">All years</option>
+          {years.map((y) => (
+            <option key={y} value={y}>
+              {y}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div className="pq__list">
         {filteredQuestions.length === 0 && (
@@ -64,8 +108,8 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor }) => {
             <strong>No questions here yet</strong>
             <p>
               {query
-                ? `Nothing in ${selectedSubject} matches “${searchQuery}”. Try another word.`
-                : `${selectedSubject} questions are coming soon. Try another subject.`}
+                ? `Nothing in ${examName} ${selectedSubject} matches “${searchQuery}”. Try another word.`
+                : `${examName} ${selectedSubject} questions are coming soon. Try another subject or exam.`}
             </p>
           </div>
         )}
@@ -81,7 +125,9 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor }) => {
                   <BadgeCheck size={14} aria-hidden /> Verified
                 </span>
                 <span>
-                  Question {i + 1} · {q.topic}
+                  {EXAM_LABEL[q.examType]}
+                  {q.year ? ` ${q.year}` : ''} · Question {i + 1}
+                  {q.topic ? ` · ${q.topic}` : ''}
                 </span>
               </div>
 

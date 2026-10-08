@@ -3,6 +3,7 @@ import type { DiagnosticQuestion } from '../types';
 import { DIAGNOSTIC_QUESTIONS } from '../data/nigerian-curriculum';
 import { NEWS } from '../data/news';
 import type { NewsItem } from '../data/news';
+import { COURSE_SEED } from '../data/courses';
 
 /* -----------------------------------------------------------------------------
    Content store for the admin CMS and the student pages.
@@ -22,11 +23,39 @@ export const CMS_SUBJECTS = [
   'Economics',
   'Government',
   'Literature',
+  'Geography',
+  'Commerce',
+  'Accounting',
+  'Agricultural Science',
+  'Further Mathematics',
+  'CRS',
+  'IRS',
+  'Civic Education',
 ] as const;
 export type CmsSubject = (typeof CMS_SUBJECTS)[number];
 
-export const EXAM_TYPES = ['UTME', 'Post-UTME', 'WAEC', 'NECO'] as const;
+/** Exam bodies. Each one is its own past-question collection. */
+export const EXAM_TYPES = ['UTME', 'WAEC', 'NECO', 'GCE', 'NABTEB', 'Post-UTME'] as const;
 export type ExamType = (typeof EXAM_TYPES)[number];
+
+/** What students and admins see. UTME is the JAMB exam. */
+export const EXAM_LABEL: Record<ExamType, string> = {
+  UTME: 'JAMB',
+  WAEC: 'WAEC',
+  NECO: 'NECO',
+  GCE: 'GCE',
+  NABTEB: 'NABTEB',
+  'Post-UTME': 'Post-UTME',
+};
+
+export const EXAM_FULL_NAME: Record<ExamType, string> = {
+  UTME: 'JAMB UTME',
+  WAEC: 'WAEC WASSCE (school)',
+  NECO: 'NECO SSCE (school)',
+  GCE: 'GCE (private candidates)',
+  NABTEB: 'NABTEB',
+  'Post-UTME': 'University Post-UTME',
+};
 
 export type Status = 'draft' | 'published';
 
@@ -54,6 +83,15 @@ export interface CmsNews extends NewsItem {
   status: Status;
 }
 
+export interface CmsCourse {
+  id: string;
+  name: string;
+  faculty: string;
+  /** The four UTME subjects, English first. */
+  subjects: string[];
+  note: string;
+}
+
 export interface Activity {
   at: string;
   text: string;
@@ -63,6 +101,7 @@ interface CmsState {
   version: 1;
   questions: CmsQuestion[];
   news: CmsNews[];
+  courses: CmsCourse[];
   activity: Activity[];
 }
 
@@ -90,6 +129,7 @@ const seed = (): CmsState => ({
     updatedAt: '2026-09-01T09:00:00.000Z',
   })),
   news: NEWS.map((n) => ({ ...n, status: 'published' as Status })),
+  courses: COURSE_SEED.map((c) => ({ ...c, subjects: [...c.subjects] })),
   activity: [{ at: now(), text: 'Content store created with the starter questions and news.' }],
 });
 
@@ -98,7 +138,10 @@ const load = (): CmsState => {
     const raw = window.localStorage.getItem(KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as CmsState;
-      if (parsed.version === 1 && Array.isArray(parsed.questions)) return parsed;
+      if (parsed.version === 1 && Array.isArray(parsed.questions)) {
+        if (!Array.isArray(parsed.courses)) parsed.courses = COURSE_SEED.map((c) => ({ ...c, subjects: [...c.subjects] }));
+        return parsed;
+      }
     }
   } catch {
     /* corrupt or blocked storage — fall back to seed */
@@ -147,7 +190,7 @@ export const useCms = () => useSyncExternalStore(subscribe, () => state);
 /** Published questions in the four CBT subjects, shaped for the exam engine. */
 export const toExamQuestion = (q: CmsQuestion): DiagnosticQuestion => ({
   id: q.id,
-  subject: q.subject as DiagnosticQuestion['subject'],
+  subject: q.subject,
   topic: q.topic || 'General',
   question: q.question,
   options: q.options,
@@ -236,6 +279,18 @@ export const cms = {
     commit({ ...state, news: state.news.filter((n) => n.id !== id) }, `Deleted news: “${item?.title ?? id}”.`);
   },
 
+  saveCourse(course: CmsCourse) {
+    const exists = state.courses.some((c) => c.id === course.id);
+    const courses = exists ? state.courses.map((c) => (c.id === course.id ? course : c)) : [...state.courses, course];
+    courses.sort((a, b) => a.name.localeCompare(b.name));
+    commit({ ...state, courses }, `${exists ? 'Updated' : 'Added'} course: ${course.name}.`);
+  },
+
+  deleteCourse(id: string) {
+    const course = state.courses.find((c) => c.id === id);
+    commit({ ...state, courses: state.courses.filter((c) => c.id !== id) }, `Deleted course: ${course?.name ?? id}.`);
+  },
+
   exportJson: () => JSON.stringify(state, null, 2),
 
   importJson(raw: string) {
@@ -243,6 +298,7 @@ export const cms = {
     if (parsed.version !== 1 || !Array.isArray(parsed.questions) || !Array.isArray(parsed.news)) {
       throw new Error('This file is not an i-Tutor backup.');
     }
+    if (!Array.isArray(parsed.courses)) parsed.courses = COURSE_SEED.map((c) => ({ ...c, subjects: [...c.subjects] }));
     commit(parsed, 'Restored content from a backup file.');
   },
 

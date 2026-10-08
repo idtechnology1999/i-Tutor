@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowRight, BookOpenCheck, CircleAlert, FilePlus2, Newspaper, ScanText, Shapes } from 'lucide-react';
-import { CMS_SUBJECTS, useCms } from '../../lib/cms';
+import { CMS_SUBJECTS, EXAM_FULL_NAME, EXAM_LABEL, EXAM_TYPES, useCms } from '../../lib/cms';
 import type { AdminNav } from './AdminApp';
 import { PageHead, StatusChip } from './AdminApp';
 
@@ -18,7 +18,7 @@ export const AdminOverview: React.FC<{ nav: AdminNav; mode: 'live' | 'demo' }> =
   const published = questions.filter((q) => q.status === 'published');
   const toReview = questions.filter((q) => q.needsReview || q.status === 'draft');
   const subjectsCovered = new Set(published.map((q) => q.subject)).size;
-  const maxPerSubject = Math.max(1, ...CMS_SUBJECTS.map((s) => questions.filter((q) => q.subject === s).length));
+  const maxPerExam = Math.max(1, ...EXAM_TYPES.map((t) => questions.filter((q) => q.examType === t).length));
 
   const stats = [
     { label: 'Published questions', value: published.length, icon: BookOpenCheck, tone: 'brand' },
@@ -61,21 +61,23 @@ export const AdminOverview: React.FC<{ nav: AdminNav; mode: 'live' | 'demo' }> =
       <div className="adm-cols">
         <section className="adm-card">
           <div className="adm-card__head">
-            <h2>Questions by subject</h2>
+            <h2>Questions by exam</h2>
             <button type="button" className="adm-link" onClick={() => nav.go('questions', { filter: 'all' })}>
               Open bank <ArrowRight size={14} aria-hidden />
             </button>
           </div>
           <ul className="adm-bars">
-            {CMS_SUBJECTS.map((s) => {
-              const all = questions.filter((q) => q.subject === s).length;
-              const live = questions.filter((q) => q.subject === s && q.status === 'published').length;
+            {EXAM_TYPES.map((t) => {
+              const all = questions.filter((q) => q.examType === t).length;
+              const live = questions.filter((q) => q.examType === t && q.status === 'published').length;
               return (
-                <li key={s}>
-                  <span className="adm-bars__name">{s}</span>
+                <li key={t}>
+                  <span className="adm-bars__name" title={EXAM_FULL_NAME[t]}>
+                    {EXAM_LABEL[t]}
+                  </span>
                   <span className="adm-bars__track" aria-hidden>
-                    <i style={{ width: `${(all / maxPerSubject) * 100}%` }} className="is-all" />
-                    <i style={{ width: `${(live / maxPerSubject) * 100}%` }} />
+                    <i style={{ width: `${(all / maxPerExam) * 100}%` }} className="is-all" />
+                    <i style={{ width: `${(live / maxPerExam) * 100}%` }} />
                   </span>
                   <span className="adm-bars__num">
                     {live}
@@ -113,7 +115,7 @@ export const AdminOverview: React.FC<{ nav: AdminNav; mode: 'live' | 'demo' }> =
                   <button type="button" onClick={() => nav.go('questions', { filter: 'review' })}>
                     <span className="adm-mini-list__text">{q.question}</span>
                     <span className="adm-mini-list__meta">
-                      {q.subject} · {q.examType}
+                      {EXAM_LABEL[q.examType]} · {q.subject}
                       {q.year ? ` ${q.year}` : ''}
                     </span>
                     <StatusChip status={q.status} review={q.needsReview} />

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   ArrowUpRight,
   BookOpenCheck,
+  GraduationCap,
   KeyRound,
   LayoutDashboard,
   LoaderCircle,
@@ -13,24 +14,27 @@ import {
 import { BrandMark } from '../web/BrandMark';
 import { adminKey, checkAdmin } from '../../lib/question-import';
 import { useCms } from '../../lib/cms';
-import type { CmsSubject } from '../../lib/cms';
+import type { CmsSubject, ExamType } from '../../lib/cms';
 import { AdminOverview } from './AdminOverview';
 import { AdminQuestions } from './AdminQuestions';
 import { AdminImport } from './AdminImport';
 import { AdminNews } from './AdminNews';
 import { AdminSettings } from './AdminSettings';
+import { AdminCourses } from './AdminCourses';
 
-export type Section = 'overview' | 'questions' | 'import' | 'news' | 'settings';
+export type Section = 'overview' | 'questions' | 'import' | 'courses' | 'news' | 'settings';
 export type QuestionFilter = 'all' | 'published' | 'draft' | 'review';
 
 /** Which part of the bank is open: a subject (or All) and a year (or all years). */
 export interface BankScope {
+  exam: ExamType;
   subject: string;
   year: number | null;
 }
 
 /** Subject and year handed to the importer from the bank. */
 export interface ImportPreset {
+  exam: ExamType;
   subject: CmsSubject;
   year: number | null;
 }
@@ -44,6 +48,7 @@ const NAV: Array<{ id: Section; label: string; icon: typeof LayoutDashboard }> =
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'questions', label: 'Past questions', icon: BookOpenCheck },
   { id: 'import', label: 'Import with AI', icon: ScanText },
+  { id: 'courses', label: 'Courses', icon: GraduationCap },
   { id: 'news', label: 'News', icon: Newspaper },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
@@ -127,7 +132,7 @@ export const AdminApp: React.FC<{ onExit: () => void }> = ({ onExit }) => {
     }
   });
   const [questionFilter, setQuestionFilter] = useState<QuestionFilter>('all');
-  const [bankScope, setBankScope] = useState<BankScope>({ subject: 'English', year: null });
+  const [bankScope, setBankScope] = useState<BankScope>({ exam: 'UTME', subject: 'English', year: null });
   const [importPreset, setImportPreset] = useState<{ value: ImportPreset | null; n: number }>({ value: null, n: 0 });
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null);
   const { questions } = useCms();
@@ -226,6 +231,7 @@ export const AdminApp: React.FC<{ onExit: () => void }> = ({ onExit }) => {
           />
         )}
         {section === 'import' && <AdminImport key={importPreset.n} nav={nav} preset={importPreset.value} />}
+        {section === 'courses' && <AdminCourses nav={nav} />}
         {section === 'news' && <AdminNews nav={nav} />}
         {section === 'settings' && <AdminSettings nav={nav} mode={mode} />}
       </main>

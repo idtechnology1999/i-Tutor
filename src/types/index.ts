@@ -46,7 +46,8 @@ export type DeviceMode = 'iphone' | 'fluid';
 
 export interface DiagnosticQuestion {
   id: number;
-  subject: 'Physics' | 'Chemistry' | 'Mathematics' | 'English';
+  /** Any subject name, e.g. 'Mathematics', 'Biology', 'Government'. */
+  subject: string;
   topic: string;
   question: string;
   options: { label: string; text: string }[];

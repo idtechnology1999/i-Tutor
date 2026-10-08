@@ -9,7 +9,7 @@ import {
   Play,
   LockOpen,
   Target,
-  UserRoundPen,
+  GraduationCap,
 } from 'lucide-react';
 import type { DiagnosticQuestion, UserProfile } from '../../types';
 
@@ -22,6 +22,7 @@ interface Props {
   onOpenTutor: () => void;
   onUpgrade: () => void;
   onEditGoal: () => void;
+  onOpenCourse: () => void;
 }
 
 const SUBJECTS = [
@@ -52,7 +53,8 @@ export const DashboardView: React.FC<Props> = ({
   onOpenSyllabus,
   onOpenTutor,
   onUpgrade,
-  onEditGoal,
+
+  onOpenCourse,
 }) => {
   const firstName = profile.fullName.split(' ')[0] || 'there';
   const projected = Math.round(160 + (profile.diagnosticScore / 100) * 200);
@@ -137,12 +139,12 @@ export const DashboardView: React.FC<Props> = ({
           <strong>Ask the tutor</strong>
           <small>Get help with any question</small>
         </button>
-        <button type="button" onClick={onEditGoal}>
+        <button type="button" onClick={onOpenCourse}>
           <span className="dash__action-icon">
-            <UserRoundPen size={22} aria-hidden />
+            <GraduationCap size={22} aria-hidden />
           </span>
-          <strong>My goal</strong>
-          <small>Course, school, subjects</small>
+          <strong>Practise for my course</strong>
+          <small>{profile.targetCourse || 'Pick your course'}</small>
         </button>
       </nav>
 
