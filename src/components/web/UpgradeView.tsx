@@ -51,7 +51,7 @@ const BENEFITS = [
   { icon: MessageSquareText, text: 'Step-by-step help on every past question' },
   { icon: CalendarCheck, text: 'A personal weekly study plan' },
   { icon: ChartNoAxesColumnIncreasing, text: 'Detailed reports on your weak topics' },
-  { icon: Mic, text: '60 minutes of voice tutoring each month' },
+  { icon: Mic, text: 'Voice lessons: your tutor talks you through topics and listens to your answers' },
 ];
 
 const BANKS_USSD = [

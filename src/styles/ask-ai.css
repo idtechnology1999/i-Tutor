@@ -103,3 +103,339 @@
 .tutor__links button:hover svg {
   transform: translateX(3px);
 }
+
+/* ================================================================ Voice lesson */
+
+.tutor__voice {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--brand-tint);
+  color: var(--brand);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.3s var(--spring, ease);
+}
+.tutor__voice:hover { background: #d8e8e6; }
+.tutor__voice:active { transform: scale(0.94); }
+
+.voice {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: linear-gradient(180deg, var(--brand-tint) 0%, #fff 46%);
+  animation: ui-fade 320ms ease both;
+}
+
+.voice__back {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 4px;
+  border: 0;
+  background: none;
+  color: var(--brand);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.voice__intro,
+.voice--locked {
+  text-align: center;
+  align-items: center;
+}
+.voice__intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.voice__intro h2,
+.voice--locked h2 {
+  margin: 8px 0 0;
+  font-size: 1.375rem;
+  letter-spacing: -0.02em;
+}
+.voice__intro p,
+.voice--locked > p {
+  margin: 0;
+  max-width: 32ch;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+.voice__note {
+  font-size: 0.8125rem;
+  color: var(--warn) !important;
+}
+
+.voice__topics {
+  display: grid;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+}
+.voice__topics button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'sub n' 'title n';
+  align-items: center;
+  gap: 2px 12px;
+  padding: 14px 16px;
+  text-align: left;
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.3s var(--spring, ease);
+}
+.voice__topics button:hover { border-color: var(--brand); }
+.voice__topics button:active { transform: scale(0.98); }
+.voice__topics small { grid-area: sub; color: var(--ink-3); font-size: 0.8125rem; }
+.voice__topics strong { grid-area: title; }
+.voice__topics span { grid-area: n; color: var(--ink-3); font-size: 0.8125rem; }
+
+/* The orb: breathes when idle, pulses when speaking, rings when listening. */
+.voice__orb {
+  position: relative;
+  width: 112px;
+  height: 112px;
+  display: grid;
+  place-items: center;
+}
+.voice__orb i {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #2b7a76 0%, var(--brand) 62%, #082625 100%);
+}
+.voice__orb i:nth-child(2),
+.voice__orb i:nth-child(3) {
+  background: none;
+  border: 2px solid color-mix(in srgb, var(--brand) 35%, transparent);
+  opacity: 0;
+}
+.voice__orb.is-idle i:first-child,
+.voice__orb.is-waiting i:first-child,
+.voice__orb.is-done i:first-child { animation: orb-breathe 3.2s ease-in-out infinite; }
+.voice__orb.is-speaking i:first-child { animation: orb-talk 0.9s ease-in-out infinite; }
+.voice__orb.is-thinking i:first-child { animation: orb-breathe 1.2s ease-in-out infinite; opacity: 0.8; }
+.voice__orb.is-listening i:first-child {
+  background: radial-gradient(circle at 35% 30%, #f3c06f 0%, var(--accent) 60%, #b97818 100%);
+  animation: orb-breathe 1.4s ease-in-out infinite;
+}
+.voice__orb.is-speaking i:nth-child(2),
+.voice__orb.is-listening i:nth-child(2) { animation: orb-ring 1.8s ease-out infinite; }
+.voice__orb.is-speaking i:nth-child(3),
+.voice__orb.is-listening i:nth-child(3) { animation: orb-ring 1.8s ease-out 0.9s infinite; }
+.voice__orb.is-listening i:nth-child(2),
+.voice__orb.is-listening i:nth-child(3) { border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+
+@keyframes orb-breathe {
+  0%, 100% { transform: scale(0.94); }
+  50% { transform: scale(1); }
+}
+@keyframes orb-talk {
+  0%, 100% { transform: scale(0.95); }
+  25% { transform: scale(1.03); }
+  55% { transform: scale(0.97); }
+  75% { transform: scale(1.05); }
+}
+@keyframes orb-ring {
+  from { transform: scale(1); opacity: 0.8; }
+  to { transform: scale(1.6); opacity: 0; }
+}
+
+.voice__top {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  text-align: center;
+}
+.voice__top small { color: var(--ink-3); }
+.voice__top strong { font-size: 1.0625rem; }
+.voice__progress { font-size: 0.8125rem; color: var(--ink-3); }
+
+.voice__stage {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 8px 0 4px;
+}
+.voice__orb.is-speaking,
+.voice__orb.is-waiting,
+.voice__orb.is-listening,
+.voice__orb.is-thinking,
+.voice__orb.is-done { width: 96px; height: 96px; }
+.voice__status {
+  margin: 0;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.voice__log {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overscroll-behavior: contain;
+}
+.voice__line {
+  max-width: 90%;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 18px;
+  line-height: 1.45;
+  font-size: 0.9375rem;
+  animation: ui-fade 260ms ease both;
+}
+.voice__line--tutor {
+  align-self: flex-start;
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-bottom-left-radius: 6px;
+}
+.voice__line--you {
+  align-self: flex-end;
+  background: var(--brand);
+  color: #fff;
+  border-bottom-right-radius: 6px;
+}
+.voice__line.is-live { opacity: 0.7; }
+
+.voice__error {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--warn-bg);
+  color: var(--warn);
+  font-size: 0.875rem;
+}
+
+.voice__type { margin: 0; padding: 0; border: 0; }
+
+.voice__controls {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  justify-items: center;
+  gap: 12px;
+}
+.voice__controls .ui-btn { grid-column: 1 / -1; }
+.voice__ctl {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.voice__ctl span {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--mist);
+  transition: transform 0.3s var(--spring, ease);
+}
+.voice__ctl:active span { transform: scale(0.9); }
+.voice__ctl:disabled { opacity: 0.4; cursor: default; }
+.voice__mic {
+  width: 76px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--brand);
+  color: #fff;
+  box-shadow: 0 14px 30px -12px rgba(14, 59, 58, 0.7);
+  cursor: pointer;
+  transition: transform 0.35s var(--spring, ease), background 0.2s;
+}
+.voice__mic:active { transform: scale(0.92); }
+.voice__mic.is-on { background: var(--accent); color: #2a1a02; }
+.voice__mic:disabled { opacity: 0.45; cursor: default; box-shadow: none; }
+.voice__mic-spacer { width: 48px; }
+
+.voice__end {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--bad-bg);
+  color: var(--bad);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.voice--locked {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.voice__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--warn-bg);
+  color: var(--warn);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.voice__perks {
+  display: grid;
+  gap: 8px;
+  margin: 4px 0 8px;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+.voice__perks li {
+  position: relative;
+  padding-left: 22px;
+  color: var(--ink-2);
+}
+.voice__perks li::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 0.55em;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ok);
+}
+.voice__back-link { align-self: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .voice__orb i { animation: none !important; }
+}
