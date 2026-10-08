@@ -2746,3 +2746,48 @@ body.cbt-active {
     width: 100%;
   }
 }
+
+/* Dashboard: the student's school Post-UTME */
+.dash__pu {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  border-radius: 24px;
+  border: 1px solid var(--rule);
+  background: linear-gradient(120deg, var(--brand-tint) 0%, #fff 70%);
+}
+.dash__pu-icon {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: var(--brand);
+  color: #fff;
+}
+.dash__pu-text {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+.dash__pu-text h2 {
+  margin: 0;
+  font-size: 1.1875rem;
+  letter-spacing: -0.01em;
+}
+.dash__pu-text p {
+  margin: 0;
+  color: var(--ink-2);
+}
+.dash__pu-btn { flex: none; }
+@media (max-width: 640px) {
+  .dash__pu { flex-wrap: wrap; }
+  .dash__pu-btn { width: 100%; justify-content: center; }
+}
+.dash__pu .dash__label {
+  color: var(--brand);
+  font-size: 0.8125rem;
+}

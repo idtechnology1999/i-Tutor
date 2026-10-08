@@ -10,8 +10,11 @@ import {
   LockOpen,
   Target,
   GraduationCap,
+  Landmark,
 } from 'lucide-react';
 import type { DiagnosticQuestion, UserProfile } from '../../types';
+import { useCms } from '../../lib/cms';
+import { NIGERIAN_INSTITUTIONS } from '../../data/nigerian-curriculum';
 
 type Subject = DiagnosticQuestion['subject'];
 
@@ -23,6 +26,8 @@ interface Props {
   onUpgrade: () => void;
   onEditGoal: () => void;
   onOpenCourse: () => void;
+  /** The student's school's Post-UTME page. */
+  onOpenPostUtme: () => void;
 }
 
 const SUBJECTS = [
@@ -55,7 +60,17 @@ export const DashboardView: React.FC<Props> = ({
   onUpgrade,
 
   onOpenCourse,
+  onOpenPostUtme,
 }) => {
+  const { questions } = useCms();
+  // The school picked at registration sets the student's Post-UTME.
+  const school = NIGERIAN_INSTITUTIONS.find(
+    (i) => profile.targetInstitution.includes(i.shortName) || profile.targetInstitution.includes(i.name),
+  );
+  const schoolQs = school
+    ? questions.filter((q) => q.status === 'published' && q.examType === 'Post-UTME' && q.school === school.shortName)
+    : [];
+  const schoolSubjects = [...new Set(schoolQs.map((q) => q.subject))];
   const firstName = profile.fullName.split(' ')[0] || 'there';
   const projected = Math.round(160 + (profile.diagnosticScore / 100) * 200);
   const gap = profile.targetScore - projected;
@@ -147,6 +162,28 @@ export const DashboardView: React.FC<Props> = ({
           <small>{profile.targetCourse || 'Pick your course'}</small>
         </button>
       </nav>
+
+      {/* ------------------------------------------------- Your Post-UTME */}
+      <section className="dash__pu">
+        <span className="dash__pu-icon">
+          <Landmark size={24} aria-hidden />
+        </span>
+        <div className="dash__pu-text">
+          <span className="dash__label">Your Post-UTME</span>
+          <h2>{school ? `${school.name} (${school.shortName})` : 'Choose your school'}</h2>
+          <p>
+            {!school
+              ? 'Each school sets its own Post-UTME. Pick yours to practise its past questions.'
+              : schoolQs.length
+                ? `${schoolQs.length} past question${schoolQs.length === 1 ? '' : 's'} ready · ${schoolSubjects.join(', ')}`
+                : `${school.shortName} past questions are coming soon. Meanwhile, keep practising for JAMB.`}
+          </p>
+        </div>
+        <button type="button" className="ui-btn ui-btn--primary dash__pu-btn" onClick={onOpenPostUtme}>
+          {school && schoolQs.length ? `Practise ${school.shortName} Post-UTME` : school ? 'See Post-UTME' : 'Choose school'}
+          <ArrowRight size={18} aria-hidden />
+        </button>
+      </section>
 
       <div className="dash__cols">
         {/* ------------------------------------------------------- Score */}

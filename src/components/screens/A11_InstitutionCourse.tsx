@@ -109,7 +109,8 @@ export const A11_InstitutionCourse: React.FC<Props> = ({
             What is your target course & school?
           </h1>
           <p className="text-body-reg" style={{ color: 'var(--neutral-600)', fontSize: '15px' }}>
-            i-Tutor uses this to calculate exact cut-off benchmarks and quota requirements.
+            Your school sets your Post-UTME, so we’ll prepare you with its past questions — and use its cut-off
+            marks for your goal.
           </p>
         </div>
 

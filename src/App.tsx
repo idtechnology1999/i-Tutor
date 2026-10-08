@@ -188,6 +188,7 @@ export function App() {
             onUpgrade={() => goTo('upgrade')}
             onEditGoal={() => goTo('setup')}
             onOpenCourse={() => goTo('course')}
+            onOpenPostUtme={() => goTo('postutme')}
           />
         )}
 

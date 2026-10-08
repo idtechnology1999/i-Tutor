@@ -80,8 +80,8 @@ export const Navbar: React.FC<Props> = ({
   const onHome = activeView === 'home';
   const isPremium = profile.plan === 'premium';
   const sheetRef = useRef<HTMLDivElement>(null);
-  const { direction, atTop } = useScrollDirection();
-  const tucked = direction === 'down' && !menuOpen && !isTutorOpen && !inApp;
+  // The header stays put (sticky) while scrolling; it only gains a shadow once off the top.
+  const { atTop } = useScrollDirection();
   const closeMenu = useCallback(() => setMenuOpen(false), []);
   const initial = profile.fullName.charAt(0).toUpperCase() || 'A';
 
@@ -213,7 +213,7 @@ export const Navbar: React.FC<Props> = ({
 
   return (
     <>
-      <header className={`site-nav${tucked ? ' is-tucked' : ''}${atTop ? ' is-top' : ''}`}>
+      <header className={`site-nav${atTop ? ' is-top' : ''}`}>
         <div className="site-nav__inner">
           <button
             type="button"
@@ -225,9 +225,6 @@ export const Navbar: React.FC<Props> = ({
           </button>
 
           <nav className="site-nav__links" aria-label="Primary">
-            <RouteLink view="postutme" active={false} className="site-nav__link">
-              Post-UTME
-            </RouteLink>
             {onHome &&
               HOME_ANCHORS.map((anchor) => (
                 <a key={anchor.href} href={anchor.href} className="site-nav__link">
