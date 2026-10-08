@@ -118,7 +118,7 @@ export const Navbar: React.FC<Props> = ({
               type="button"
               className="site-nav__brand"
               onClick={() => onChangeView('dashboard')}
-              aria-label="i-Teacher home"
+              aria-label="i-Tutor home"
             >
               <BrandMark />
             </button>
@@ -216,7 +216,7 @@ export const Navbar: React.FC<Props> = ({
             type="button"
             className="site-nav__brand"
             onClick={() => onChangeView('home')}
-            aria-label="i-Teacher home"
+            aria-label="i-Tutor home"
           >
             <BrandMark />
           </button>
@@ -231,6 +231,15 @@ export const Navbar: React.FC<Props> = ({
           </nav>
 
           <div className="site-nav__actions">
+            <button
+              type="button"
+              onClick={onToggleTutor}
+              className={`site-nav__ask${isTutorOpen ? ' is-open' : ''}`}
+              aria-expanded={isTutorOpen}
+            >
+              <MessageSquareText size={16} aria-hidden />
+              <span>Ask AI</span>
+            </button>
             <span className="site-nav__auth">{authActions}</span>
             {onHome && (
               <button

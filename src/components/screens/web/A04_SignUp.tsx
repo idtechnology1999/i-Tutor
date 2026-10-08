@@ -119,7 +119,7 @@ export const A04_SignUp: React.FC<Props> = ({
           </p>
           <p className="auth__foot-back">
             <button type="button" className="link-inline" onClick={onBack}>
-              Back to i-Teacher home
+              Back to i-Tutor home
             </button>
           </p>
         </>
@@ -284,7 +284,7 @@ export const A04_SignUp: React.FC<Props> = ({
               <a href="/privacy" className="link-inline">
                 privacy policy
               </a>
-              , and consent to i-Teacher storing my study record.
+              , and consent to i-Tutor storing my study record.
             </span>
           </label>
           {consentError ? (

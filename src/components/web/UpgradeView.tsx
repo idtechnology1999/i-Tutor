@@ -140,7 +140,7 @@ export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor
   const cardOk = !cardErrors.number && !cardErrors.expiry && !cardErrors.cvv;
 
   const [reference] = useState(
-    () => `ITCH-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+    () => `ITUT-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
   );
 
   const confirmPayment = () => {
@@ -305,7 +305,7 @@ export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor
 
           <div className="pay__summary">
             <span>
-              i-Teacher Premium · {PLANS[plan].name}
+              i-Tutor Premium · {PLANS[plan].name}
             </span>
             <strong>{naira(amount)}</strong>
           </div>
@@ -424,7 +424,7 @@ export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor
                 </div>
                 <div>
                   <dt>Account name</dt>
-                  <dd>i-Teacher Checkout</dd>
+                  <dd>i-Tutor Checkout</dd>
                 </div>
                 <div>
                   <dt>Amount</dt>

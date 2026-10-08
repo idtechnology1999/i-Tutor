@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { BadgeCheck, LockOpen, MessageSquareText, SendHorizontal, X } from 'lucide-react';
+import { ArrowRight, BadgeCheck, LockOpen, MessageSquareText, SendHorizontal, X } from 'lucide-react';
+import type { AppView } from '../../lib/router';
 
 interface Props {
   isOpen: boolean;
@@ -7,15 +8,23 @@ interface Props {
   isPremium?: boolean;
   onUpgrade?: () => void;
   studentName?: string;
+  /** Lets the tutor send students to a page ("take me to past questions"). */
+  onNavigate?: (view: AppView) => void;
+}
+
+interface NavLink {
+  label: string;
+  view: AppView;
 }
 
 interface Message {
   sender: 'user' | 'tutor';
   text: string;
+  links?: NavLink[];
 }
 
 const FREE_DAILY = 5;
-const quotaKey = () => `iteacher-tutor-${new Date().toISOString().slice(0, 10)}`;
+const quotaKey = () => `itutor-tutor-${new Date().toISOString().slice(0, 10)}`;
 
 const readUsed = () => {
   try {
@@ -45,6 +54,72 @@ const formatText = (text: string) => {
   );
 };
 
+
+/* -----------------------------------------------------------------------------
+   Site guide. Questions about using i-Tutor get a plain answer plus buttons
+   that open the right page. These don't count towards the free daily limit.
+   -------------------------------------------------------------------------- */
+
+const PAGES = {
+  exam: { label: 'Open practice exam', view: 'cbt' as AppView },
+  questions: { label: 'Open past questions', view: 'syllabus' as AppView },
+  home: { label: 'Go to my home page', view: 'dashboard' as AppView },
+  upgrade: { label: 'See Premium plans', view: 'upgrade' as AppView },
+  profile: { label: 'Open my profile', view: 'setup' as AppView },
+  signup: { label: 'Create a free account', view: 'signup' as AppView },
+  login: { label: 'Log in', view: 'login' as AppView },
+};
+
+const GUIDE: Array<{ test: RegExp; text: string; links: NavLink[] }> = [
+  {
+    test: /\b(pay|payment|upgrade|premium|price|pricing|cost|subscribe|subscription|card|ussd|transfer|activate)\b/,
+    text: 'To unlock unlimited help from me, go to Premium. Pick a plan (from ₦2,500 a month), then pay with your card, a bank transfer or USSD. It switches on straight away.',
+    links: [PAGES.upgrade],
+  },
+  {
+    test: /\b(exam|mock|cbt|test|timed|timer)\b/,
+    text: 'Tap Practice exam. Choose a subject (or all subjects) and how many questions you want, then press Start exam. The timer only starts when you press Start.',
+    links: [PAGES.exam],
+  },
+  {
+    test: /\b(past questions?|questions bank|syllabus|practi[cs]e questions?|old questions?)\b/,
+    text: 'Open Past questions, pick a subject at the top, then tap an answer. You’ll see straight away if it’s right — and why.',
+    links: [PAGES.questions],
+  },
+  {
+    test: /\b(profile|goal|course|school|university|subjects?|account|settings|log ?out)\b/,
+    text: 'Your profile shows your plan, your goal (course and school) and your subjects. Tap Change to update your goal.',
+    links: [PAGES.profile],
+  },
+  {
+    test: /\b(sign ?up|register|create (an )?account|join)\b/,
+    text: 'Creating an account is free and takes about a minute. You’ll get a code to confirm your phone or email.',
+    links: [PAGES.signup, PAGES.login],
+  },
+  {
+    test: /\b(log ?in|sign ?in|password)\b/,
+    text: 'Use Log in with the phone number or email you registered with. If you forgot your password, there’s a link on that page to reset it.',
+    links: [PAGES.login],
+  },
+  {
+    test: /\b(home|dashboard|progress|streak|score|today)\b/,
+    text: 'Your home page shows today’s practice, your likely score and how each subject is going.',
+    links: [PAGES.home],
+  },
+  {
+    test: /\b(how (do|can) i (use|start|navigate|find)|where (is|are|do)|help me (use|find|navigate)|show me around|get started|what can (i|you) do|navigate|menu)\b/,
+    text: 'Here’s how i-Tutor works:\n\n1. **Practice exam** — timed tests like the real CBT.\n2. **Past questions** — try a question and check the answer.\n3. **Ask me** — I’ll guide you through any question step by step.\n4. **Me** — your plan, goal and subjects.\n\nTap where you want to go:',
+    links: [PAGES.exam, PAGES.questions, PAGES.home, PAGES.upgrade],
+  },
+];
+
+const guideFor = (query: string) => {
+  const q = query.toLowerCase();
+  // Subject questions ("explain isomers") are tutoring, not navigation.
+  if (/\b(explain|solve|calculate|what is|why|isomer|formula|equation)\b/.test(q)) return null;
+  return GUIDE.find((g) => g.test.test(q)) ?? null;
+};
+
 const replyFor = (query: string) => {
   const q = query.toLowerCase();
   if (q.includes('isomer') || q.includes('chem')) {
@@ -60,6 +135,7 @@ const replyFor = (query: string) => {
 };
 
 const PROMPTS = [
+  'How do I use i-Tutor?',
   'Explain chain vs functional isomers',
   'Help me with motion questions',
   'How do stress patterns work?',
@@ -71,11 +147,12 @@ export const AITutorDrawer: React.FC<Props> = ({
   isPremium = false,
   onUpgrade,
   studentName = 'there',
+  onNavigate,
 }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: 'tutor',
-      text: `Hi ${studentName}! I'm your i-Teacher tutor. Ask me about any JAMB question in English, Maths, Physics or Chemistry. I'll guide you to the answer step by step.`,
+      text: `Hi ${studentName}! I'm your i-Tutor tutor. Ask me about any JAMB question in English, Maths, Physics or Chemistry. I'll guide you to the answer step by step. You can also ask me how to find anything on the site.`,
     },
   ]);
   const [inputText, setInputText] = useState('');
@@ -103,10 +180,22 @@ export const AITutorDrawer: React.FC<Props> = ({
 
   const handleSend = (textToSend?: string) => {
     const query = (textToSend ?? inputText).trim();
-    if (!query || blocked || typing) return;
+    if (!query || typing) return;
+    const guide = guideFor(query);
+    if (blocked && !guide) return;
 
     setMessages((prev) => [...prev, { sender: 'user', text: query }]);
     setInputText('');
+
+    if (guide) {
+      setTyping(true);
+      window.setTimeout(() => {
+        setTyping(false);
+        setMessages((prev) => [...prev, { sender: 'tutor', text: guide.text, links: guide.links }]);
+      }, 600);
+      return;
+    }
+
     if (!isPremium) {
       const next = used + 1;
       setUsed(next);
@@ -153,9 +242,26 @@ export const AITutorDrawer: React.FC<Props> = ({
 
         <div className="tutor__log" ref={logRef} aria-live="polite">
           {messages.map((m, idx) => (
-            <p key={idx} className={`tutor__msg tutor__msg--${m.sender}`}>
-              {formatText(m.text)}
-            </p>
+            <React.Fragment key={idx}>
+              <p className={`tutor__msg tutor__msg--${m.sender}`}>{formatText(m.text)}</p>
+              {m.links && onNavigate && (
+                <div className="tutor__links">
+                  {m.links.map((link) => (
+                    <button
+                      key={link.view}
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onNavigate(link.view);
+                      }}
+                    >
+                      {link.label}
+                      <ArrowRight size={16} aria-hidden />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </React.Fragment>
           ))}
           {typing && (
             <p className="tutor__msg tutor__msg--tutor tutor__typing" aria-label="Tutor is typing">

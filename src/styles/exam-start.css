@@ -1,0 +1,607 @@
+/* =============================================================================
+   Exam setup page (/cbt-simulation before Start). A normal page, not a modal:
+   big subject cards, count picker, and a summary that is a side panel on
+   desktop and a pinned bar on phones.
+   ============================================================================= */
+
+.xs {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background:
+    radial-gradient(1200px 420px at 50% -120px, var(--brand-tint), transparent 70%),
+    var(--paper);
+  color: var(--ink);
+}
+
+/* ------------------------------------------------------------------ Bar */
+
+.xs__bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  height: 60px;
+  padding: 0 var(--lp-gutter);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  border-bottom: 1px solid var(--rule);
+}
+
+.xs__back {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 0 12px 0 8px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--brand);
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.xs__back:hover {
+  background: var(--brand-tint);
+}
+
+.xs__bar-title {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+/* ---------------------------------------------------------------- Intro */
+
+.xs__wrap {
+  max-width: var(--lp-wrap);
+  margin: 0 auto;
+  padding: clamp(28px, 5vw, 56px) var(--lp-gutter) 64px;
+}
+
+.xs__intro {
+  max-width: 640px;
+  margin-bottom: clamp(24px, 4vw, 40px);
+  animation: rise-in 700ms var(--ease-ios, ease) both;
+}
+
+.xs__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 99px;
+  background: #fff;
+  border: 1px solid var(--rule);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--brand);
+}
+
+.xs__intro h1 {
+  margin-top: 16px;
+  font-size: clamp(2rem, 1.4rem + 2.6vw, 3rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  color: var(--ink);
+}
+
+.xs__lead {
+  margin-top: 12px;
+  font-size: clamp(1.0625rem, 1rem + 0.3vw, 1.1875rem);
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.xs__lead b {
+  color: var(--ink);
+}
+
+/* ----------------------------------------------------------------- Grid */
+
+.xs__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: clamp(24px, 4vw, 48px);
+  align-items: start;
+}
+
+.xs__steps {
+  display: grid;
+  gap: 36px;
+}
+
+.xs__step h2 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.xs__num {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--brand);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+/* ------------------------------------------------------- Subject cards */
+
+.xs__subjects {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.xs__subject {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 14px;
+  row-gap: 10px;
+  align-items: center;
+  padding: 18px;
+  border-radius: 20px;
+  border: 1.5px solid var(--rule);
+  background: #fff;
+  text-align: left;
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+  animation: rise-in 640ms var(--ease-ios, ease) both;
+  animation-delay: calc(var(--i, 0) * 50ms + 80ms);
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 300ms ease,
+    transform 520ms var(--spring, ease);
+}
+
+.xs__subject--all {
+  grid-column: 1 / -1;
+}
+
+@media (hover: hover) {
+  .xs__subject:hover {
+    border-color: var(--rule-2);
+    box-shadow: 0 18px 36px -26px rgba(11, 31, 30, 0.45);
+    transform: translate3d(0, -2px, 0);
+  }
+}
+
+.xs__subject:active {
+  transform: scale(0.97);
+  transition-duration: 120ms;
+}
+
+.xs__subject.is-on {
+  border-color: var(--brand);
+  background: var(--brand-tint);
+  box-shadow: 0 0 0 4px rgba(14, 59, 58, 0.08);
+}
+
+.xs__subject-icon {
+  grid-row: 1 / 3;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: var(--mist);
+  color: var(--brand);
+  transition: background-color 200ms ease, color 200ms ease, transform 520ms var(--spring, ease);
+}
+
+.xs__subject.is-on .xs__subject-icon {
+  background: var(--brand);
+  color: #fff;
+  transform: rotate(-6deg) scale(1.04);
+}
+
+.xs__subject-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding-right: 28px;
+}
+
+.xs__subject-text strong {
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.xs__subject-text small {
+  font-size: 0.875rem;
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.xs__subject-count {
+  justify-self: start;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: var(--mist);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.xs__subject.is-on .xs__subject-count {
+  background: #fff;
+  color: var(--brand);
+}
+
+.xs__tick {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--rule-2);
+  color: transparent;
+  transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease;
+}
+
+.xs__subject.is-on .xs__tick {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+  animation: pop 520ms var(--spring, ease);
+}
+
+/* --------------------------------------------------------- Count picker */
+
+.xs__counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.xs__counts button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 84px;
+  min-height: 72px;
+  padding: 10px 16px;
+  border-radius: 18px;
+  border: 1.5px solid var(--rule);
+  background: #fff;
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease,
+    transform 520ms var(--spring, ease);
+}
+
+.xs__counts button:active {
+  transform: scale(0.94);
+  transition-duration: 120ms;
+}
+
+.xs__counts strong {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.xs__counts small {
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+}
+
+.xs__counts button.is-on {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: #fff;
+}
+
+.xs__counts button.is-on small {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.xs__hint {
+  margin-top: 12px;
+  font-size: 0.9375rem;
+  color: var(--ink-3);
+}
+
+/* ---------------------------------------------------------------- Rules */
+
+.xs__rules {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.xs__rules li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid var(--rule);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.xs__rules li span {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--brand-tint);
+  color: var(--brand);
+}
+
+/* -------------------------------------------------------------- Summary */
+
+.xs__summary {
+  position: sticky;
+  top: 84px;
+  animation: rise-in 700ms var(--ease-ios, ease) 160ms both;
+}
+
+.xs__summary-card {
+  position: relative;
+  overflow: hidden;
+  padding: 26px;
+  border-radius: 24px;
+  background: var(--brand);
+  color: #fff;
+  box-shadow: 0 30px 60px -36px rgba(14, 59, 58, 0.8);
+}
+
+/* Soft light in the corner of the card. */
+.xs__summary-card::before {
+  content: '';
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  right: -110px;
+  top: -130px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(232, 163, 61, 0.35), transparent 65%);
+  pointer-events: none;
+}
+
+.xs__summary-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.xs__summary-label {
+  margin-top: 18px;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.xs__summary-card h3 {
+  margin-top: 2px;
+  font-size: 1.625rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: #fff;
+}
+
+.xs__facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.xs__facts div {
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.xs__facts dt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.xs__facts dd {
+  margin: 6px 0 0;
+  font-size: 1.625rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.xs__start {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--accent);
+  color: var(--ink);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 520ms var(--spring, ease), background-color 160ms ease, box-shadow 300ms ease;
+}
+
+.xs__start:hover {
+  background: #f0b257;
+  box-shadow: 0 14px 30px -14px rgba(232, 163, 61, 0.8);
+}
+
+.xs__start:active {
+  transform: scale(0.96);
+  transition-duration: 120ms;
+}
+
+.xs__start svg {
+  transition: transform 300ms var(--spring, ease);
+}
+
+.xs__start:hover svg {
+  transform: translateX(2px) scale(1.1);
+}
+
+.xs__fine {
+  margin-top: 14px;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.65);
+  text-align: center;
+}
+
+/* Phone bar (hidden on desktop) */
+.xs__dock {
+  display: none;
+}
+
+/* ----------------------------------------------------------- Responsive */
+
+@media (max-width: 900px) {
+  .xs__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .xs__summary {
+    display: none;
+  }
+
+  .xs__wrap {
+    padding-bottom: calc(110px + env(safe-area-inset-bottom));
+  }
+
+  .xs__dock {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px var(--lp-gutter) calc(12px + env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-top: 1px solid var(--rule);
+    animation: ui-up 520ms var(--ease-ios, ease) 200ms both;
+  }
+
+  .xs__dock div {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .xs__dock strong {
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .xs__dock span {
+    font-size: 0.875rem;
+    color: var(--ink-3);
+  }
+
+  .xs__dock .xs__start {
+    width: auto;
+    min-height: 52px;
+    background: var(--brand);
+    color: #fff;
+  }
+
+  .xs__rules {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .xs__subjects {
+    gap: 10px;
+  }
+
+  .xs__subject {
+    padding: 14px;
+    column-gap: 12px;
+  }
+
+  .xs__subject-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+  }
+
+  /* Stack icon above the name so long names (Mathematics) never hit the tick. */
+  .xs__subject:not(.xs__subject--all) {
+    grid-template-columns: 1fr;
+    row-gap: 10px;
+  }
+
+  .xs__subject:not(.xs__subject--all) .xs__subject-icon {
+    grid-row: auto;
+  }
+
+  .xs__subject-text {
+    padding-right: 0;
+  }
+
+  .xs__subject--all .xs__subject-text {
+    padding-right: 28px;
+  }
+
+  .xs__subject-text small {
+    display: none;
+  }
+
+  .xs__counts button {
+    flex: 1 1 0;
+    min-width: 64px;
+    max-width: 140px;
+  }
+}

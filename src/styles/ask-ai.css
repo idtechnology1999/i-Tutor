@@ -1,0 +1,105 @@
+/* =============================================================================
+   "Ask AI" in the visitor header + tap-to-go links inside tutor answers.
+   ============================================================================= */
+
+.site-nav__ask {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 99px;
+  border: 1px solid var(--rule-2);
+  background: #fff;
+  color: var(--brand);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 500ms var(--spring, ease);
+}
+
+.site-nav__ask:hover {
+  border-color: var(--brand);
+  background: var(--brand-tint);
+}
+
+.site-nav__ask:active {
+  transform: scale(0.95);
+  transition-duration: 120ms;
+}
+
+.site-nav__ask.is-open {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+
+/* On phones the header keeps Ask AI visible next to the menu button. */
+@media (max-width: 960px) {
+  .site-nav__ask {
+    height: 40px;
+    padding: 0 12px;
+  }
+}
+
+@media (max-width: 380px) {
+  .site-nav__ask span {
+    display: none;
+  }
+}
+
+/* --------------------------------------------- Tutor answers with links */
+
+.tutor__links {
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: min(100%, 300px);
+  margin-top: -2px;
+  animation: msg-in 460ms var(--spring, ease) both;
+}
+
+.tutor__links button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 46px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1.5px solid var(--brand);
+  background: #fff;
+  color: var(--brand);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    transform 500ms var(--spring, ease);
+}
+
+.tutor__links button:hover {
+  background: var(--brand);
+  color: #fff;
+}
+
+.tutor__links button:active {
+  transform: scale(0.97);
+  transition-duration: 120ms;
+}
+
+.tutor__links button svg {
+  flex: none;
+  transition: transform 300ms var(--spring, ease);
+}
+
+.tutor__links button:hover svg {
+  transform: translateX(3px);
+}

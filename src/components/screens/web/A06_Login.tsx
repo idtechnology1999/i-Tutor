@@ -76,7 +76,7 @@ export const A06_Login: React.FC<Props> = ({
     <AuthShell
       photo
       eyebrow="Welcome back"
-      title="Log in to i-Teacher"
+      title="Log in to i-Tutor"
       lede="Pick up your mocks, weak topics and tutor sessions where you left off."
       aside={
         <PhotoAside
@@ -95,7 +95,7 @@ export const A06_Login: React.FC<Props> = ({
           </p>
           <p className="auth__foot-back">
             <button type="button" className="link-inline" onClick={onBack}>
-              Back to i-Teacher home
+              Back to i-Tutor home
             </button>
           </p>
         </>

@@ -15,7 +15,7 @@ export const BrandMark: React.FC<{ compact?: boolean; invert?: boolean }> = ({
     </svg>
     {!compact && (
       <span className="brand__name">
-        i-Teacher
+        i-Tutor
       </span>
     )}
   </span>

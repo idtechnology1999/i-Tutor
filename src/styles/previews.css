@@ -16,9 +16,12 @@
   letter-spacing: -0.035em;
 }
 
-.lp-hero__grid {
-  grid-template-columns: 1.18fr 0.92fr;
-  gap: clamp(40px, 5vw, 72px);
+/* Desktop only — below 1025px site.css stacks the hero into one column. */
+@media (min-width: 1025px) {
+  .lp-hero__grid {
+    grid-template-columns: 1.18fr 0.92fr;
+    gap: clamp(40px, 5vw, 72px);
+  }
 }
 
 .lp-hero__title {

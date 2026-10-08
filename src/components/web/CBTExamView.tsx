@@ -1,5 +1,7 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  ArrowLeft,
+  Atom,
   Calculator,
   Check,
   ChevronDown,
@@ -7,39 +9,73 @@ import {
   ChevronRight,
   Clock3,
   Flag,
+  FlaskConical,
+  Languages,
+  Layers,
   LayoutGrid,
+  ListChecks,
   MessageSquareText,
+  Play,
   RotateCcw,
+  Sigma,
+  Timer,
   X,
 } from 'lucide-react';
 import type { DiagnosticQuestion, UserProfile } from '../../types';
 import { DIAGNOSTIC_QUESTIONS } from '../../data/nigerian-curriculum';
+import { ExamCalculator } from './ExamCalculator';
 
 interface Props {
   profile: UserProfile;
   onExit: () => void;
   onOpenTutor?: () => void;
+  /** Subject the student tapped to get here, pre-selected in the setup. */
+  presetSubject?: DiagnosticQuestion['subject'];
 }
 
 type Subject = DiagnosticQuestion['subject'];
+type Choice = Subject | 'all';
 const SUBJECTS: Subject[] = ['English', 'Mathematics', 'Physics', 'Chemistry'];
-const EXAM_SECONDS = 2 * 60 * 60;
+const COUNT_STEPS = [5, 10, 20, 40, 60];
+const SECONDS_PER_QUESTION = 60;
+
+const poolFor = (choice: Choice) =>
+  choice === 'all' ? DIAGNOSTIC_QUESTIONS : DIAGNOSTIC_QUESTIONS.filter((q) => q.subject === choice);
+
+// Sensible counts for the pool size, always ending with "all of them".
+const countOptions = (available: number) => {
+  const steps = COUNT_STEPS.filter((n) => n < available);
+  return [...steps, available];
+};
 
 const formatTime = (secs: number) => {
   const h = Math.floor(secs / 3600);
   const m = Math.floor((secs % 3600) / 60);
   const s = secs % 60;
-  return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return h > 0
+    ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+    : `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 };
 
-export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor }) => {
-  const [activeSubject, setActiveSubject] = useState<Subject>('Physics');
+const minutesLabel = (count: number) => {
+  const mins = Math.round((count * SECONDS_PER_QUESTION) / 60);
+  if (mins < 60) return `${mins} min`;
+  const rest = mins % 60;
+  return rest ? `${Math.floor(mins / 60)} hr ${rest} min` : `${mins / 60} hr`;
+};
+
+export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, presetSubject }) => {
+  // Setup: nothing runs until the student has chosen and pressed Start.
+  const [config, setConfig] = useState<null | { choice: Choice; count: number }>(null);
+  const [pickChoice, setPickChoice] = useState<Choice>(presetSubject ?? 'all');
+  const [pickCount, setPickCount] = useState(() => poolFor(presetSubject ?? 'all').length);
+
+  const [activeSubject, setActiveSubject] = useState<Subject>('English');
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [flagged, setFlagged] = useState<Record<number, boolean>>({});
-  const [timeLeft, setTimeLeft] = useState(EXAM_SECONDS);
+  const [timeLeft, setTimeLeft] = useState(0);
   const [showCalculator, setShowCalculator] = useState(false);
-  const [calcInput, setCalcInput] = useState('0');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [confirm, setConfirm] = useState<null | 'submit' | 'exit'>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -47,56 +83,70 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor }) =
 
   const tabsRef = useRef<HTMLElement>(null);
 
+  const examQuestions = config ? poolFor(config.choice).slice(0, config.count) : [];
+  const examSubjects = SUBJECTS.filter((s) => examQuestions.some((q) => q.subject === s));
+
   // Keep the chosen subject tab visible when the strip scrolls on phones.
   useEffect(() => {
     const tab = tabsRef.current?.querySelector<HTMLElement>('.is-on');
     tab?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
   }, [activeSubject]);
 
-  const subjectQuestions = DIAGNOSTIC_QUESTIONS.filter((q) => q.subject === activeSubject);
-  const activeQuestion = subjectQuestions[currentQIndex] || DIAGNOSTIC_QUESTIONS[0];
-  const total = DIAGNOSTIC_QUESTIONS.length;
+  const subjectQuestions = examQuestions.filter((q) => q.subject === activeSubject);
+  const activeQuestion = subjectQuestions[currentQIndex] || examQuestions[0] || DIAGNOSTIC_QUESTIONS[0];
+  const total = examQuestions.length;
   const answeredCount = Object.keys(answers).length;
   const flaggedCount = Object.values(flagged).filter(Boolean).length;
 
   // The paper is over when the candidate submits or the clock hits zero.
-  const finished = isSubmitted || timeLeft <= 0;
+  const running = config !== null;
+  const finished = running && (isSubmitted || timeLeft <= 0);
 
   useEffect(() => {
-    if (finished) return;
+    if (!running || finished) return;
     const timer = window.setInterval(() => setTimeLeft((t) => Math.max(0, t - 1)), 1000);
     return () => window.clearInterval(timer);
-  }, [finished]);
+  }, [running, finished]);
 
-  const goTo = useCallback(
-    (index: number) => {
-      setCurrentQIndex(Math.max(0, Math.min(subjectQuestions.length - 1, index)));
-      setPaletteOpen(false);
-    },
-    [subjectQuestions.length],
-  );
+  const startExam = () => {
+    const pool = poolFor(pickChoice);
+    const count = Math.min(pickCount, pool.length);
+    const chosen = pool.slice(0, count);
+    const first = SUBJECTS.find((s) => chosen.some((q) => q.subject === s)) ?? 'English';
+    setAnswers({});
+    setFlagged({});
+    setCurrentQIndex(0);
+    setActiveSubject(first);
+    setTimeLeft(count * SECONDS_PER_QUESTION);
+    setIsSubmitted(false);
+    setOpenReview(null);
+    setConfig({ choice: pickChoice, count });
+  };
+
+  const goTo = (index: number) => {
+    setCurrentQIndex(Math.max(0, Math.min(subjectQuestions.length - 1, index)));
+    setPaletteOpen(false);
+  };
 
   const switchSubject = (subject: Subject) => {
     setActiveSubject(subject);
     setCurrentQIndex(0);
   };
 
-  const handleSelectOption = useCallback(
-    (label: string) => setAnswers((prev) => ({ ...prev, [activeQuestion.id]: label })),
-    [activeQuestion.id],
-  );
+  const handleSelectOption = (label: string) =>
+    setAnswers((prev) => ({ ...prev, [activeQuestion.id]: label }));
 
-  const toggleFlag = useCallback(
-    () => setFlagged((prev) => ({ ...prev, [activeQuestion.id]: !prev[activeQuestion.id] })),
-    [activeQuestion.id],
-  );
+  const toggleFlag = () =>
+    setFlagged((prev) => ({ ...prev, [activeQuestion.id]: !prev[activeQuestion.id] }));
 
-  // Keyboard: A–D or 1–4 to answer, N / P to move, F to flag.
+  // Keyboard: A–D or 1–4 to answer, N / P to move, F to flag. The listener is
+  // attached once and always calls the latest handler through a ref.
+  const onKeyRef = useRef<(event: KeyboardEvent) => void>(() => undefined);
   useEffect(() => {
-    if (finished || confirm) return;
-    const onKey = (event: KeyboardEvent) => {
+    onKeyRef.current = (event) => {
+      if (!running || finished || confirm) return;
       const target = event.target as HTMLElement;
-      if (target.closest('input, textarea') || event.metaKey || event.ctrlKey) return;
+      if (target.closest('input, textarea, .calc') || event.metaKey || event.ctrlKey) return;
       const key = event.key.toLowerCase();
       const pick = 'abcd'.indexOf(key) >= 0 ? 'abcd'.indexOf(key) : '1234'.indexOf(key);
       if (pick >= 0 && activeQuestion.options[pick]) handleSelectOption(activeQuestion.options[pick].label);
@@ -104,41 +154,207 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor }) =
       else if (key === 'p' || key === 'arrowleft') goTo(currentQIndex - 1);
       else if (key === 'f') toggleFlag();
     };
+  });
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => onKeyRef.current(event);
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [finished, confirm, activeQuestion, currentQIndex, goTo, handleSelectOption, toggleFlag]);
+  }, []);
 
-  const handleCalcClick = (val: string) => {
-    if (val === 'C') {
-      setCalcInput('0');
-    } else if (val === '=') {
-      try {
-        // Safe basic arithmetic evaluation
-        const sanitized = calcInput.replace(/[^0-9+\-*/.]/g, '');
-        // eslint-disable-next-line no-eval
-        const res = Function(`'use strict'; return (${sanitized})`)();
-        setCalcInput(String(res));
-      } catch {
-        setCalcInput('Error');
-      }
-    } else {
-      setCalcInput((prev) => (prev === '0' || prev === 'Error' ? val : prev + val));
-    }
-  };
-
+  // "Try again" goes back to the setup so the student can change their mind.
   const restart = () => {
-    setAnswers({});
-    setFlagged({});
-    setTimeLeft(EXAM_SECONDS);
-    setActiveSubject('Physics');
-    setCurrentQIndex(0);
-    setOpenReview(null);
+    setConfig(null);
     setIsSubmitted(false);
+    setOpenReview(null);
   };
+
+  /* ================================================================== Setup */
+  if (!running) {
+    const pool = poolFor(pickChoice);
+    const options = countOptions(pool.length);
+    const count = Math.min(pickCount, pool.length);
+    const choices: Array<{ id: Choice; label: string; note: string; icon: typeof Layers }> = [
+      { id: 'all', label: 'All subjects', note: 'Full mixed mock', icon: Layers },
+      { id: 'English', label: 'English', note: 'Use of English', icon: Languages },
+      { id: 'Mathematics', label: 'Mathematics', note: 'Algebra, calculus…', icon: Sigma },
+      { id: 'Physics', label: 'Physics', note: 'Motion, waves…', icon: Atom },
+      { id: 'Chemistry', label: 'Chemistry', note: 'Organic, moles…', icon: FlaskConical },
+    ];
+    const chosen = choices.find((c) => c.id === pickChoice) ?? choices[0];
+    const ChosenIcon = chosen.icon;
+
+    return (
+      <div className="xs">
+        <header className="xs__bar">
+          <button type="button" className="xs__back" onClick={onExit}>
+            <ArrowLeft size={18} aria-hidden /> Home
+          </button>
+          <span className="xs__bar-title">Practice exam</span>
+          <span className="xs__bar-spacer" aria-hidden />
+        </header>
+
+        <div className="xs__wrap">
+          <section className="xs__intro">
+            <p className="xs__eyebrow">
+              <Timer size={16} aria-hidden /> Timed like the real CBT
+            </p>
+            <h1>Set up your exam</h1>
+            <p className="xs__lead">
+              Choose a subject and how many questions you want. The timer only starts when you
+              press <b>Start exam</b>.
+            </p>
+          </section>
+
+          <div className="xs__grid">
+            <div className="xs__steps">
+              {/* Step 1 */}
+              <section className="xs__step">
+                <h2>
+                  <span className="xs__num">1</span> Choose a subject
+                </h2>
+                <div className="xs__subjects" role="radiogroup" aria-label="Subject">
+                  {choices.map((c, i) => {
+                    const Icon = c.icon;
+                    const on = pickChoice === c.id;
+                    const n = poolFor(c.id).length;
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        className={`xs__subject${on ? ' is-on' : ''}${c.id === 'all' ? ' xs__subject--all' : ''}`}
+                        style={{ ['--i' as string]: i }}
+                        onClick={() => {
+                          setPickChoice(c.id);
+                          setPickCount(n);
+                        }}
+                      >
+                        <span className="xs__subject-icon">
+                          <Icon size={22} aria-hidden />
+                        </span>
+                        <span className="xs__subject-text">
+                          <strong>{c.label}</strong>
+                          <small>{c.note}</small>
+                        </span>
+                        <span className="xs__subject-count">
+                          {n} {n === 1 ? 'question' : 'questions'}
+                        </span>
+                        <span className="xs__tick" aria-hidden>
+                          <Check size={14} />
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+
+              {/* Step 2 */}
+              <section className="xs__step">
+                <h2>
+                  <span className="xs__num">2</span> How many questions?
+                </h2>
+                <div className="xs__counts" role="radiogroup" aria-label="Number of questions">
+                  {options.map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      role="radio"
+                      aria-checked={count === n}
+                      className={count === n ? 'is-on' : ''}
+                      onClick={() => setPickCount(n)}
+                    >
+                      <strong>{n}</strong>
+                      <small>{n === pool.length && options.length > 1 ? 'all' : minutesLabel(n)}</small>
+                    </button>
+                  ))}
+                </div>
+                <p className="xs__hint">You get about 1 minute per question, like the real exam.</p>
+              </section>
+
+              {/* Step 3 */}
+              <section className="xs__step">
+                <h2>
+                  <span className="xs__num">3</span> Good to know
+                </h2>
+                <ul className="xs__rules">
+                  <li>
+                    <span>
+                      <Check size={16} aria-hidden />
+                    </span>
+                    Tap an answer to choose it. You can change it any time.
+                  </li>
+                  <li>
+                    <span>
+                      <Flag size={16} aria-hidden />
+                    </span>
+                    Not sure? Flag the question and come back later.
+                  </li>
+                  <li>
+                    <span>
+                      <Calculator size={16} aria-hidden />
+                    </span>
+                    A calculator is there if you need it.
+                  </li>
+                  <li>
+                    <span>
+                      <Clock3 size={16} aria-hidden />
+                    </span>
+                    When time runs out, your answers are submitted for you.
+                  </li>
+                </ul>
+              </section>
+            </div>
+
+            {/* Summary: side panel on desktop, pinned bar on phones */}
+            <aside className="xs__summary" aria-label="Your exam">
+              <div className="xs__summary-card">
+                <span className="xs__summary-icon">
+                  <ChosenIcon size={26} aria-hidden />
+                </span>
+                <p className="xs__summary-label">Your exam</p>
+                <h3>{chosen.label}</h3>
+                <dl className="xs__facts">
+                  <div>
+                    <dt>
+                      <ListChecks size={16} aria-hidden /> Questions
+                    </dt>
+                    <dd>{count}</dd>
+                  </div>
+                  <div>
+                    <dt>
+                      <Timer size={16} aria-hidden /> Time
+                    </dt>
+                    <dd>{minutesLabel(count)}</dd>
+                  </div>
+                </dl>
+                <button type="button" className="xs__start" onClick={startExam}>
+                  <Play size={18} aria-hidden /> Start exam
+                </button>
+                <p className="xs__fine">Answers and explanations are shown after you submit.</p>
+              </div>
+            </aside>
+          </div>
+        </div>
+
+        <div className="xs__dock">
+          <div>
+            <strong>{chosen.label}</strong>
+            <span>
+              {count} {count === 1 ? 'question' : 'questions'} · {minutesLabel(count)}
+            </span>
+          </div>
+          <button type="button" className="xs__start" onClick={startExam}>
+            <Play size={18} aria-hidden /> Start
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   /* ================================================================ Results */
   if (finished) {
-    const correctCount = DIAGNOSTIC_QUESTIONS.filter((q) => answers[q.id] === q.correctAnswer).length;
+    const correctCount = examQuestions.filter((q) => answers[q.id] === q.correctAnswer).length;
     const scorePct = Math.round((correctCount / total) * 100);
     const estimate = Math.round(160 + (scorePct / 100) * 200);
 
@@ -182,7 +398,7 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor }) =
           <h2>Check your answers</h2>
           <p className="exam-review__sub">Tap a question to see the right answer and why.</p>
           <ol>
-            {DIAGNOSTIC_QUESTIONS.map((q, i) => {
+            {examQuestions.map((q, i) => {
               const yours = answers[q.id];
               const right = yours === q.correctAnswer;
               const open = openReview === q.id;
@@ -231,7 +447,8 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor }) =
 
   /* ================================================================== Exam */
   const isFlagged = Boolean(flagged[activeQuestion.id]);
-  const lowTime = timeLeft < 5 * 60;
+  // Warn in the last fifth of the paper (never more than the final 5 minutes).
+  const lowTime = timeLeft < Math.min(5 * 60, (config?.count ?? 0) * SECONDS_PER_QUESTION * 0.2);
 
   const palette = (
     <>
@@ -300,8 +517,8 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor }) =
 
       {/* ------------------------------------------------------ Subject tabs */}
       <nav className="exam__tabs" aria-label="Subjects" ref={tabsRef}>
-        {SUBJECTS.map((subject) => {
-          const qs = DIAGNOSTIC_QUESTIONS.filter((q) => q.subject === subject);
+        {examSubjects.map((subject) => {
+          const qs = examQuestions.filter((q) => q.subject === subject);
           const done = qs.filter((q) => answers[q.id]).length;
           return (
             <button
@@ -385,7 +602,7 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor }) =
                 type="button"
                 className="ui-btn ui-btn--primary"
                 onClick={() => {
-                  const nextSubject = SUBJECTS[(SUBJECTS.indexOf(activeSubject) + 1) % SUBJECTS.length];
+                  const nextSubject = examSubjects[(examSubjects.indexOf(activeSubject) + 1) % examSubjects.length];
                   switchSubject(nextSubject);
                 }}
               >
@@ -416,29 +633,7 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor }) =
       )}
 
       {/* ----------------------------------------------------- Calculator */}
-      {showCalculator && (
-        <div className="exam-calc" role="dialog" aria-label="Calculator">
-          <div className="exam-calc__head">
-            <strong>Calculator</strong>
-            <button type="button" onClick={() => setShowCalculator(false)} aria-label="Close calculator">
-              <X size={18} aria-hidden />
-            </button>
-          </div>
-          <output className="exam-calc__screen">{calcInput}</output>
-          <div className="exam-calc__keys">
-            {['7', '8', '9', '/', '4', '5', '6', '*', '1', '2', '3', '-', 'C', '0', '=', '+'].map((btn) => (
-              <button
-                key={btn}
-                type="button"
-                className={btn === '=' ? 'is-eq' : btn === 'C' ? 'is-clear' : /[0-9]/.test(btn) ? '' : 'is-op'}
-                onClick={() => handleCalcClick(btn)}
-              >
-                {btn === '*' ? '×' : btn === '/' ? '÷' : btn === '-' ? '−' : btn}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      {showCalculator && <ExamCalculator onClose={() => setShowCalculator(false)} />}
 
       {/* -------------------------------------------------------- Confirm */}
       {confirm && (

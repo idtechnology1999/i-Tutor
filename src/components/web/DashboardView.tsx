@@ -11,11 +11,13 @@ import {
   Target,
   UserRoundPen,
 } from 'lucide-react';
-import type { UserProfile } from '../../types';
+import type { DiagnosticQuestion, UserProfile } from '../../types';
+
+type Subject = DiagnosticQuestion['subject'];
 
 interface Props {
   profile: UserProfile;
-  onLaunchCBT: () => void;
+  onLaunchCBT: (subject?: Subject) => void;
   onOpenSyllabus: () => void;
   onOpenTutor: () => void;
   onUpgrade: () => void;
@@ -23,16 +25,16 @@ interface Props {
 }
 
 const SUBJECTS = [
-  { name: 'Use of English', mastery: 84, weak: 'Stress patterns' },
-  { name: 'Mathematics', mastery: 78, weak: 'Matrices' },
-  { name: 'Physics', mastery: 72, weak: 'Magnetic induction' },
-  { name: 'Chemistry', mastery: 58, weak: 'Organic isomers' },
+  { name: 'Use of English', exam: 'English' as Subject, mastery: 84, weak: 'Stress patterns' },
+  { name: 'Mathematics', exam: 'Mathematics' as Subject, mastery: 78, weak: 'Matrices' },
+  { name: 'Physics', exam: 'Physics' as Subject, mastery: 72, weak: 'Magnetic induction' },
+  { name: 'Chemistry', exam: 'Chemistry' as Subject, mastery: 58, weak: 'Organic isomers' },
 ];
 
 const TASKS = [
-  { text: 'Physics: 20 questions on motion', done: true },
-  { text: 'English: 15 vocabulary questions', done: true },
-  { text: 'Chemistry: 15 questions on organic isomers', done: false },
+  { text: 'Physics: 20 questions on motion', subject: 'Physics' as Subject, done: true },
+  { text: 'English: 15 vocabulary questions', subject: 'English' as Subject, done: true },
+  { text: 'Chemistry: 15 questions on organic isomers', subject: 'Chemistry' as Subject, done: false },
 ];
 
 // Plain-language level, always shown next to the colour.
@@ -88,7 +90,11 @@ export const DashboardView: React.FC<Props> = ({
           <>
             <h2 className="dash__next">{nextTask.text}</h2>
             <p className="dash__next-sub">About 15 minutes. Finish it to keep your streak.</p>
-            <button type="button" className="ui-btn ui-btn--light ui-btn--lg" onClick={onLaunchCBT}>
+            <button
+              type="button"
+              className="ui-btn ui-btn--light ui-btn--lg"
+              onClick={() => onLaunchCBT(nextTask.subject)}
+            >
               <Play size={18} aria-hidden /> Start now
             </button>
           </>
@@ -110,7 +116,7 @@ export const DashboardView: React.FC<Props> = ({
 
       {/* ----------------------------------------------------- Quick actions */}
       <nav className="dash__actions" aria-label="Quick actions">
-        <button type="button" onClick={onLaunchCBT}>
+        <button type="button" onClick={() => onLaunchCBT()}>
           <span className="dash__action-icon">
             <ClipboardList size={22} aria-hidden />
           </span>
@@ -187,7 +193,7 @@ export const DashboardView: React.FC<Props> = ({
                     <span>
                       {s.mastery}% · work on: {s.weak}
                     </span>
-                    <button type="button" onClick={onLaunchCBT}>
+                    <button type="button" onClick={() => onLaunchCBT(s.exam)}>
                       Practise <ArrowRight size={14} aria-hidden />
                     </button>
                   </div>

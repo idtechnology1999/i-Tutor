@@ -282,7 +282,7 @@ export const TutorPreview: React.FC = () => {
           <MessageSquareText size={16} aria-hidden />
         </span>
         <div>
-          <strong>i-Teacher tutor</strong>
+          <strong>i-Tutor tutor</strong>
           <span>Physics · Kinematics</span>
         </div>
         <div className="pv-chat__modes" aria-label="Tutor mode">

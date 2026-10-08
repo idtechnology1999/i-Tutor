@@ -1,5 +1,5 @@
 /* =============================================================================
-   i-Teacher — site chrome and public landing page
+   i-Tutor — site chrome and public landing page
    Loaded after index.css. Overrides the type tokens globally so every view
    picks up the same family; everything else is scoped to .site-* / .lp-*.
    ============================================================================= */

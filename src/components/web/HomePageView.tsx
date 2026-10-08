@@ -104,7 +104,7 @@ const TRUST = [
   {
     tone: 'amber',
     icon: PenLine,
-    label: 'i-Teacher Practice Question',
+    label: 'i-Tutor Practice Question',
     body: 'Written by us from a verified seed question, solver-checked, then reviewed. Always labelled so you know.',
   },
 ] as const;
@@ -411,7 +411,7 @@ export const HomePageView: React.FC<HomePageViewProps> = ({
             </h2>
             <p className="lp-body" data-reveal data-reveal-delay={120}>
               This is a real 2019 UTME Physics question. Pick an answer. If you
-              miss it, i-Teacher doesn&rsquo;t just show the key &mdash; it asks
+              miss it, i-Tutor doesn&rsquo;t just show the key &mdash; it asks
               you the question that gets you unstuck.
             </p>
             <ul className="lp-ticks" data-reveal data-reveal-delay={180}>
@@ -608,7 +608,7 @@ export const HomePageView: React.FC<HomePageViewProps> = ({
             </div>
             <p className="lp-body" data-reveal data-reveal-delay={120}>
               Exam season is full of rumours and fake &ldquo;expo&rdquo;. On
-              i-Teacher, one of three labels sits on every question and update,
+              i-Tutor, one of three labels sits on every question and update,
               so you always know what you&rsquo;re reading.
             </p>
           </header>
@@ -641,7 +641,7 @@ export const HomePageView: React.FC<HomePageViewProps> = ({
             </h2>
             <p className="lp-body" data-reveal data-reveal-delay={120}>
               Departmental cut-offs from the last admission cycle. Set your
-              target course and i-Teacher tracks how close your mock scores are.
+              target course and i-Tutor tracks how close your mock scores are.
             </p>
             <button type="button" className="lp-btn lp-btn--outline" onClick={onOpenSyllabus} data-reveal data-reveal-delay={180}>
               <BookOpenCheck size={18} aria-hidden />
@@ -749,7 +749,7 @@ export const HomePageView: React.FC<HomePageViewProps> = ({
             </h2>
             <p className="lp-body" data-reveal data-reveal-delay={120}>
               Still unsure? Open the tutor and ask &mdash; it can answer
-              questions about i-Teacher too.
+              questions about i-Tutor too.
             </p>
           </header>
           <div className="lp-faq__list">
@@ -841,7 +841,7 @@ export const HomePageView: React.FC<HomePageViewProps> = ({
             ))}
           </div>
           <div className="lp-footer__base">
-            <span>&copy; 2026 i-Teacher</span>
+            <span>&copy; 2026 i-Tutor</span>
             <span>
               <Flag size={14} aria-hidden /> Not affiliated with JAMB
             </span>

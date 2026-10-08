@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { UserProfile } from './types';
+import type { DiagnosticQuestion, UserProfile } from './types';
 import { Navbar } from './components/web/Navbar';
 import { initMotion } from './lib/motion';
 import { useRouter, pathForView, isAccountFlowView, isAppView } from './lib/router';
@@ -13,7 +13,7 @@ import { UpgradeView } from './components/web/UpgradeView';
 import { AITutorDrawer } from './components/web/AITutorDrawer';
 import { RegistrationFlow } from './components/screens/web/RegistrationFlow';
 
-const PLAN_KEY = 'iteacher-plan';
+const PLAN_KEY = 'itutor-plan';
 
 const storedPlan = (): UserProfile['plan'] => {
   try {
@@ -43,23 +43,23 @@ const DEFAULT_PROFILE: UserProfile = {
 };
 
 const TITLES: Record<AppView, string> = {
-  home: 'i-Teacher — UTME & Post-UTME practice that teaches',
-  cbt: 'Practice exam — i-Teacher',
-  syllabus: 'Past questions — i-Teacher',
-  dashboard: 'Home — i-Teacher',
-  setup: 'My profile — i-Teacher',
-  upgrade: 'Upgrade — i-Teacher',
-  signup: 'Create your account — i-Teacher',
-  otp: 'Verify your contact — i-Teacher',
-  login: 'Log in — i-Teacher',
-  forgot: 'Reset your password — i-Teacher',
-  reset: 'Set a new password — i-Teacher',
-  track: 'Step 1 · Exam track — i-Teacher',
-  subjects: 'Step 2 · Subjects — i-Teacher',
-  institution: 'Step 3 · Institution & course — i-Teacher',
-  goals: 'Step 4 · Exam date & goal — i-Teacher',
-  permissions: 'Step 5 · Reminders & offline — i-Teacher',
-  baseline: 'Step 6 · Placement test — i-Teacher',
+  home: 'i-Tutor — UTME & Post-UTME practice that teaches',
+  cbt: 'Practice exam — i-Tutor',
+  syllabus: 'Past questions — i-Tutor',
+  dashboard: 'Home — i-Tutor',
+  setup: 'My profile — i-Tutor',
+  upgrade: 'Upgrade — i-Tutor',
+  signup: 'Create your account — i-Tutor',
+  otp: 'Verify your contact — i-Tutor',
+  login: 'Log in — i-Tutor',
+  forgot: 'Reset your password — i-Tutor',
+  reset: 'Set a new password — i-Tutor',
+  track: 'Step 1 · Exam track — i-Tutor',
+  subjects: 'Step 2 · Subjects — i-Tutor',
+  institution: 'Step 3 · Institution & course — i-Tutor',
+  goals: 'Step 4 · Exam date & goal — i-Tutor',
+  permissions: 'Step 5 · Reminders & offline — i-Tutor',
+  baseline: 'Step 6 · Placement test — i-Tutor',
 };
 
 export function App() {
@@ -70,11 +70,17 @@ export function App() {
   // non-empty.
   const [hasAccount, setHasAccount] = useState(false);
   const [isTutorOpen, setIsTutorOpen] = useState(false);
+  // Subject the student tapped before opening the exam (pre-selected in setup).
+  const [examSubject, setExamSubject] = useState<DiagnosticQuestion['subject'] | undefined>();
   const isCbt = activeView === 'cbt';
   const inApp = isAppView(activeView);
 
   const goTo = (view: AppView) => navigate(pathForView(view));
   const openTutor = () => setIsTutorOpen(true);
+  const launchExam = (subject?: DiagnosticQuestion['subject']) => {
+    setExamSubject(subject);
+    goTo('cbt');
+  };
 
   // The exam owns the whole screen: no site header, no footer, no exits
   // except its own (which ask first).
@@ -131,12 +137,21 @@ export function App() {
 
       <main>
         {isCbt && (
-          <CBTExamView profile={profile} onExit={() => goTo('dashboard')} onOpenTutor={openTutor} />
+          <CBTExamView
+            key={examSubject ?? 'any'}
+            profile={profile}
+            presetSubject={examSubject}
+            onExit={() => {
+              setExamSubject(undefined);
+              goTo('dashboard');
+            }}
+            onOpenTutor={openTutor}
+          />
         )}
 
         {activeView === 'home' && (
           <HomePageView
-            onLaunchCBT={() => goTo('cbt')}
+            onLaunchCBT={() => launchExam()}
             onOpenSyllabus={() => goTo('syllabus')}
             onGoToDashboard={() => goTo('dashboard')}
             onOpenTutor={openTutor}
@@ -147,7 +162,7 @@ export function App() {
         {activeView === 'dashboard' && (
           <DashboardView
             profile={profile}
-            onLaunchCBT={() => goTo('cbt')}
+            onLaunchCBT={launchExam}
             onOpenSyllabus={() => goTo('syllabus')}
             onOpenTutor={openTutor}
             onUpgrade={() => goTo('upgrade')}
@@ -197,15 +212,16 @@ export function App() {
         isPremium={profile.plan === 'premium'}
         onUpgrade={() => goTo('upgrade')}
         studentName={profile.fullName.split(' ')[0]}
+        onNavigate={(view) => (view === 'cbt' ? launchExam() : goTo(view))}
       />
 
       {!isCbt && activeView !== 'home' && (
         <footer className="app-footer">
           <div className="container app-footer__inner">
             <span>
-              <strong>i-Teacher</strong> · UTME &amp; Post-UTME practice
+              <strong>i-Tutor</strong> · UTME &amp; Post-UTME practice
             </span>
-            <span>© 2026 i-Teacher · Not affiliated with JAMB</span>
+            <span>© 2026 i-Tutor · Not affiliated with JAMB</span>
           </div>
         </footer>
       )}
