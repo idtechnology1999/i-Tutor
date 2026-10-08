@@ -16,12 +16,10 @@ import {
   Languages,
   Layers,
   LayoutGrid,
-  ListChecks,
   MessageSquareText,
   Play,
   RotateCcw,
   Sigma,
-  Timer,
   X,
 } from 'lucide-react';
 import type { DiagnosticQuestion, UserProfile } from '../../types';
@@ -226,7 +224,6 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
       })),
     ];
     const chosen = choices.find((c) => c.id === pickChoice) ?? choices[0];
-    const ChosenIcon = chosen.icon;
 
     return (
       <div className="xs">
@@ -234,168 +231,95 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
           <button type="button" className="xs__back" onClick={onExit}>
             <ArrowLeft size={18} aria-hidden /> Home
           </button>
-          <span className="xs__bar-title">Practice exam</span>
-          <span className="xs__bar-spacer" aria-hidden />
         </header>
 
         <div className="xs__wrap">
-          <section className="xs__intro">
-            <p className="xs__eyebrow">
-              <Timer size={16} aria-hidden /> Timed like the real CBT
-            </p>
-            <h1>{presetCourse ? `${presetCourse.name} practice` : 'Set up your exam'}</h1>
-            <p className="xs__lead">
-              Choose a subject and how many questions you want. The timer only starts when you
-              press <b>Start exam</b>.
-            </p>
+          <header className="xs__intro">
+            <h1>{presetCourse ? presetCourse.name : 'Practice exam'}</h1>
+            <p>Pick a subject, choose how many questions, then start. You get about 1 minute per question.</p>
+          </header>
+
+          <section className="xs__group" aria-labelledby="xs-subject">
+            <h2 id="xs-subject">Subject</h2>
+            <div className="xs__list" role="radiogroup" aria-labelledby="xs-subject">
+              {choices.map((c) => {
+                const Icon = c.icon;
+                const on = pickChoice === c.id;
+                const n = poolFor(bank, c.id, courseSubjects).length;
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    className={`xs__row${on ? ' is-on' : ''}`}
+                    disabled={n === 0}
+                    onClick={() => {
+                      setPickChoice(c.id);
+                      setPickCount(n);
+                    }}
+                  >
+                    <span className="xs__row-icon">
+                      <Icon size={18} aria-hidden />
+                    </span>
+                    <span className="xs__row-name">{c.label}</span>
+                    <span className="xs__row-n">{n === 0 ? 'Coming soon' : n}</span>
+                    <span className="xs__row-tick" aria-hidden>
+                      {on && <Check size={18} strokeWidth={2.5} />}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </section>
 
-          <div className="xs__grid">
-            <div className="xs__steps">
-              {/* Step 1 */}
-              <section className="xs__step">
-                <h2>
-                  <span className="xs__num">1</span> Choose a subject
-                </h2>
-                <div className="xs__subjects" role="radiogroup" aria-label="Subject">
-                  {choices.map((c, i) => {
-                    const Icon = c.icon;
-                    const on = pickChoice === c.id;
-                    const n = poolFor(bank, c.id, courseSubjects).length;
-                    return (
-                      <button
-                        key={c.id}
-                        type="button"
-                        role="radio"
-                        aria-checked={on}
-                        className={`xs__subject${on ? ' is-on' : ''}${c.id === 'all' || c.id === 'course' ? ' xs__subject--all' : ''}`}
-                        style={{ ['--i' as string]: i }}
-                        onClick={() => {
-                          setPickChoice(c.id);
-                          setPickCount(n);
-                        }}
-                      >
-                        <span className="xs__subject-icon">
-                          <Icon size={22} aria-hidden />
-                        </span>
-                        <span className="xs__subject-text">
-                          <strong>{c.label}</strong>
-                          <small>{c.note}</small>
-                        </span>
-                        <span className="xs__subject-count">
-                          {n} {n === 1 ? 'question' : 'questions'}
-                        </span>
-                        <span className="xs__tick" aria-hidden>
-                          <Check size={14} />
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-
-              {/* Step 2 */}
-              <section className="xs__step">
-                <h2>
-                  <span className="xs__num">2</span> How many questions?
-                </h2>
-                <div className="xs__counts" role="radiogroup" aria-label="Number of questions">
-                  {options.map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      role="radio"
-                      aria-checked={count === n}
-                      className={count === n ? 'is-on' : ''}
-                      onClick={() => setPickCount(n)}
-                    >
-                      <strong>{n}</strong>
-                      <small>{n === pool.length && options.length > 1 ? 'all' : minutesLabel(n)}</small>
-                    </button>
-                  ))}
-                </div>
-                <p className="xs__hint">
-                  {count === 0
-                    ? 'No questions for this subject yet — pick another subject.'
-                    : 'You get about 1 minute per question, like the real exam.'}
-                </p>
-              </section>
-
-              {/* Step 3 */}
-              <section className="xs__step">
-                <h2>
-                  <span className="xs__num">3</span> Good to know
-                </h2>
-                <ul className="xs__rules">
-                  <li>
-                    <span>
-                      <Check size={16} aria-hidden />
-                    </span>
-                    Tap an answer to choose it. You can change it any time.
-                  </li>
-                  <li>
-                    <span>
-                      <Flag size={16} aria-hidden />
-                    </span>
-                    Not sure? Flag the question and come back later.
-                  </li>
-                  <li>
-                    <span>
-                      <Calculator size={16} aria-hidden />
-                    </span>
-                    A calculator is there if you need it.
-                  </li>
-                  <li>
-                    <span>
-                      <Clock3 size={16} aria-hidden />
-                    </span>
-                    When time runs out, your answers are submitted for you.
-                  </li>
-                </ul>
-              </section>
-            </div>
-
-            {/* Summary: side panel on desktop, pinned bar on phones */}
-            <aside className="xs__summary" aria-label="Your exam">
-              <div className="xs__summary-card">
-                <span className="xs__summary-icon">
-                  <ChosenIcon size={26} aria-hidden />
-                </span>
-                <p className="xs__summary-label">Your exam</p>
-                <h3>{chosen.label}</h3>
-                <dl className="xs__facts">
-                  <div>
-                    <dt>
-                      <ListChecks size={16} aria-hidden /> Questions
-                    </dt>
-                    <dd>{count}</dd>
-                  </div>
-                  <div>
-                    <dt>
-                      <Timer size={16} aria-hidden /> Time
-                    </dt>
-                    <dd>{minutesLabel(count)}</dd>
-                  </div>
-                </dl>
-                <button type="button" className="xs__start" onClick={startExam} disabled={count === 0}>
-                  <Play size={18} aria-hidden /> Start exam
-                </button>
-                <p className="xs__fine">Answers and explanations are shown after you submit.</p>
+          {count > 0 && (
+            <section className="xs__group" aria-labelledby="xs-count">
+              <h2 id="xs-count">Questions</h2>
+              <div className="xs__seg" role="radiogroup" aria-labelledby="xs-count">
+                {options.map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    role="radio"
+                    aria-checked={count === n}
+                    className={count === n ? 'is-on' : ''}
+                    onClick={() => setPickCount(n)}
+                  >
+                    {n === pool.length && options.length > 1 ? `All ${n}` : n}
+                  </button>
+                ))}
               </div>
-            </aside>
-          </div>
-        </div>
+            </section>
+          )}
 
-        <div className="xs__dock">
-          <div>
-            <strong>{chosen.label}</strong>
-            <span>
-              {count} {count === 1 ? 'question' : 'questions'} · {minutesLabel(count)}
-            </span>
+          <div className="xs__go">
+            <p className="xs__sum">
+              <strong>{chosen.label}</strong> · {count} {count === 1 ? 'question' : 'questions'} · {minutesLabel(count)}
+            </p>
+            <button type="button" className="xs__start" onClick={startExam} disabled={count === 0}>
+              <Play size={18} aria-hidden /> Start exam
+            </button>
+            <p className="xs__fine">The timer starts when you press Start.</p>
           </div>
-          <button type="button" className="xs__start" onClick={startExam} disabled={count === 0}>
-            <Play size={18} aria-hidden /> Start
-          </button>
+
+          <details className="xs__how">
+            <summary>How the exam works</summary>
+            <ul>
+              <li>
+                <Check size={16} aria-hidden /> Tap an answer to choose it. You can change it any time.
+              </li>
+              <li>
+                <Flag size={16} aria-hidden /> Not sure? Flag it and come back later.
+              </li>
+              <li>
+                <Calculator size={16} aria-hidden /> There’s a calculator if you need it.
+              </li>
+              <li>
+                <Clock3 size={16} aria-hidden /> When time runs out, your answers are submitted for you.
+              </li>
+            </ul>
+          </details>
         </div>
       </div>
     );
