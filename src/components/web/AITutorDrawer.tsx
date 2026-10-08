@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { askTutor, demoExplain, explainQuestion } from '../../services/tutor';
+import { isLive } from '../../services/api';
 import { ArrowRight, AudioLines, BadgeCheck, LockOpen, MessageSquareText, Mic, SendHorizontal, X } from 'lucide-react';
 import { VoiceLesson } from './VoiceLesson';
 import { FREE_DAILY, readUsed, writeUsed } from '../../lib/tutor-quota';
-import { hintSteps, solveSteps } from '../../data/tutors';
 import type { SolveRequest, TutorPersona } from '../../data/tutors';
 import type { AppView } from '../../lib/router';
 
@@ -117,20 +118,6 @@ const guideFor = (query: string) => {
   return GUIDE.find((g) => g.test.test(q)) ?? null;
 };
 
-const replyFor = (query: string) => {
-  const q = query.toLowerCase();
-  if (q.includes('isomer') || q.includes('chem')) {
-    return 'Good question on Organic Chemistry.\n\n• **Functional group isomers** have the same formula but different groups — e.g. ethanol C₂H₅OH (alcohol) and methoxymethane CH₃OCH₃ (ether).\n• **Chain isomers** have the same group but a different carbon chain — e.g. butane and 2-methylpropane.\n\nQuick check: which of the two would have the higher boiling point, ethanol or methoxymethane? Tell me what you think and why.';
-  }
-  if (q.includes('kinematic') || q.includes('motion') || q.includes('physic')) {
-    return "Let's work through motion questions together.\n\n1. If a body starts from rest, u = 0, so s = ut + ½at² becomes s = ½at².\n2. If time isn't given, use v² = u² + 2as.\n\nTry this: a car starts from rest and reaches 20 m/s in 5 s. What is its acceleration? Show me your first step.";
-  }
-  if (q.includes('stress') || q.includes('english') || q.includes('oral')) {
-    return 'Stress questions are about which syllable is said loudest.\n\n• Most two-syllable **nouns** stress the first syllable: PREsent, REcord.\n• Most two-syllable **verbs** stress the second: preSENT, reCORD.\n\nYour turn: in “She will reCORD the song”, is record a noun or a verb?';
-  }
-  return "Let's break it down step by step.\n\n1. What is the question really asking for?\n2. What information are you given?\n3. Which formula or rule links them?\n\nPaste the question here and tell me how far you got — I'll guide you from there.";
-};
-
 const PROMPTS = [
   'How do I use i-Tutor?',
   'Explain chain vs functional isomers',
@@ -155,21 +142,34 @@ export const AITutorDrawer: React.FC<Props> = ({
         ? `Hi ${studentName}, it’s ${tutor.name}, your personal tutor. Send me any question — or tap “Solve with ${tutor.name}” under a question — and we’ll work through it together.`
         : `Hi ${studentName}! I'm your i-Tutor tutor. Ask me about any JAMB question in English, Maths, Physics or Chemistry. I'll guide you to the answer step by step. You can also ask me how to find anything on the site.`,
     },
-    ...(solve
-      ? [
-          {
-            sender: 'user' as const,
-            text:
-              solve.mode === 'hint'
-                ? `I’m stuck on this ${solve.subject} question — can I have a hint? ${solve.question}`
-                : `Please explain this ${solve.subject} question: ${solve.question}`,
-          },
-          { sender: 'tutor' as const, text: solve.mode === 'hint' ? hintSteps(solve, tutor) : solveSteps(solve, tutor) },
-        ]
-      : []),
   ]);
+  // Opened from Ask AI / Solve with…: the question and its explanation come
+  // first. Demo mode answers instantly; the backend answers after a moment.
+  const [seedReply, setSeedReply] = useState<string | null>(() =>
+    solve && !isLive ? demoExplain(solve, tutor?.id) : null,
+  );
+  useEffect(() => {
+    if (!solve || !isLive) return;
+    explainQuestion(solve, tutor?.id)
+      .then(setSeedReply)
+      .catch((err: Error) => setSeedReply(`Sorry, I couldn’t explain that just now. ${err.message}`));
+  }, [solve, tutor?.id]);
+  const seeded: Message[] = solve
+    ? [
+        {
+          sender: 'user',
+          text:
+            solve.mode === 'hint'
+              ? `I’m stuck on this ${solve.subject} question — can I have a hint? ${solve.question}`
+              : `Please explain this ${solve.subject} question: ${solve.question}`,
+        },
+        ...(seedReply ? [{ sender: 'tutor' as const, text: seedReply }] : []),
+      ]
+    : [];
+  const shown = [...messages.slice(0, 1), ...seeded, ...messages.slice(1)];
   const [inputText, setInputText] = useState('');
   const [typing, setTyping] = useState(false);
+  const thinking = typing || (Boolean(solve) && seedReply === null);
   const [used, setUsed] = useState(readUsed);
   // Voice lesson: Premium only; free users see what it is and how to unlock it.
   const [voice, setVoice] = useState(false);
@@ -183,7 +183,7 @@ export const AITutorDrawer: React.FC<Props> = ({
       top: logRef.current.scrollHeight,
       behavior: 'smooth',
     });
-  }, [messages, typing]);
+  }, [messages, typing, seedReply]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -198,7 +198,7 @@ export const AITutorDrawer: React.FC<Props> = ({
 
   const handleSend = (textToSend?: string) => {
     const query = (textToSend ?? inputText).trim();
-    if (!query || typing) return;
+    if (!query || thinking) return;
     const guide = guideFor(query);
     if (blocked && !guide) return;
 
@@ -221,10 +221,11 @@ export const AITutorDrawer: React.FC<Props> = ({
     }
 
     setTyping(true);
-    window.setTimeout(() => {
-      setTyping(false);
-      setMessages((prev) => [...prev, { sender: 'tutor', text: replyFor(query) }]);
-    }, 900);
+    const history = shown.map((m) => ({ role: m.sender === 'user' ? ('student' as const) : ('tutor' as const), text: m.text }));
+    askTutor(query, history, tutor?.id)
+      .then((reply) => setMessages((prev) => [...prev, { sender: 'tutor', text: reply }]))
+      .catch((err: Error) => setMessages((prev) => [...prev, { sender: 'tutor', text: `Sorry — ${err.message}` }]))
+      .finally(() => setTyping(false));
   };
 
   return (
@@ -317,7 +318,7 @@ export const AITutorDrawer: React.FC<Props> = ({
         {!voice && (
           <>
             <div className="tutor__log" ref={logRef} aria-live="polite">
-              {messages.map((m, idx) => (
+              {shown.map((m, idx) => (
                 <React.Fragment key={idx}>
                   <p className={`tutor__msg tutor__msg--${m.sender}`}>{formatText(m.text)}</p>
                   {m.links && onNavigate && (
@@ -339,7 +340,7 @@ export const AITutorDrawer: React.FC<Props> = ({
                   )}
                 </React.Fragment>
               ))}
-              {typing && (
+              {thinking && (
                 <p className="tutor__msg tutor__msg--tutor tutor__typing" aria-label="Tutor is typing">
                   <i />
                   <i />
@@ -391,7 +392,7 @@ export const AITutorDrawer: React.FC<Props> = ({
                     placeholder="Type your question…"
                     aria-label="Your question"
                   />
-                  <button type="submit" disabled={!inputText.trim() || typing} aria-label="Send">
+                  <button type="submit" disabled={!inputText.trim() || thinking} aria-label="Send">
                     <SendHorizontal size={18} aria-hidden />
                   </button>
                 </form>

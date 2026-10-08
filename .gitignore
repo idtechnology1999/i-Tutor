@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment files (keys live on the backend; only .env.example is shared)
+.env
+.env.*
+!.env.example

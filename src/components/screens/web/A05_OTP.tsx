@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { resendCode, verifyCode } from '../../../services/auth';
 import { AlertCircleIcon, RefreshCwIcon } from '../../Icons';
 import { AuthShell, TrustList } from './shared';
 
@@ -100,14 +101,18 @@ export const A05_OTP: React.FC<Props> = ({
   const verify = () => {
     if (!isComplete || submitting) return;
     setSubmitting(true);
-    window.setTimeout(() => {
-      setSubmitting(false);
-      // Placeholder check: any six digits pass, since there is no backend yet.
-      onVerified();
-    }, 700);
+    // Demo mode accepts any six digits; with a backend the code is checked there.
+    verifyCode(phoneOrEmail, digits.join(''))
+      .then(() => onVerified())
+      .catch((err: Error) => {
+        setAttempts((n) => n + 1);
+        setError(err.message);
+      })
+      .finally(() => setSubmitting(false));
   };
 
   const handleResend = () => {
+    resendCode(phoneOrEmail).catch((err: Error) => setError(err.message));
     setResendIn(RESEND_SECONDS);
     setError(null);
     setAttempts(0);

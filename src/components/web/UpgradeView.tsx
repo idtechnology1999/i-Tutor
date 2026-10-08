@@ -16,6 +16,9 @@ import {
   ChartNoAxesColumnIncreasing,
 } from 'lucide-react';
 import type { UserProfile } from '../../types';
+import { payForPlan } from '../../services/payments';
+import type { PlanId } from '../../services/payments';
+import { isLive } from '../../services/api';
 import { TutorPicker } from './TutorPicker';
 import { tutorById } from '../../data/tutors';
 
@@ -35,7 +38,6 @@ interface Props {
    webhook before calling `onActivated` — never trust the client alone.
    -------------------------------------------------------------------------- */
 
-type PlanId = 'monthly' | 'quarter';
 type Method = 'card' | 'transfer' | 'ussd';
 type Step = 'plan' | 'pay' | 'processing' | 'done';
 
@@ -143,17 +145,23 @@ export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor
   };
   const cardOk = !cardErrors.number && !cardErrors.expiry && !cardErrors.cvv;
 
-  const [reference] = useState(
-    () => `ITUT-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
-  );
+  const [reference, setReference] = useState('');
+  const [payError, setPayError] = useState('');
 
   const confirmPayment = () => {
     setStep('processing');
-    // Test mode: simulate the gateway + webhook round trip.
-    window.setTimeout(() => {
-      onActivated();
-      setStep('done');
-    }, 2200);
+    setPayError('');
+    // Demo: simulated gateway. Live: Paystack checkout, then the server confirms.
+    payForPlan(plan, method)
+      .then(({ reference: ref }) => {
+        setReference(ref);
+        onActivated();
+        setStep('done');
+      })
+      .catch((err: Error) => {
+        setPayError(err.message);
+        setStep('pay');
+      });
   };
 
   const onPayCard = (event: React.FormEvent) => {
@@ -321,9 +329,16 @@ export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor
             <strong>{naira(amount)}</strong>
           </div>
 
-          <div className="pay__test" role="note">
-            Test mode — no real money is taken.
-          </div>
+          {payError && (
+            <div className="pay__test pay__error" role="alert">
+              {payError}
+            </div>
+          )}
+          {!isLive && (
+            <div className="pay__test" role="note">
+              Test mode — no real money is taken.
+            </div>
+          )}
 
           <h2 className="pay__h2">How would you like to pay?</h2>
           <div className="pay__methods" role="tablist" aria-label="Payment method">

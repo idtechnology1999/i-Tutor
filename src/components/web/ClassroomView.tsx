@@ -18,7 +18,8 @@ import { recogniserCtor, speakText } from '../../lib/speech';
 import type { Recogniser } from '../../lib/speech';
 import type { UserProfile } from '../../types';
 import type { TutorPersona } from '../../data/tutors';
-import { SYLLABUS, lessonFor, outlineFor, syllabusSubject } from '../../data/syllabus';
+import { SYLLABUS, syllabusSubject } from '../../data/syllabus';
+import { getLesson } from '../../services/classroom';
 import type { BoardLine, Lesson } from '../../data/syllabus';
 import { FREE_DAILY, readUsed, writeUsed } from '../../lib/tutor-quota';
 
@@ -203,14 +204,17 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
       }
       writeUsed(used + 1);
     }
-    const l = lessonFor(subj, top) ?? outlineFor(subj, top);
     setSubject(subj);
     setTopic(top);
-    setLesson(l);
-    setStep(0);
-    setQuiz(false);
-    setPen(EMPTY_PEN);
-    teachStep(l, 0);
+    getLesson(subj, top, tutor?.id)
+      .then((l) => {
+        setLesson(l);
+        setStep(0);
+        setQuiz(false);
+        setPen(EMPTY_PEN);
+        teachStep(l, 0);
+      })
+      .catch((err: Error) => say(`I couldn’t prepare that lesson just now. ${err.message}`));
   };
 
   const next = () => {

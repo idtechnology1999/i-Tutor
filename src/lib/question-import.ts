@@ -20,6 +20,8 @@
    engine ran so the review screen can warn accordingly.
    -------------------------------------------------------------------------- */
 
+import { API_BASE, isLive } from '../services/api';
+
 export interface ParsedQuestion {
   number: number;
   question: string;
@@ -86,8 +88,9 @@ const toBase64 = (file: File) =>
 
 /** Checks the admin key against the server. `offline` means no server here. */
 export async function checkAdmin(key: string): Promise<{ status: 'ok' | 'wrong' | 'offline' | 'unconfigured'; ai?: boolean }> {
+  if (!isLive) return { status: 'offline' };
   try {
-    const res = await fetch('/api/admin-check', { headers: { 'x-admin-key': key } });
+    const res = await fetch(`${API_BASE}/api/admin-check`, { headers: { 'x-admin-key': key } });
     const type = res.headers.get('content-type') ?? '';
     if (!type.includes('application/json')) return { status: 'offline' };
     const data = (await res.json()) as { ok: boolean; ai?: boolean };
@@ -106,7 +109,8 @@ export async function organiseWithAI(req: ImportRequest): Promise<ImportResult> 
   }
 
   try {
-    const res = await fetch('/api/parse-questions', {
+    if (!isLive) throw new Error('offline');
+    const res = await fetch(`${API_BASE}/api/parse-questions`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-admin-key': adminKey.get() },
       body: JSON.stringify({

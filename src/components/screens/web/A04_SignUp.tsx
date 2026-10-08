@@ -19,6 +19,8 @@ interface Props {
   onSignInInstead: () => void;
   isLoading?: boolean;
   loadingMessage?: string;
+  /** Message from the server when sign-up fails. */
+  serverError?: string;
 }
 
 type Channel = 'sms' | 'email';
@@ -29,6 +31,7 @@ export const A04_SignUp: React.FC<Props> = ({
   onSignInInstead,
   isLoading = false,
   loadingMessage,
+  serverError,
 }) => {
   const [fullName, setFullName] = useState('');
   const [fullNameTouched, setFullNameTouched] = useState(false);
@@ -130,6 +133,12 @@ export const A04_SignUp: React.FC<Props> = ({
         onSubmit={handleSubmit}
         noValidate
       >
+        {serverError ? (
+          <div className="form-banner is-error" role="alert">
+            <AlertCircleIcon size={16} />
+            <span>{serverError}</span>
+          </div>
+        ) : null}
         {submitAttempted && !isFormValid ? (
           <div className="form-banner is-error" role="alert">
             <AlertCircleIcon size={16} />

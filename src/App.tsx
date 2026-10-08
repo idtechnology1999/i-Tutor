@@ -18,6 +18,8 @@ import { PostUtmeView } from './components/web/PostUtmeView';
 import { ClassroomView } from './components/web/ClassroomView';
 import type { ExamType } from './lib/cms';
 import { tutorById } from './data/tutors';
+import { loadProfile, saveProfile } from './services/profile';
+import { logOut } from './services/auth';
 import { FREE_DAILY, readUsed, writeUsed } from './lib/tutor-quota';
 import type { SolveRequest } from './data/tutors';
 
@@ -171,7 +173,21 @@ export function App() {
 
   const handleUpdateProfile = (updated: Partial<UserProfile>) => {
     setProfile((prev) => ({ ...prev, ...updated }));
+    // With a backend, changes are saved to the student's account (demo: no-op).
+    saveProfile(updated).catch(() => {
+      /* kept locally; the next change retries */
+    });
   };
+
+  // With a backend, the signed-in student (incl. their real plan) comes from the server.
+  useEffect(() => {
+    loadProfile().then((me) => {
+      if (me) {
+        setProfile(me);
+        setHasAccount(true);
+      }
+    });
+  }, []);
 
   const activatePremium = () => {
     handleUpdateProfile({ plan: 'premium' });
@@ -294,6 +310,9 @@ export function App() {
             onUpdateProfile={handleUpdateProfile}
             onUpgrade={() => goTo('upgrade')}
             onLogOut={() => {
+              logOut().catch(() => {
+                /* signed out locally either way */
+              });
               setHasAccount(false);
               goTo('home');
             }}

@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { resetPassword } from '../../../services/auth';
 import {
   EyeIcon,
   EyeOffIcon,
@@ -13,6 +14,8 @@ interface Props {
   onBack: () => void;
   onSuccess: () => void;
   onGoToLogin: () => void;
+  /** Where the reset code was sent (from the previous step). */
+  phoneOrEmail?: string;
 }
 
 const RULES: { id: string; label: string; test: (value: string) => boolean }[] = [
@@ -30,6 +33,7 @@ export const A08_ResetPassword: React.FC<Props> = ({
   onBack,
   onSuccess,
   onGoToLogin,
+  phoneOrEmail,
 }) => {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -38,6 +42,7 @@ export const A08_ResetPassword: React.FC<Props> = ({
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
+  const [serverError, setServerError] = useState('');
 
   const strength = useMemo(() => calculatePasswordStrength(password), [password]);
 
@@ -65,11 +70,16 @@ export const A08_ResetPassword: React.FC<Props> = ({
     if (!isFormValid || saving) return;
 
     setSaving(true);
-    window.setTimeout(() => {
-      setSaving(false);
-      setDone(true);
-      onSuccess();
-    }, 800);
+    setServerError('');
+    // TODO(backend): the reset needs the code from the SMS/email (or a link
+    // token). This screen has no code field yet — see docs/BACKEND_CONTRACT.md.
+    resetPassword(phoneOrEmail ?? '', '', password)
+      .then(() => {
+        setDone(true);
+        onSuccess();
+      })
+      .catch((err: Error) => setServerError(err.message))
+      .finally(() => setSaving(false));
   };
 
   if (done) {
@@ -145,6 +155,12 @@ export const A08_ResetPassword: React.FC<Props> = ({
       }
     >
       <form className="auth__form" onSubmit={handleSubmit} noValidate>
+        {serverError ? (
+          <div className="form-banner is-error" role="alert">
+            <AlertCircleIcon size={16} />
+            <span>{serverError}</span>
+          </div>
+        ) : null}
         {submitAttempted && !isFormValid ? (
           <div className="form-banner is-error" role="alert">
             <AlertCircleIcon size={16} />

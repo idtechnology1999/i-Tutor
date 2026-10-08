@@ -1,4 +1,5 @@
 import React, { useCallback, useState } from 'react';
+import { signUp } from '../../../services/auth';
 import {
   examsLabel,
   examsOf,
@@ -74,6 +75,8 @@ export const RegistrationFlow: React.FC<Props> = ({
   onFinish,
 }) => {
   const [pendingContact, setPendingContact] = useState('');
+  const [signingUp, setSigningUp] = useState(false);
+  const [signUpError, setSignUpError] = useState('');
 
   const goHome = useCallback(() => onNavigate('home'), [onNavigate]);
 
@@ -153,12 +156,20 @@ export const RegistrationFlow: React.FC<Props> = ({
           <A04_SignUp
             onBack={goHome}
             onSignInInstead={() => onNavigate('login')}
-            onSubmit={({ fullName, phoneOrEmail }) => {
-              onUpdateProfile({ fullName, phoneOrEmail });
-              setPendingContact(phoneOrEmail);
-              onNavigate('otp');
+            onSubmit={(input) => {
+              setSigningUp(true);
+              setSignUpError('');
+              signUp(input)
+                .then(() => {
+                  onUpdateProfile({ fullName: input.fullName, phoneOrEmail: input.phoneOrEmail });
+                  setPendingContact(input.phoneOrEmail);
+                  onNavigate('otp');
+                })
+                .catch((err: Error) => setSignUpError(err.message))
+                .finally(() => setSigningUp(false));
             }}
-            isLoading={false}
+            isLoading={signingUp}
+            serverError={signUpError}
           />
         );
 
@@ -206,6 +217,7 @@ export const RegistrationFlow: React.FC<Props> = ({
       case 'reset':
         return (
           <A08_ResetPassword
+            phoneOrEmail={pendingContact}
             onBack={() => onNavigate('forgot')}
             onGoToLogin={() => onNavigate('login')}
             onSuccess={() => {

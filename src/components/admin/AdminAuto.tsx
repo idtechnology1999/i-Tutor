@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Check, CircleDashed, LoaderCircle, SendHorizontal, Workflow, X } from 'lucide-react';
 import { cms, useCms } from '../../lib/cms';
-import { AUDIENCES, STARTERS, planLocally } from '../../lib/auto-agent';
+import { AUDIENCES, STARTERS } from '../../lib/auto-agent';
+import { planAuto, sendStudentEmail } from '../../services/admin';
+import { isLive } from '../../services/api';
 import type { Audience, AutoAction, AutoPlan } from '../../lib/auto-agent';
 import type { AdminNav } from './AdminApp';
 
@@ -74,27 +76,31 @@ export const AdminAuto: React.FC<Props> = ({ open, onClose, nav }) => {
     const youId = idRef.current++;
     setTurns((prev) => [...prev, { id: youId, who: 'you', text: m }]);
     setThinking(true);
-    window.setTimeout(() => {
-      const plan = planLocally(m, { questions, news });
-      setThinking(false);
-      const id = idRef.current++;
-      setTurns((prev) => [
-        ...prev,
-        {
-          id,
-          who: 'auto',
-          text: plan.reply,
-          plan,
-          run: plan.action ? 'ready' : undefined,
-        },
-      ]);
-    }, 650);
+    planAuto(m, { questions, news })
+      .then((plan) => {
+        const id = idRef.current++;
+        setTurns((prev) => [
+          ...prev,
+          {
+            id,
+            who: 'auto',
+            text: plan.reply,
+            plan,
+            run: plan.action ? 'ready' : undefined,
+          },
+        ]);
+      })
+      .catch((err: Error) => {
+        const id = idRef.current++;
+        setTurns((prev) => [...prev, { id, who: 'auto', text: `Sorry — ${err.message}` }]);
+      })
+      .finally(() => setThinking(false));
   };
 
   const narrow = () => window.matchMedia('(max-width: 860px)').matches;
 
   /** Do the action for real. Returns what to say afterwards. */
-  const perform = (a: AutoAction): string => {
+  const perform = (a: AutoAction): string | Promise<string> => {
     switch (a.kind) {
       case 'open':
         nav.go(a.section, { filter: a.filter, scope: a.scope });
@@ -132,24 +138,33 @@ export const AdminAuto: React.FC<Props> = ({ open, onClose, nav }) => {
         cms.setStatus(a.ids, a.status);
         return `${a.status === 'published' ? 'Published' : 'Unpublished'} ${a.ids.length} question${a.ids.length === 1 ? '' : 's'}.`;
       case 'email':
-        cms.log(`Email “${a.subject}” queued for ${a.audience.toLowerCase()}.`);
-        nav.notify(`Email queued for ${a.audience.toLowerCase()}.`);
-        return 'Queued and logged in Activity. Emails go out once the mail server is connected — in demo mode nothing is actually sent.';
+        return sendStudentEmail(a.audience, a.subject, a.body).then(({ queued }) => {
+          nav.notify(`Email queued for ${a.audience.toLowerCase()}.`);
+          return isLive
+            ? `Queued for ${queued} student${queued === 1 ? '' : 's'} and logged in Activity.`
+            : 'Queued and logged in Activity. Emails go out once the mail server is connected — in demo mode nothing is actually sent.';
+        });
     }
   };
+
+  const finish = (id: number, action: AutoAction) =>
+    Promise.resolve()
+      .then(() => perform(action))
+      .then((result) => patch(id, { run: 'done', result }))
+      .catch((err: Error) => patch(id, { run: 'done', result: `That didn’t work: ${err.message}` }));
 
   const run = (turn: Turn) => {
     const action = turn.plan?.action;
     if (!action) return;
     if (isNavigation(action) && !turn.plan?.steps) {
-      patch(turn.id, { run: 'done', result: perform(action) });
+      finish(turn.id, action);
       return;
     }
     const steps = turn.plan?.steps ?? [];
     patch(turn.id, { run: 'running', ticked: 0 });
     // Tick the steps off one by one, then do the work.
     steps.forEach((_, i) => window.setTimeout(() => patch(turn.id, { ticked: i + 1 }), 380 * (i + 1)));
-    window.setTimeout(() => patch(turn.id, { run: 'done', result: perform(action) }), 380 * steps.length + 200);
+    window.setTimeout(() => finish(turn.id, action), 380 * steps.length + 200);
   };
 
   return (

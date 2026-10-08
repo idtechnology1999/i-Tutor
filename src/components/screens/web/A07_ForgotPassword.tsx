@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { requestPasswordReset } from '../../../services/auth';
 import { CheckIcon, SendIcon, AlertCircleIcon, ShieldCheckIcon } from '../../Icons';
 import { normalizeNigerianPhone } from '../../../utils/phone';
 import { AuthShell, FormField, TrustList } from './shared';
@@ -22,6 +23,7 @@ export const A07_ForgotPassword: React.FC<Props> = ({
   const [sending, setSending] = useState(false);
   const [phase, setPhase] = useState<Phase>('form');
   const [destination, setDestination] = useState('');
+  const [serverError, setServerError] = useState('');
 
   const validation = normalizeNigerianPhone(identifier);
   const error =
@@ -39,12 +41,15 @@ export const A07_ForgotPassword: React.FC<Props> = ({
 
     const value = validation.formatted || identifier.trim();
     setSending(true);
-    window.setTimeout(() => {
-      setSending(false);
-      setDestination(value);
-      setPhase('sent');
-      onSendCode(value);
-    }, 700);
+    setServerError('');
+    requestPasswordReset(value)
+      .then(() => {
+        setDestination(value);
+        setPhase('sent');
+        onSendCode(value);
+      })
+      .catch((err: Error) => setServerError(err.message))
+      .finally(() => setSending(false));
   };
 
   if (phase === 'sent') {
@@ -133,6 +138,12 @@ export const A07_ForgotPassword: React.FC<Props> = ({
       }
     >
       <form className="auth__form" onSubmit={handleSubmit} noValidate>
+        {serverError ? (
+          <div className="form-banner is-error" role="alert">
+            <AlertCircleIcon size={16} />
+            <span>{serverError}</span>
+          </div>
+        ) : null}
         {submitAttempted && !validation.isValid ? (
           <div className="form-banner is-error" role="alert">
             <AlertCircleIcon size={16} />

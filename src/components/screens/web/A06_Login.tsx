@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { logIn } from '../../../services/auth';
+import { isLive } from '../../../services/api';
+import type { ApiError } from '../../../services/api';
 import {
   EyeIcon,
   EyeOffIcon,
@@ -35,6 +38,7 @@ export const A06_Login: React.FC<Props> = ({
   const [attempts, setAttempts] = useState(0);
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [serverError, setServerError] = useState('');
 
   const validation = normalizeNigerianPhone(identifier);
   const identifierError =
@@ -56,11 +60,15 @@ export const A06_Login: React.FC<Props> = ({
     if (!isFormValid || submitting) return;
 
     setSubmitting(true);
-    window.setTimeout(() => {
-      setSubmitting(false);
-      // Placeholder: no credential check yet, so the happy path always passes.
-      onSuccess();
-    }, 650);
+    setServerError('');
+    // Demo mode lets any valid-looking login in; the backend checks the password.
+    logIn(validation.formatted || identifier.trim(), password)
+      .then(() => onSuccess())
+      .catch((err: ApiError) => {
+        if (err.status === 401) failAttempt();
+        setServerError(err.message);
+      })
+      .finally(() => setSubmitting(false));
   };
 
   const failAttempt = () => {
@@ -102,6 +110,12 @@ export const A06_Login: React.FC<Props> = ({
       }
     >
       <form className="auth__form" onSubmit={handleSubmit} noValidate>
+        {serverError ? (
+          <div className="form-banner is-error" role="alert">
+            <AlertCircleIcon size={16} />
+            <span>{serverError}</span>
+          </div>
+        ) : null}
         {isLocked ? (
           <div className="form-banner is-error" role="alert">
             <LockIcon size={16} />
@@ -212,14 +226,18 @@ export const A06_Login: React.FC<Props> = ({
           {submitting ? 'Logging in…' : 'Log in'}
         </button>
 
-        <button
-          type="button"
-          className="btn btn--outline btn--block"
-          onClick={onBiometricAuth}
-        >
-          <FingerprintIcon size={17} />
-          Use fingerprint or face unlock
-        </button>
+        {/* Demo only: it signs in without a check. With a backend this needs
+            passkeys (WebAuthn) first, so it's hidden — see BACKEND_CONTRACT. */}
+        {!isLive && (
+          <button
+            type="button"
+            className="btn btn--outline btn--block"
+            onClick={onBiometricAuth}
+          >
+            <FingerprintIcon size={17} />
+            Use fingerprint or face unlock
+          </button>
+        )}
       </form>
     </AuthShell>
   );
