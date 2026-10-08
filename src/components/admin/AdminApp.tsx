@@ -28,6 +28,8 @@ export type QuestionFilter = 'all' | 'published' | 'draft' | 'review';
 /** Which part of the bank is open: a subject (or All) and a year (or all years). */
 export interface BankScope {
   exam: ExamType;
+  /** Post-UTME only. */
+  school: string;
   subject: string;
   year: number | null;
 }
@@ -35,6 +37,7 @@ export interface BankScope {
 /** Subject and year handed to the importer from the bank. */
 export interface ImportPreset {
   exam: ExamType;
+  school: string;
   subject: CmsSubject;
   year: number | null;
 }
@@ -53,7 +56,21 @@ const NAV: Array<{ id: Section; label: string; icon: typeof LayoutDashboard }> =
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
-const SECTION_KEY = 'itutor-admin-section';
+/** Each section has its own address under /admin. */
+const SECTION_PATH: Record<Section, string> = {
+  overview: '/admin',
+  questions: '/admin/past-questions',
+  import: '/admin/import',
+  courses: '/admin/courses',
+  news: '/admin/news',
+  settings: '/admin/settings',
+};
+
+const sectionForPath = (path: string): Section => {
+  const clean = path.toLowerCase().replace(/\/+$/, '');
+  const hit = (Object.keys(SECTION_PATH) as Section[]).find((k) => SECTION_PATH[k] === clean);
+  return hit ?? 'overview';
+};
 const MODE_KEY = 'itutor-admin-mode';
 
 /* --------------------------------------------------------------- Sign-in */
@@ -116,7 +133,11 @@ const SignIn: React.FC<{ onIn: (mode: 'live' | 'demo') => void; onExit: () => vo
 
 /* ----------------------------------------------------------------- Shell */
 
-export const AdminApp: React.FC<{ onExit: () => void }> = ({ onExit }) => {
+export const AdminApp: React.FC<{
+  path: string;
+  navigate: (to: string) => void;
+  onExit: () => void;
+}> = ({ path, navigate, onExit }) => {
   const [mode, setMode] = useState<'live' | 'demo' | null>(() => {
     try {
       return (window.sessionStorage.getItem(MODE_KEY) as 'live' | 'demo' | null) ?? null;
@@ -124,26 +145,17 @@ export const AdminApp: React.FC<{ onExit: () => void }> = ({ onExit }) => {
       return null;
     }
   });
-  const [section, setSection] = useState<Section>(() => {
-    try {
-      return (window.sessionStorage.getItem(SECTION_KEY) as Section) || 'overview';
-    } catch {
-      return 'overview';
-    }
-  });
+  // The address is the source of truth: /admin/settings shows Settings, and
+  // back/forward move between sections.
+  const section = sectionForPath(path);
   const [questionFilter, setQuestionFilter] = useState<QuestionFilter>('all');
-  const [bankScope, setBankScope] = useState<BankScope>({ exam: 'UTME', subject: 'English', year: null });
+  const [bankScope, setBankScope] = useState<BankScope>({ exam: 'UTME', school: '', subject: 'English', year: null });
   const [importPreset, setImportPreset] = useState<{ value: ImportPreset | null; n: number }>({ value: null, n: 0 });
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null);
   const { questions } = useCms();
   const reviewCount = questions.filter((q) => q.needsReview || q.status === 'draft').length;
 
   useEffect(() => {
-    try {
-      window.sessionStorage.setItem(SECTION_KEY, section);
-    } catch {
-      /* ignore */
-    }
     window.scrollTo({ top: 0 });
   }, [section]);
 
@@ -158,7 +170,7 @@ export const AdminApp: React.FC<{ onExit: () => void }> = ({ onExit }) => {
       if (opts?.filter) setQuestionFilter(opts.filter);
       if (opts?.scope) setBankScope(opts.scope);
       if (next === 'import') setImportPreset((p) => ({ value: opts?.preset ?? null, n: p.n + 1 }));
-      setSection(next);
+      navigate(SECTION_PATH[next]);
     },
     notify: (text) => setToast((prev) => ({ id: (prev?.id ?? 0) + 1, text })),
   };

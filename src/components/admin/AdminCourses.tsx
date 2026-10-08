@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Search, Trash2, X } from 'lucide-react';
-import { CMS_SUBJECTS, cms, useCms } from '../../lib/cms';
+import { CMS_SUBJECTS, EXAM_FULL_NAME, EXAM_LABEL, cms, useCms } from '../../lib/cms';
 import type { CmsCourse } from '../../lib/cms';
+import { COURSE_EXAMS, FACULTIES } from '../../data/courses';
+import type { CourseExam } from '../../data/courses';
 import type { AdminNav } from './AdminApp';
 import { PageHead } from './AdminApp';
 
@@ -11,13 +13,17 @@ const slug = (name: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
 
-const blank = (): CmsCourse => ({
-  id: '',
-  name: '',
-  faculty: '',
-  subjects: ['English', 'Mathematics', 'Physics', 'Chemistry'],
-  note: '',
-});
+const blank = (exam: CourseExam): CmsCourse =>
+  exam === 'UTME'
+    ? { id: '', name: '', faculty: 'Engineering', subjects: ['English', 'Mathematics', 'Physics', 'Chemistry'], note: '', exam }
+    : { id: '', name: '', faculty: '', subjects: ['English', 'Mathematics'], note: '', exam };
+
+const facultyOrder = (f: string) => {
+  const i = (FACULTIES as readonly string[]).indexOf(f);
+  return i < 0 ? 99 : i;
+};
+
+/* ------------------------------------------------------------------ Editor */
 
 const CourseEditor: React.FC<{
   initial: CmsCourse;
@@ -29,6 +35,8 @@ const CourseEditor: React.FC<{
 }> = ({ initial, isNew, taken, onClose, onSave, onDelete }) => {
   const [c, setC] = useState<CmsCourse>(initial);
   const [error, setError] = useState('');
+  const isUtme = c.exam === 'UTME';
+  const kind = isUtme ? 'course' : 'class';
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -42,51 +50,84 @@ const CourseEditor: React.FC<{
 
   const setSubject = (i: number, value: string) =>
     setC((prev) => ({ ...prev, subjects: prev.subjects.map((s, j) => (j === i ? value : s)) }));
+  const addSubject = () =>
+    setC((prev) => ({
+      ...prev,
+      subjects: [...prev.subjects, CMS_SUBJECTS.find((s) => !prev.subjects.includes(s)) ?? CMS_SUBJECTS[0]],
+    }));
+  const removeSubject = (i: number) => setC((prev) => ({ ...prev, subjects: prev.subjects.filter((_, j) => j !== i) }));
 
   const save = () => {
     const name = c.name.trim();
-    if (!name) return setError('Give the course a name.');
-    const id = isNew ? slug(name) : c.id;
-    if (isNew && taken.has(id)) return setError('A course with this name already exists.');
-    if (new Set(c.subjects).size !== 4) return setError('Choose four different subjects.');
-    onSave({ ...c, id, name, faculty: c.faculty.trim(), note: c.note.trim() });
+    if (!name) return setError(`Give the ${kind} a name.`);
+    if (isUtme && !c.faculty) return setError('Choose the faculty this course belongs to.');
+    const id = isNew ? `${isUtme ? '' : `${c.exam.toLowerCase()}-`}${slug(name)}` : c.id;
+    if (isNew && taken.has(id)) return setError(`A ${kind} with this name already exists for ${EXAM_LABEL[c.exam]}.`);
+    if (new Set(c.subjects).size !== c.subjects.length) return setError('Each subject can only be listed once.');
+    if (isUtme && c.subjects.length !== 4) return setError('JAMB courses need exactly four subjects.');
+    if (!isUtme && c.subjects.length < 3) return setError('Add at least three subjects.');
+    onSave({ ...c, id, name, note: c.note.trim() });
   };
 
   return (
     <div className="adm-drawer" onClick={onClose}>
-      <aside className="adm-drawer__panel" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Edit course">
+      <aside className="adm-drawer__panel" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={`Edit ${kind}`}>
         <header className="adm-drawer__head">
-          <h2>{isNew ? 'New course' : c.name}</h2>
+          <h2>{isNew ? `New ${EXAM_LABEL[c.exam]} ${kind}` : `${EXAM_LABEL[c.exam]} · ${c.name}`}</h2>
           <button type="button" className="adm-icon-btn" onClick={onClose} aria-label="Close">
             <X size={20} aria-hidden />
           </button>
         </header>
         <div className="adm-drawer__body">
-          <div className="adm-grid-2">
+          <div className={isUtme ? 'adm-grid-2' : ''}>
             <label className="adm-field">
-              <span>Course name</span>
-              <input className="adm-input" value={c.name} onChange={(e) => setC({ ...c, name: e.target.value })} placeholder="e.g. Computer Engineering" />
+              <span>{isUtme ? 'Course name' : 'Class name'}</span>
+              <input
+                className="adm-input"
+                value={c.name}
+                onChange={(e) => setC({ ...c, name: e.target.value })}
+                placeholder={isUtme ? 'e.g. Computer Engineering' : 'e.g. Science'}
+              />
             </label>
-            <label className="adm-field">
-              <span>Faculty</span>
-              <input className="adm-input" value={c.faculty} onChange={(e) => setC({ ...c, faculty: e.target.value })} placeholder="e.g. Engineering" />
-            </label>
+            {isUtme && (
+              <label className="adm-field">
+                <span>Faculty</span>
+                <select className="adm-input" value={c.faculty} onChange={(e) => setC({ ...c, faculty: e.target.value })}>
+                  <option value="">Choose a faculty</option>
+                  {[...new Set([...FACULTIES, ...(c.faculty ? [c.faculty] : [])])].map((f) => (
+                    <option key={f}>{f}</option>
+                  ))}
+                </select>
+              </label>
+            )}
           </div>
 
           <fieldset className="adm-field">
-            <span>JAMB subjects (four)</span>
+            <span>{isUtme ? 'JAMB subjects (four)' : `${EXAM_LABEL[c.exam]} subjects`}</span>
             <div className="adm-course-subjects">
               {c.subjects.map((s, i) => (
-                <label key={i} className="adm-field">
-                  <small className="adm-muted">{i === 0 ? 'Compulsory' : `Subject ${i + 1}`}</small>
-                  <select className="adm-input" value={s} disabled={i === 0} onChange={(e) => setSubject(i, e.target.value)}>
-                    {CMS_SUBJECTS.map((opt) => (
-                      <option key={opt}>{opt}</option>
-                    ))}
-                  </select>
-                </label>
+                <div key={i} className="adm-course-subject">
+                  <label className="adm-field">
+                    <small className="adm-muted">{i === 0 ? 'Compulsory' : `Subject ${i + 1}`}</small>
+                    <select className="adm-input" value={s} disabled={i === 0} onChange={(e) => setSubject(i, e.target.value)}>
+                      {CMS_SUBJECTS.map((opt) => (
+                        <option key={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </label>
+                  {!isUtme && i > 1 && (
+                    <button type="button" className="adm-icon-btn" onClick={() => removeSubject(i)} aria-label={`Remove ${s}`}>
+                      <X size={16} aria-hidden />
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
+            {!isUtme && c.subjects.length < 10 && (
+              <button type="button" className="adm-link" onClick={addSubject}>
+                <Plus size={16} aria-hidden /> Add subject
+              </button>
+            )}
           </fieldset>
 
           <label className="adm-field">
@@ -96,10 +137,14 @@ const CourseEditor: React.FC<{
               rows={3}
               value={c.note}
               onChange={(e) => setC({ ...c, note: e.target.value })}
-              placeholder="e.g. Some schools accept Biology as the fourth subject."
+              placeholder={isUtme ? 'e.g. Some schools accept Biology as the fourth subject.' : 'e.g. IRS can replace CRS.'}
             />
           </label>
-          <p className="adm-muted">Check requirements against the current JAMB brochure before publishing changes.</p>
+          <p className="adm-muted">
+            {isUtme
+              ? 'Check requirements against the current JAMB brochure before saving.'
+              : 'Subjects vary by school; list the ones most students in this class sit.'}
+          </p>
           {error && <p className="adm-error">{error}</p>}
         </div>
         <footer className="adm-drawer__foot">
@@ -113,7 +158,7 @@ const CourseEditor: React.FC<{
             Cancel
           </button>
           <button type="button" className="adm-btn adm-btn--primary" onClick={save}>
-            Save course
+            Save {kind}
           </button>
         </footer>
       </aside>
@@ -121,75 +166,132 @@ const CourseEditor: React.FC<{
   );
 };
 
+/* -------------------------------------------------------------------- Page */
+
 export const AdminCourses: React.FC<{ nav: AdminNav }> = ({ nav }) => {
   const { courses, questions } = useCms();
+  const [exam, setExam] = useState<CourseExam>('UTME');
   const [editing, setEditing] = useState<CmsCourse | 'new' | null>(null);
   const [search, setSearch] = useState('');
+  const isUtme = exam === 'UTME';
+  const kind = isUtme ? 'course' : 'class';
 
-  const published = questions.filter((q) => q.status === 'published' && q.examType === 'UTME');
+  const published = questions.filter((q) => q.status === 'published' && q.examType === exam);
   const countFor = (subject: string) => published.filter((q) => q.subject === subject).length;
   const term = search.trim().toLowerCase();
-  const list = courses.filter((c) => !term || `${c.name} ${c.faculty}`.toLowerCase().includes(term));
+  const inExam = courses.filter((c) => (c.exam ?? 'UTME') === exam);
+  const list = inExam.filter((c) => !term || `${c.name} ${c.faculty}`.toLowerCase().includes(term));
+  const groups = isUtme
+    ? [...new Set(inExam.map((c) => c.faculty || 'Other'))].sort((a, b) => facultyOrder(a) - facultyOrder(b) || a.localeCompare(b))
+    : [''];
+
+  const card = (c: CmsCourse) => {
+    const total = c.subjects.reduce((n, s) => n + countFor(s), 0);
+    const missing = c.subjects.filter((s) => countFor(s) === 0);
+    return (
+      <li key={c.id}>
+        <button type="button" onClick={() => setEditing(c)}>
+          <span className="adm-courses__top">
+            <strong>{c.name}</strong>
+            <span className="adm-muted">
+              {isUtme ? c.faculty : `${c.subjects.length} subjects`}
+            </span>
+          </span>
+          <span className="adm-courses__subjects">
+            {c.subjects.map((s) => {
+              const n = countFor(s);
+              return (
+                <span key={s} className={`adm-courses__subject${n ? '' : ' is-empty'}`}>
+                  {s}
+                  <b>{n}</b>
+                </span>
+              );
+            })}
+          </span>
+          <span className={`adm-courses__foot${missing.length ? ' is-warn' : ''}`}>
+            {missing.length
+              ? `No ${EXAM_LABEL[exam]} questions yet for ${missing.join(', ')}.`
+              : `${total} ${EXAM_LABEL[exam]} questions ready.`}
+          </span>
+        </button>
+      </li>
+    );
+  };
 
   return (
     <div className="adm-page">
       <PageHead
         title="Courses"
-        sub="Students pick their course and get a JAMB practice exam from its four subjects. Numbers show how many published JAMB questions each subject has."
+        sub="What students practise for. JAMB is by faculty and course (four subjects each); WAEC, NECO and GCE are by class — Science, Arts, Commercial."
         actions={
           <button type="button" className="adm-btn adm-btn--primary" onClick={() => setEditing('new')}>
-            <Plus size={18} aria-hidden /> Add course
+            <Plus size={18} aria-hidden /> Add {EXAM_LABEL[exam]} {kind}
           </button>
         }
       />
 
+      <div className="adm-tabs" role="tablist" aria-label="Exam">
+        {COURSE_EXAMS.map((t) => (
+          <button
+            key={t}
+            type="button"
+            role="tab"
+            aria-selected={exam === t}
+            className={exam === t ? 'is-on' : ''}
+            onClick={() => {
+              setExam(t);
+              setSearch('');
+            }}
+            title={EXAM_FULL_NAME[t]}
+          >
+            {EXAM_LABEL[t]}
+            <small>{courses.filter((c) => (c.exam ?? 'UTME') === t).length}</small>
+          </button>
+        ))}
+      </div>
+
       <label className="adm-input adm-input--icon adm-search">
         <Search size={18} aria-hidden />
-        <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search courses" aria-label="Search courses" />
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={isUtme ? 'Search JAMB courses or faculties' : `Search ${EXAM_LABEL[exam]} classes`}
+          aria-label="Search"
+        />
       </label>
 
-      <ul className="adm-courses">
-        {list.map((c) => {
-          const total = c.subjects.reduce((n, s) => n + countFor(s), 0);
-          const missing = c.subjects.filter((s) => countFor(s) === 0);
-          return (
-            <li key={c.id}>
-              <button type="button" onClick={() => setEditing(c)}>
-                <span className="adm-courses__top">
-                  <strong>{c.name}</strong>
-                  <span className="adm-muted">{c.faculty}</span>
-                </span>
-                <span className="adm-courses__subjects">
-                  {c.subjects.map((s) => {
-                    const n = countFor(s);
-                    return (
-                      <span key={s} className={`adm-courses__subject${n ? '' : ' is-empty'}`}>
-                        {s}
-                        <b>{n}</b>
-                      </span>
-                    );
-                  })}
-                </span>
-                <span className={`adm-courses__foot${missing.length ? ' is-warn' : ''}`}>
-                  {missing.length
-                    ? `Students can’t practise ${missing.join(', ')} yet — add questions.`
-                    : `${total} questions ready for this course.`}
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      {list.length === 0 && (
+        <div className="adm-empty">
+          <h3>No {EXAM_LABEL[exam]} {isUtme ? 'courses' : 'classes'} here</h3>
+          <p>Add one so students can practise for it.</p>
+        </div>
+      )}
+
+      {groups.map((g) => {
+        const group = isUtme ? list.filter((c) => (c.faculty || 'Other') === g) : list;
+        if (!group.length) return null;
+        return (
+          <section key={g || 'classes'} className="adm-faculty">
+            {isUtme && (
+              <h2 className="adm-faculty__title">
+                {g} <span className="adm-muted">{group.length} course{group.length === 1 ? '' : 's'}</span>
+              </h2>
+            )}
+            <ul className="adm-courses">{group.map(card)}</ul>
+          </section>
+        );
+      })}
 
       {editing && (
         <CourseEditor
-          initial={editing === 'new' ? blank() : editing}
+          initial={editing === 'new' ? blank(exam) : editing}
           isNew={editing === 'new'}
           taken={new Set(courses.map((c) => c.id))}
           onClose={() => setEditing(null)}
           onSave={(course) => {
             cms.saveCourse(course);
-            nav.notify(`Saved ${course.name}.`);
+            nav.notify(`Saved ${EXAM_LABEL[course.exam]} ${course.name}.`);
             setEditing(null);
           }}
           onDelete={
@@ -197,7 +299,7 @@ export const AdminCourses: React.FC<{ nav: AdminNav }> = ({ nav }) => {
               ? () => {
                   if (!window.confirm(`Delete ${editing.name}?`)) return;
                   cms.deleteCourse(editing.id);
-                  nav.notify('Course deleted.');
+                  nav.notify('Deleted.');
                   setEditing(null);
                 }
               : undefined

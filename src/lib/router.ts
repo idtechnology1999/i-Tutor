@@ -171,6 +171,8 @@ export const viewForPath = (pathname: string): AppView => {
   const path = normalise(pathname).toLowerCase();
   const fromScreenId = SCREEN_IDS[path.replace(/^\/|\.html$/g, '')];
   if (fromScreenId) return fromScreenId;
+  // Every /admin/... address belongs to the admin area.
+  if (path === '/admin' || path.startsWith('/admin/')) return 'admin';
   return PATH_VIEWS[path] ?? ALIASES[path] ?? 'home';
 };
 

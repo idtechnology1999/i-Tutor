@@ -4,6 +4,8 @@ import { DIAGNOSTIC_QUESTIONS } from '../data/nigerian-curriculum';
 import { NEWS } from '../data/news';
 import type { NewsItem } from '../data/news';
 import { COURSE_SEED } from '../data/courses';
+import type { CourseExam } from '../data/courses';
+import { NIGERIAN_INSTITUTIONS } from '../data/nigerian-curriculum';
 
 /* -----------------------------------------------------------------------------
    Content store for the admin CMS and the student pages.
@@ -48,6 +50,11 @@ export const EXAM_LABEL: Record<ExamType, string> = {
   'Post-UTME': 'Post-UTME',
 };
 
+/** Post-UTME papers belong to a school. Short name is the stored value. */
+export const SCHOOLS = NIGERIAN_INSTITUTIONS.map((i) => ({ id: i.shortName, name: i.name }));
+export const schoolName = (id?: string) => SCHOOLS.find((s) => s.id === id)?.name ?? id ?? '';
+export const needsSchool = (exam: string) => exam === 'Post-UTME';
+
 export const EXAM_FULL_NAME: Record<ExamType, string> = {
   UTME: 'JAMB UTME',
   WAEC: 'WAEC WASSCE (school)',
@@ -63,6 +70,8 @@ export interface CmsQuestion {
   id: number;
   subject: CmsSubject;
   examType: ExamType;
+  /** Post-UTME only: the school's short name, e.g. "UNILAG". */
+  school?: string;
   year: number | null;
   topic: string;
   question: string;
@@ -85,11 +94,14 @@ export interface CmsNews extends NewsItem {
 
 export interface CmsCourse {
   id: string;
+  /** UTME: the course. WAEC/NECO/GCE: the class (Science, Arts, Commercial). */
   name: string;
+  /** UTME: the faculty. Empty for school-cert classes. */
   faculty: string;
-  /** The four UTME subjects, English first. */
+  /** UTME: four subjects, English first. Others: the class's subjects. */
   subjects: string[];
   note: string;
+  exam: CourseExam;
 }
 
 export interface Activity {
@@ -140,6 +152,16 @@ const load = (): CmsState => {
       const parsed = JSON.parse(raw) as CmsState;
       if (parsed.version === 1 && Array.isArray(parsed.questions)) {
         if (!Array.isArray(parsed.courses)) parsed.courses = COURSE_SEED.map((c) => ({ ...c, subjects: [...c.subjects] }));
+        // Older saves: health courses split across "Medicine"/"Pharmacy", and
+        // every course was JAMB (no exam field, no WAEC/NECO/GCE classes).
+        parsed.courses = parsed.courses.map((c) => ({
+          ...c,
+          exam: c.exam ?? 'UTME',
+          faculty: c.faculty === 'Medicine' || c.faculty === 'Pharmacy' ? 'Medicine & Health' : c.faculty,
+        }));
+        if (!parsed.courses.some((c) => c.exam !== 'UTME')) {
+          parsed.courses.push(...COURSE_SEED.filter((c) => c.exam !== 'UTME').map((c) => ({ ...c, subjects: [...c.subjects] })));
+        }
         return parsed;
       }
     }
@@ -208,14 +230,22 @@ export const paperSize = (
   subject: string,
   examType: ExamType,
   year: number | null,
+  school = '',
 ) =>
   year === null
     ? 0
-    : questions.filter((q) => q.subject === subject && q.examType === examType && q.year === year).length;
+    : questions.filter(
+        (q) =>
+          q.subject === subject &&
+          q.examType === examType &&
+          q.year === year &&
+          // Post-UTME papers are per school.
+          (!needsSchool(examType) || (q.school ?? '') === school),
+      ).length;
 
 /** Exam types that already have a paper for this subject and year. */
-export const takenExams = (questions: CmsQuestion[], subject: string, year: number | null) =>
-  EXAM_TYPES.filter((t) => paperSize(questions, subject, t, year) > 0);
+export const takenExams = (questions: CmsQuestion[], subject: string, year: number | null, school = '') =>
+  EXAM_TYPES.filter((t) => paperSize(questions, subject, t, year, school) > 0);
 
 /** Comparable form of a question, so re-pasted copies are recognised. */
 export const questionKey = (text: string) =>

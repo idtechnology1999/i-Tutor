@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CircleAlert, Plus, Trash2, X } from 'lucide-react';
-import { CMS_SUBJECTS, EXAM_LABEL, EXAM_TYPES } from '../../lib/cms';
+import { CMS_SUBJECTS, EXAM_LABEL, EXAM_TYPES, SCHOOLS, needsSchool } from '../../lib/cms';
 import type { CmsQuestion, QuestionDraft } from '../../lib/cms';
 import { publishProblems } from '../../lib/question-rules';
 
@@ -114,6 +114,20 @@ export const QuestionEditor: React.FC<Props> = ({ initial, isNew, onClose, onSav
               />
             </label>
           </div>
+
+          {needsSchool(q.examType) && (
+            <label className="adm-field">
+              <span>School</span>
+              <select className="adm-input" value={q.school ?? ''} onChange={(e) => set('school', e.target.value)}>
+                <option value="">Choose the school</option>
+                {SCHOOLS.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.id})
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
 
           <label className="adm-field">
             <span>Topic</span>

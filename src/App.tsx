@@ -67,7 +67,7 @@ const TITLES: Record<AppView, string> = {
 };
 
 export function App() {
-  const { view: activeView, navigate } = useRouter();
+  const { view: activeView, path, navigate } = useRouter();
   const [profile, setProfile] = useState<UserProfile>(() => ({ ...DEFAULT_PROFILE, plan: storedPlan() }));
   // The demo profile is pre-filled, so onboarding has to be gated on whether a
   // candidate actually went through A04/A05 rather than on the profile being
@@ -76,7 +76,7 @@ export function App() {
   const [isTutorOpen, setIsTutorOpen] = useState(false);
   // Subject the student tapped before opening the exam (pre-selected in setup).
   const [examSubject, setExamSubject] = useState<DiagnosticQuestion['subject'] | undefined>();
-  const [examCourse, setExamCourse] = useState<{ name: string; subjects: string[] } | undefined>();
+  const [examCourse, setExamCourse] = useState<{ name: string; subjects: string[]; exam?: string } | undefined>();
   const isCbt = activeView === 'cbt';
   const isAdmin = activeView === 'admin';
   const inApp = isAppView(activeView);
@@ -88,7 +88,7 @@ export function App() {
     setExamCourse(undefined);
     goTo('cbt');
   };
-  const launchCourseExam = (course: { name: string; subjects: string[] }) => {
+  const launchCourseExam = (course: { name: string; subjects: string[]; exam?: string }) => {
     setExamSubject(undefined);
     setExamCourse(course);
     goTo('cbt');
@@ -135,7 +135,7 @@ export function App() {
     }
   };
 
-  if (isAdmin) return <AdminApp onExit={() => goTo('home')} />;
+  if (isAdmin) return <AdminApp path={path} navigate={navigate} onExit={() => goTo('home')} />;
 
   return (
     <div className="app-container">
@@ -152,7 +152,7 @@ export function App() {
       <main>
         {isCbt && (
           <CBTExamView
-            key={examCourse?.name ?? examSubject ?? 'any'}
+            key={examCourse ? `${examCourse.exam ?? 'UTME'}-${examCourse.name}` : (examSubject ?? 'any')}
             profile={profile}
             presetSubject={examSubject}
             presetCourse={examCourse}

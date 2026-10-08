@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BadgeCheck, Check, MessageSquareText, RotateCcw, Search, X } from 'lucide-react';
-import { EXAM_FULL_NAME, EXAM_LABEL, EXAM_TYPES, useCms } from '../../lib/cms';
+import { EXAM_FULL_NAME, EXAM_LABEL, EXAM_TYPES, SCHOOLS, needsSchool, useCms } from '../../lib/cms';
 import type { ExamType } from '../../lib/cms';
 
 interface Props {
@@ -12,6 +12,7 @@ const CORE_SUBJECTS = ['English', 'Mathematics', 'Physics', 'Chemistry', 'Biolog
 
 export const SyllabusView: React.FC<Props> = ({ onOpenTutor }) => {
   const [exam, setExam] = useState<ExamType>('UTME');
+  const [school, setSchool] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('English');
   const [year, setYear] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -20,7 +21,8 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor }) => {
 
   const { questions } = useCms();
   const published = questions.filter((q) => q.status === 'published');
-  const inExam = published.filter((q) => q.examType === exam);
+  const bySchool = needsSchool(exam);
+  const inExam = published.filter((q) => q.examType === exam && (!bySchool || !school || q.school === school));
   const subjects = [...new Set([...CORE_SUBJECTS, ...inExam.map((q) => q.subject)])];
   const inSubject = inExam.filter((q) => q.subject === selectedSubject);
   const years = [...new Set(inSubject.map((q) => q.year).filter((y): y is number => y !== null))].sort((a, b) => b - a);
@@ -29,7 +31,7 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor }) => {
     if (year !== null && q.year !== year) return false;
     return !query || q.question.toLowerCase().includes(query) || q.topic.toLowerCase().includes(query);
   });
-  const examName = EXAM_LABEL[exam];
+  const examName = bySchool && school ? `${school} ${EXAM_LABEL[exam]}` : EXAM_LABEL[exam];
 
   return (
     <div className="ui-page pq">
@@ -56,6 +58,25 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor }) => {
           </button>
         ))}
       </div>
+
+      {bySchool && (
+        <select
+          className="pq__year pq__school"
+          value={school}
+          onChange={(e) => {
+            setSchool(e.target.value);
+            setYear(null);
+          }}
+          aria-label="School"
+        >
+          <option value="">All schools</option>
+          {SCHOOLS.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name} ({s.id})
+            </option>
+          ))}
+        </select>
+      )}
 
       <div className="pq__subjects" role="tablist" aria-label="Subjects">
         {subjects.map((s) => (
@@ -125,6 +146,7 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor }) => {
                   <BadgeCheck size={14} aria-hidden /> Verified
                 </span>
                 <span>
+                  {q.school ? `${q.school} ` : ''}
                   {EXAM_LABEL[q.examType]}
                   {q.year ? ` ${q.year}` : ''} · Question {i + 1}
                   {q.topic ? ` · ${q.topic}` : ''}

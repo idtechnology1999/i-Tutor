@@ -11,7 +11,7 @@ import {
   Upload,
   X,
 } from 'lucide-react';
-import { CMS_SUBJECTS, EXAM_LABEL, EXAM_TYPES, cms, paperSize, questionKey, takenExams, useCms } from '../../lib/cms';
+import { CMS_SUBJECTS, EXAM_LABEL, EXAM_TYPES, SCHOOLS, cms, needsSchool, paperSize, questionKey, takenExams, useCms } from '../../lib/cms';
 import type { CmsSubject, ExamType, QuestionDraft } from '../../lib/cms';
 import { organiseWithAI } from '../../lib/question-import';
 import type { ImportResult, ParsedQuestion } from '../../lib/question-import';
@@ -59,6 +59,7 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
   const [stage, setStage] = useState<Stage>('setup');
   const [subject, setSubject] = useState<CmsSubject>(preset?.subject ?? 'Physics');
   const [examType, setExamType] = useState<ExamType>(preset?.exam ?? 'UTME');
+  const [school, setSchool] = useState(preset?.school ?? '');
   const [year, setYear] = useState(preset?.year ? String(preset.year) : '');
   // Coming from a subject/year in the bank: details are already known.
   const [showDetails, setShowDetails] = useState(!preset);
@@ -74,8 +75,11 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
   const [summary, setSummary] = useState({ published: 0, drafts: 0, skipped: 0 });
 
   const yearNum = year ? Number(year) : null;
-  const existing = paperSize(questions, subject, examType, yearNum);
-  const takenHere = takenExams(questions, subject, yearNum);
+  const bySchool = needsSchool(examType);
+  const schoolTag = bySchool ? school : '';
+  const examName = bySchool && school ? `${school} ${EXAM_LABEL[examType]}` : EXAM_LABEL[examType];
+  const existing = paperSize(questions, subject, examType, yearNum, schoolTag);
+  const takenHere = takenExams(questions, subject, yearNum, schoolTag);
   const fileInput = useRef<HTMLInputElement>(null);
 
   // Walk through the progress steps while the import runs.
@@ -104,6 +108,11 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
   };
 
   const run = async () => {
+    if (bySchool && !school) {
+      setShowDetails(true);
+      setError('Choose the school for this Post-UTME paper.');
+      return;
+    }
     if (!yearNum) {
       setShowDetails(true);
       setError('Choose the year of this paper first.');
@@ -111,7 +120,7 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
     }
     if (existing > 0) {
       setShowDetails(true);
-      setError(`${EXAM_LABEL[examType]} ${subject} ${yearNum} is already added (${existing} questions). Each year’s paper can only be added once — edit it in Past questions instead.`);
+      setError(`${examName} ${subject} ${yearNum} is already added (${existing} questions). Each year’s paper can only be added once — edit it in Past questions instead.`);
       return;
     }
     if (!text.trim() && !file) {
@@ -158,6 +167,7 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
   const toDraft = (it: ReviewItem, publish: boolean): QuestionDraft => ({
     subject,
     examType,
+    ...(bySchool && school ? { school } : {}),
     year: yearNum,
     topic: it.topic,
     question: it.question.trim(),
@@ -165,7 +175,7 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
     correctAnswer: it.correctAnswer,
     explanation: it.explanation,
     answerSource: it.answerSource,
-    source: source || `${examType}${it.year ? ` ${it.year}` : ''} ${subject}`,
+    source: source || `${examName}${it.year ? ` ${it.year}` : ''} ${subject}`,
     status: publish ? 'published' : 'draft',
     needsReview: !publish && (it.needsReview || it.answerSource === 'ai' || publishProblems(it).length > 0),
     reviewNote: it.reviewNote,
@@ -251,11 +261,11 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
               onClick={() =>
                 nav.go('questions', {
                   filter: summary.drafts ? 'review' : 'all',
-                  scope: { exam: examType, subject, year: year ? Number(year) : null },
+                  scope: { exam: examType, school: schoolTag, subject, year: year ? Number(year) : null },
                 })
               }
             >
-              {summary.drafts ? 'Review drafts' : `View ${subject}${year ? ` ${year}` : ''}`}
+              {summary.drafts ? 'Review drafts' : `View ${examName} ${subject}${year ? ` ${year}` : ''}`}
             </button>
             <button type="button" className="adm-btn" onClick={reset}>
               Import another paper
@@ -425,14 +435,14 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
   return (
     <div className="adm-page">
       <PageHead
-        title={preset ? `Add ${EXAM_LABEL[examType]} ${subject} past questions` : 'Import with AI'}
+        title={preset ? `Add ${examName} ${subject} past questions` : 'Import with AI'}
         sub="Paste the paper or upload it. The AI sorts it into questions, options, answers and explanations for you to check."
         actions={
           preset ? (
             <button
               type="button"
               className="adm-btn"
-              onClick={() => nav.go('questions', { scope: { exam: examType, subject, year: year ? Number(year) : null } })}
+              onClick={() => nav.go('questions', { scope: { exam: examType, school: schoolTag, subject, year: year ? Number(year) : null } })}
             >
               <ArrowLeft size={16} aria-hidden /> Back to {subject}
               {year ? ` ${year}` : ''}
@@ -443,7 +453,7 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
 
       {existing > 0 && (
         <div className="adm-note is-warn" role="alert">
-          {EXAM_LABEL[examType]} {subject} {yearNum} is already added ({existing} questions). Choose another year or exam — each
+          {examName} {subject} {yearNum} is already added ({existing} questions). Choose another year or exam — each
           paper can only be added once.
         </div>
       )}
@@ -452,7 +462,7 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
         <div className="adm-target">
           <span className="adm-target__label">Adding to</span>
           <strong>
-            {subject} · {EXAM_LABEL[examType]}
+            {subject} · {examName}
             {year ? ` · ${year}` : ''}
           </strong>
           <button type="button" className="adm-link" onClick={() => setShowDetails(true)}>
@@ -500,13 +510,26 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
               })}
             </div>
           </div>
+          {bySchool && (
+            <label className="adm-field">
+              <span>School</span>
+              <select className="adm-input" value={school} onChange={(e) => setSchool(e.target.value)}>
+                <option value="">Choose the school</option>
+                {SCHOOLS.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.id})
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <div className="adm-grid-2">
             <label className="adm-field">
               <span>Year</span>
               <select className="adm-input" value={year} onChange={(e) => setYear(e.target.value)}>
                 <option value="">Choose the year</option>
                 {YEARS.map((y) => {
-                  const n = paperSize(questions, subject, examType, y);
+                  const n = paperSize(questions, subject, examType, y, schoolTag);
                   return (
                     <option key={y} value={y} disabled={n > 0}>
                       {y}

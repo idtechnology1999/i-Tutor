@@ -161,7 +161,7 @@
   color: #fff;
 }
 
-.course__faculty {
+.course__faculty-name {
   font-size: 0.875rem;
   color: var(--ink-3);
   margin-top: 4px;
@@ -256,10 +256,8 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  /* On phones the chosen course comes first, the list below it. */
   .course__card {
     position: static;
-    order: -1;
   }
 }
 
@@ -436,4 +434,184 @@
 /* Leave room for the sticky header when scrolled into view. */
 .course__card {
   scroll-margin-top: 80px;
+}
+
+/* ------------------------------------------------ Faculty → course steps */
+
+.course__step {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scroll-margin-top: 80px;
+}
+
+.course__step-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.course__step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--brand);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.course__step-hint {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+
+.course__faculties {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.course__faculty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1.5px solid var(--rule);
+  background: #fff;
+  text-align: left;
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 160ms ease, background-color 160ms ease, transform 450ms var(--spring, ease);
+}
+
+.course__faculty:hover {
+  border-color: var(--rule-2);
+}
+
+.course__faculty:active {
+  transform: scale(0.97);
+}
+
+.course__faculty.is-on {
+  border-color: var(--brand);
+  background: var(--brand-tint);
+}
+
+.course__faculty-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 6px;
+  background: var(--mist);
+  color: var(--brand);
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.course__faculty.is-on .course__faculty-icon {
+  background: var(--brand);
+  color: #fff;
+}
+
+.course__faculty strong {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.course__faculty small {
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+}
+
+.course__chev {
+  flex: none;
+  color: var(--ink-3);
+}
+
+.course__card--empty {
+  align-items: flex-start;
+  color: var(--ink-2);
+}
+
+.course__card--empty .course__icon {
+  background: var(--mist);
+  color: var(--ink-3);
+}
+
+@media (max-width: 520px) {
+  .course__faculties {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .course__faculty {
+    padding: 14px;
+  }
+}
+
+/* Admin courses grouped by faculty */
+.adm-faculty {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.adm-faculty__title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 1.0625rem;
+}
+
+.adm-course-subject {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.adm-course-subject .adm-field {
+  flex: 1;
+}
+
+.course__class-icon {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: var(--mist);
+  color: var(--brand);
+}
+
+.course__item.is-on .course__class-icon {
+  background: var(--brand);
+  color: #fff;
+}
+
+.course__item:has(.course__class-icon) {
+  justify-content: flex-start;
+}
+
+.course__item:has(.course__class-icon) .course__chev {
+  margin-left: auto;
+}
+
+/* Long subject lines (WAEC classes) must truncate, not widen the list. */
+.course__list ul {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.course__item-text {
+  flex: 1 1 auto;
 }

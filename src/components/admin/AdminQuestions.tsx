@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, ScanText, Search, Trash2 } from 'lucide-react';
-import { CMS_SUBJECTS, EXAM_FULL_NAME, EXAM_LABEL, EXAM_TYPES, cms, paperSize, useCms } from '../../lib/cms';
+import { CMS_SUBJECTS, EXAM_FULL_NAME, EXAM_LABEL, EXAM_TYPES, SCHOOLS, cms, needsSchool, paperSize, useCms } from '../../lib/cms';
 import type { CmsQuestion, CmsSubject, QuestionDraft } from '../../lib/cms';
 import type { AdminNav, BankScope, QuestionFilter } from './AdminApp';
 import { PageHead, StatusChip } from './AdminApp';
@@ -30,9 +30,11 @@ export const AdminQuestions: React.FC<{
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [editing, setEditing] = useState<CmsQuestion | 'new' | null>(null);
 
-  const { exam, subject, year } = scope;
-  const examName = EXAM_LABEL[exam];
-  const inExam = questions.filter((q) => q.examType === exam);
+  const { exam, school, subject, year } = scope;
+  const bySchool = needsSchool(exam);
+  // "UNILAG Post-UTME" when a school is chosen, otherwise just the exam.
+  const examName = bySchool && school ? `${school} ${EXAM_LABEL[exam]}` : EXAM_LABEL[exam];
+  const inExam = questions.filter((q) => q.examType === exam && (!bySchool || !school || q.school === school));
   const inSubject = inExam.filter((q) => subject === 'All' || q.subject === subject);
   const inScope = inSubject.filter((q) => year === null || q.year === year);
 
@@ -55,10 +57,12 @@ export const AdminQuestions: React.FC<{
   const subjectName = subject === 'All' ? 'all subjects' : subject;
   const label = `${examName} ${subject === 'All' ? '' : `${subject} `}${year ?? ''}`.trim();
   // One paper per exam + subject + year.
-  const existing = subject !== 'All' && year ? paperSize(questions, subject, exam, year) : 0;
-  const canAdd = subject !== 'All' && year !== null && existing === 0;
+  const existing = subject !== 'All' && year ? paperSize(questions, subject, exam, year, school) : 0;
+  const canAdd = (!bySchool || Boolean(school)) && subject !== 'All' && year !== null && existing === 0;
   const addLabel =
-    subject === 'All'
+    bySchool && !school
+      ? 'Choose a school first'
+      : subject === 'All'
       ? 'Choose a subject first'
       : year === null
         ? 'Choose a year first'
@@ -68,7 +72,7 @@ export const AdminQuestions: React.FC<{
 
   const openImport = () => {
     if (!canAdd) return;
-    nav.go('import', { preset: { exam, subject: subject as CmsSubject, year } });
+    nav.go('import', { preset: { exam, school, subject: subject as CmsSubject, year } });
   };
 
   const setScope = (patch: Partial<BankScope>) => {
@@ -140,7 +144,7 @@ export const AdminQuestions: React.FC<{
                 role="radio"
                 aria-checked={exam === t}
                 className={exam === t ? 'is-on' : ''}
-                onClick={() => setScope({ exam: t, year: null })}
+                onClick={() => setScope({ exam: t, school: '', year: null })}
                 title={EXAM_FULL_NAME[t]}
               >
                 <strong>{EXAM_LABEL[t]}</strong>
@@ -151,6 +155,22 @@ export const AdminQuestions: React.FC<{
         </div>
 
         <div className="adm-scope__row">
+          {bySchool && (
+            <label className="adm-field adm-scope__pick">
+              <span>School</span>
+              <select className="adm-input" value={school} onChange={(e) => setScope({ school: e.target.value, year: null })}>
+                <option value="">All schools</option>
+                {SCHOOLS.map((s) => {
+                  const n = questions.filter((q) => q.examType === exam && q.school === s.id).length;
+                  return (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.id}){n ? ` — ${n}` : ''}
+                    </option>
+                  );
+                })}
+              </select>
+            </label>
+          )}
           <label className="adm-field adm-scope__pick">
             <span>Subject</span>
             <select className="adm-input" value={subject} onChange={(e) => setScope({ subject: e.target.value, year: null })}>
@@ -277,6 +297,7 @@ export const AdminQuestions: React.FC<{
               <button type="button" className="adm-row__main" onClick={() => setEditing(q)}>
                 <span className="adm-row__q">{q.question || <em>Untitled question</em>}</span>
                 <span className="adm-row__meta">
+                  {q.school ? `${q.school} ` : ''}
                   {EXAM_LABEL[q.examType]}
                   {q.year ? ` ${q.year}` : ''}
                   {q.topic ? ` · ${q.topic}` : ''}
@@ -316,6 +337,7 @@ export const AdminQuestions: React.FC<{
               ? {
                   ...blankQuestion(),
                   examType: exam,
+                  ...(bySchool && school ? { school } : {}),
                   ...(subject !== 'All' ? { subject: subject as CmsSubject } : {}),
                   ...(year ? { year } : {}),
                 }
