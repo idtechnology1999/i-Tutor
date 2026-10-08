@@ -1,487 +1,218 @@
 import React from 'react';
-import type { UserProfile } from '../../types';
 import {
-  FlameIcon,
-  SparklesIcon,
-  ShieldCheckIcon,
-  ZapIcon,
-  BookOpenIcon,
-  ArrowRightIcon,
-  CheckCircleIcon,
-} from '../Icons';
+  ArrowRight,
+  BookOpenCheck,
+  Check,
+  ClipboardList,
+  Flame,
+  MessageSquareText,
+  Play,
+  LockOpen,
+  Target,
+  UserRoundPen,
+} from 'lucide-react';
+import type { UserProfile } from '../../types';
 
 interface Props {
   profile: UserProfile;
   onLaunchCBT: () => void;
   onOpenSyllabus: () => void;
   onOpenTutor: () => void;
+  onUpgrade: () => void;
+  onEditGoal: () => void;
 }
+
+const SUBJECTS = [
+  { name: 'Use of English', mastery: 84, weak: 'Stress patterns' },
+  { name: 'Mathematics', mastery: 78, weak: 'Matrices' },
+  { name: 'Physics', mastery: 72, weak: 'Magnetic induction' },
+  { name: 'Chemistry', mastery: 58, weak: 'Organic isomers' },
+];
+
+const TASKS = [
+  { text: 'Physics: 20 questions on motion', done: true },
+  { text: 'English: 15 vocabulary questions', done: true },
+  { text: 'Chemistry: 15 questions on organic isomers', done: false },
+];
+
+// Plain-language level, always shown next to the colour.
+const level = (pct: number) =>
+  pct >= 80 ? { label: 'Strong', tone: 'good' } : pct >= 65 ? { label: 'Good', tone: 'ok' } : { label: 'Needs work', tone: 'weak' };
+
+const greeting = () => {
+  const h = new Date().getHours();
+  return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+};
 
 export const DashboardView: React.FC<Props> = ({
   profile,
   onLaunchCBT,
   onOpenSyllabus,
   onOpenTutor,
+  onUpgrade,
+  onEditGoal,
 }) => {
-  const projectedScore = Math.round(160 + (profile.diagnosticScore / 100) * 200);
-
-  const subjects = [
-    {
-      name: 'Use of English',
-      isCompulsory: true,
-      mastery: 84,
-      questionsPracticed: 142,
-      topTopic: 'Lexis & Structure',
-      weakTopic: 'Oral Forms (Stress Patterns)',
-    },
-    {
-      name: 'Mathematics',
-      isCompulsory: false,
-      mastery: 78,
-      questionsPracticed: 110,
-      topTopic: 'Calculus & Logs',
-      weakTopic: 'Matrices & Determinants',
-    },
-    {
-      name: 'Physics',
-      isCompulsory: false,
-      mastery: 72,
-      questionsPracticed: 98,
-      topTopic: 'Kinematics & Optics',
-      weakTopic: 'Magnetic Flux & Induction',
-    },
-    {
-      name: 'Chemistry',
-      isCompulsory: false,
-      mastery: 58,
-      questionsPracticed: 76,
-      topTopic: 'Stoichiometry & Gas Laws',
-      weakTopic: 'Organic Functional Isomerism ⚠️',
-      isNeedsAttention: true,
-    },
-  ];
+  const firstName = profile.fullName.split(' ')[0] || 'there';
+  const projected = Math.round(160 + (profile.diagnosticScore / 100) * 200);
+  const gap = profile.targetScore - projected;
+  const doneCount = TASKS.filter((t) => t.done).length;
+  const nextTask = TASKS.find((t) => !t.done);
+  const isPremium = profile.plan === 'premium';
 
   return (
-    <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '32px 24px', width: '100%', display: 'flex', flexDirection: 'column', gap: '32px' }}>
-      {/* Hero Welcome Banner */}
-      <section
-        style={{
-          background: 'linear-gradient(135deg, #0E3B3A 0%, #114745 60%, #145351 100%)',
-          borderRadius: 'var(--radius-xl)',
-          padding: '32px 36px',
-          color: '#FFFFFF',
-          display: 'grid',
-          gridTemplateColumns: '1.4fr 1fr',
-          gap: '32px',
-          boxShadow: 'var(--shadow-lg)',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
+    <div className="ui-page dash">
+      {/* ------------------------------------------------------------ Hello */}
+      <header className="dash__hello">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-            <span
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                color: '#99F6E4',
-                padding: '4px 12px',
-                borderRadius: 'var(--radius-full)',
-                fontSize: '12px',
-                fontWeight: 600,
-                letterSpacing: '0.5px',
-                textTransform: 'uppercase',
-              }}
-            >
-              Candidate Portal · 2026/2027 Session
-            </span>
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                backgroundColor: '#D97706',
-                color: '#FFFFFF',
-                padding: '4px 10px',
-                borderRadius: 'var(--radius-full)',
-                fontSize: '12px',
-                fontWeight: 700,
-              }}
-            >
-              <FlameIcon size={14} color="#FFFFFF" /> 4-DAY STREAK
-            </span>
-          </div>
+          <p className="dash__eyebrow">{greeting()},</p>
+          <h1>{firstName}</h1>
+        </div>
+        <span className="dash__streak" title="Days in a row you have practised">
+          <Flame size={16} aria-hidden /> 4-day streak
+        </span>
+      </header>
 
-          <h1
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '28px',
-              fontWeight: 700,
-              lineHeight: '1.3',
-              marginBottom: '10px',
-            }}
-          >
-            Welcome back, {profile.fullName} 👋
-          </h1>
-
-          <p style={{ color: '#D8EEEB', fontSize: '15px', lineHeight: '1.6', maxWidth: '520px', marginBottom: '24px' }}>
-            You're on track for <strong>{profile.targetCourse}</strong> at <strong>{profile.targetInstitution}</strong>. Your AI study assistant has prepared your daily weaknesses drill.
-          </p>
-
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              onClick={onLaunchCBT}
-              className="btn-solid-teal"
-              style={{
-                backgroundColor: '#D97706',
-                borderColor: '#D97706',
-                color: '#FFFFFF',
-                padding: '12px 24px',
-                fontSize: '15px',
-              }}
-            >
-              <ZapIcon size={18} />
-              Start Full 4-Subject CBT Mock
-            </button>
-
-            <button
-              type="button"
-              onClick={onOpenTutor}
-              className="btn-outline-teal"
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                color: '#FFFFFF',
-                borderColor: 'rgba(255, 255, 255, 0.3)',
-                padding: '12px 20px',
-              }}
-            >
-              <SparklesIcon size={18} />
-              Ask AI Teacher a Question
-            </button>
-          </div>
+      {/* --------------------------------------------------- Today (primary) */}
+      <section className="dash__today">
+        <div className="dash__today-top">
+          <span className="dash__label">Today’s practice</span>
+          <span className="dash__count">
+            {doneCount} of {TASKS.length} done
+          </span>
+        </div>
+        <div className="dash__bar" aria-hidden>
+          <i style={{ width: `${(doneCount / TASKS.length) * 100}%` }} />
         </div>
 
-        {/* Target Benchmark Score Card */}
-        <div
-          style={{
-            background: 'rgba(255, 255, 255, 0.08)',
-            backdropFilter: 'blur(12px)',
-            borderRadius: 'var(--radius-lg)',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
-            padding: '24px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <div style={{ fontSize: '12px', textTransform: 'uppercase', color: '#99F6E4', fontWeight: 600 }}>
-                Target Admission Cut-off
-              </div>
-              <div style={{ fontSize: '36px', fontWeight: 800, fontFamily: 'var(--font-display)', marginTop: '4px' }}>
-                {profile.targetScore}{' '}
-                <span style={{ fontSize: '16px', fontWeight: 500, color: '#A7F3D0' }}>/ 400</span>
-              </div>
-            </div>
+        {nextTask ? (
+          <>
+            <h2 className="dash__next">{nextTask.text}</h2>
+            <p className="dash__next-sub">About 15 minutes. Finish it to keep your streak.</p>
+            <button type="button" className="ui-btn ui-btn--light ui-btn--lg" onClick={onLaunchCBT}>
+              <Play size={18} aria-hidden /> Start now
+            </button>
+          </>
+        ) : (
+          <h2 className="dash__next">All done for today. Well done!</h2>
+        )}
 
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '12px', textTransform: 'uppercase', color: '#99F6E4', fontWeight: 600 }}>
-                Current Projected
-              </div>
-              <div style={{ fontSize: '26px', fontWeight: 700, color: '#FEF3C7', marginTop: '6px' }}>
-                {projectedScore}
-              </div>
-            </div>
-          </div>
-
-          <div style={{ margin: '18px 0' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#E2E8F0', marginBottom: '8px' }}>
-              <span>Merit Benchmark Progress</span>
-              <span style={{ color: '#D97706', fontWeight: 700 }}>
-                {profile.targetScore - projectedScore > 0 ? `+${profile.targetScore - projectedScore} pts needed` : 'Target Achieved!'}
+        <ul className="dash__tasks">
+          {TASKS.map((t) => (
+            <li key={t.text} className={t.done ? 'is-done' : ''}>
+              <span className="dash__tick" aria-hidden>
+                {t.done && <Check size={13} />}
               </span>
-            </div>
-            <div style={{ height: '10px', width: '100%', background: 'rgba(255, 255, 255, 0.2)', borderRadius: '6px', overflow: 'hidden' }}>
-              <div
-                style={{
-                  height: '100%',
-                  width: `${Math.min(100, (projectedScore / profile.targetScore) * 100)}%`,
-                  background: 'linear-gradient(90deg, #10B981 0%, #34D399 100%)',
-                  borderRadius: '6px',
-                }}
-              />
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#D8EEEB' }}>
-            <ShieldCheckIcon size={16} color="#34D399" />
-            <span>Calibrated against past 5 years of UNILAG & UI faculty cut-offs</span>
-          </div>
-        </div>
+              {t.text}
+            </li>
+          ))}
+        </ul>
       </section>
 
-      {/* Main Grid: Today's AI Study Plan & Knowledge Gaps */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '28px' }}>
-        {/* Left Column: Registered 4 Subjects Breakdown */}
-        <section className="web-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      {/* ----------------------------------------------------- Quick actions */}
+      <nav className="dash__actions" aria-label="Quick actions">
+        <button type="button" onClick={onLaunchCBT}>
+          <span className="dash__action-icon">
+            <ClipboardList size={22} aria-hidden />
+          </span>
+          <strong>Practice exam</strong>
+          <small>Timed, like the real CBT</small>
+        </button>
+        <button type="button" onClick={onOpenSyllabus}>
+          <span className="dash__action-icon">
+            <BookOpenCheck size={22} aria-hidden />
+          </span>
+          <strong>Past questions</strong>
+          <small>Try and check answers</small>
+        </button>
+        <button type="button" onClick={onOpenTutor}>
+          <span className="dash__action-icon">
+            <MessageSquareText size={22} aria-hidden />
+          </span>
+          <strong>Ask the tutor</strong>
+          <small>Get help with any question</small>
+        </button>
+        <button type="button" onClick={onEditGoal}>
+          <span className="dash__action-icon">
+            <UserRoundPen size={22} aria-hidden />
+          </span>
+          <strong>My goal</strong>
+          <small>Course, school, subjects</small>
+        </button>
+      </nav>
+
+      <div className="dash__cols">
+        {/* ------------------------------------------------------- Score */}
+        <section className="ui-card dash__score">
+          <h3>
+            <Target size={18} aria-hidden /> Your score
+          </h3>
+          <div className="dash__score-row">
             <div>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 700, color: 'var(--slate-900)' }}>
-                Your Registered Subject Syllabus
-              </h2>
-              <p style={{ fontSize: '14px', color: 'var(--slate-500)', marginTop: '2px' }}>
-                Mastery levels across your 4 JAMB subject combination
-              </p>
+              <span className="dash__big">{projected}</span>
+              <span className="dash__of">/ 400</span>
+              <p>Likely score today</p>
             </div>
-
-            <button
-              type="button"
-              onClick={onOpenSyllabus}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--teal-700)',
-                fontSize: '13px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-              }}
-            >
-              Browse Full Syllabus <ArrowRightIcon size={14} />
-            </button>
+            <div className="dash__goal">
+              <span className="dash__big dash__big--muted">{profile.targetScore}</span>
+              <p>Your goal</p>
+            </div>
           </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {subjects.map((subj) => (
-              <div
-                key={subj.name}
-                style={{
-                  padding: '16px 20px',
-                  borderRadius: 'var(--radius-md)',
-                  border: subj.isNeedsAttention ? '1.5px solid #FCD34D' : '1px solid var(--slate-200)',
-                  backgroundColor: subj.isNeedsAttention ? '#FFFDF5' : 'var(--white)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '16px',
-                  transition: 'all 0.15s ease',
-                }}
-              >
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                    <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--slate-900)' }}>
-                      {subj.name}
-                    </span>
-                    {subj.isCompulsory && (
-                      <span className="pill-badge pill-blue" style={{ fontSize: '11px' }}>
-                        Compulsory
-                      </span>
-                    )}
-                    {subj.isNeedsAttention && (
-                      <span className="pill-badge pill-amber" style={{ fontSize: '11px' }}>
-                        Priority Review
-                      </span>
-                    )}
-                  </div>
-
-                  <div style={{ fontSize: '13px', color: 'var(--slate-600)', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                    <span><strong>Top Topic:</strong> {subj.topTopic}</span>
-                    <span><strong>Review Area:</strong> {subj.weakTopic}</span>
-                    <span><strong>Practiced:</strong> {subj.questionsPracticed} Qs</span>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '18px', fontWeight: 800, color: subj.isNeedsAttention ? '#D97706' : 'var(--teal-900)' }}>
-                      {subj.mastery}%
-                    </div>
-                    <div style={{ fontSize: '11px', color: 'var(--slate-500)', fontWeight: 500 }}>
-                      Syllabus Mastery
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={onLaunchCBT}
-                    className="btn-subtle"
-                    style={{ padding: '8px 14px', fontSize: '13px', fontWeight: 600 }}
-                  >
-                    Drill Topic
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div className="dash__meter" aria-hidden>
+            <i style={{ width: `${Math.min(100, (projected / 400) * 100)}%` }} />
+            <b style={{ left: `${(profile.targetScore / 400) * 100}%` }} />
           </div>
+          <p className={`dash__verdict ${gap > 0 ? 'is-behind' : 'is-ahead'}`}>
+            {gap > 0
+              ? `${gap} more marks to reach your goal for ${profile.targetCourse}.`
+              : `You’re above your goal for ${profile.targetCourse}. Keep it up.`}
+          </p>
         </section>
 
-        {/* Right Column: Today's AI Daily Plan & Diagnostics */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          {/* Today's Daily Target Card */}
-          <section className="web-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div
-                  style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: 'var(--radius-sm)',
-                    background: 'var(--teal-50)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'var(--teal-900)',
-                  }}
-                >
-                  <SparklesIcon size={18} color="var(--teal-900)" />
-                </div>
-                <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--slate-900)' }}>
-                  Today's AI Study Plan
-                </h3>
-              </div>
-              <span className="pill-badge pill-amber">
-                45 / 60 Mins
-              </span>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                <CheckCircleIcon size={18} color="var(--emerald-600)" style={{ marginTop: '2px', flexShrink: 0 }} />
-                <span style={{ fontSize: '13px', color: 'var(--slate-700)', textDecoration: 'line-through' }}>
-                  20 questions in Physics Kinematics & Free Fall (Completed)
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                <CheckCircleIcon size={18} color="var(--emerald-600)" style={{ marginTop: '2px', flexShrink: 0 }} />
-                <span style={{ fontSize: '13px', color: 'var(--slate-700)', textDecoration: 'line-through' }}>
-                  15 Use of English Lexis & Structure past drill (Completed)
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                <div
-                  style={{
-                    width: '18px',
-                    height: '18px',
-                    borderRadius: '50%',
-                    border: '2px solid var(--amber-500)',
-                    marginTop: '2px',
-                    flexShrink: 0,
-                  }}
-                />
-                <span style={{ fontSize: '13px', color: 'var(--slate-900)', fontWeight: 600 }}>
-                  15 mins Chemistry Organic Functional Isomerism (Remaining for streak)
-                </span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={onLaunchCBT}
-              className="btn-solid-teal"
-              style={{ width: '100%' }}
-            >
-              Complete Today's Chemistry Task
-            </button>
-          </section>
-
-          {/* Diagnostic Knowledge Gap Calibration Card */}
-          <section className="web-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--slate-900)' }}>
-                Knowledge Gaps Report
-              </h3>
-              <button
-                type="button"
-                onClick={onLaunchCBT}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--teal-700)',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                Retake Calibration
-              </button>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div style={{ padding: '10px 12px', borderRadius: '8px', background: 'var(--slate-50)', display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                <span style={{ fontWeight: 600 }}>Mechanics & Kinematics</span>
-                <span style={{ color: 'var(--emerald-600)', fontWeight: 700 }}>82% (Strong)</span>
-              </div>
-              <div style={{ padding: '10px 12px', borderRadius: '8px', background: '#FFFBEB', border: '1px solid #FDE68A', display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                <span style={{ fontWeight: 600, color: '#92400E' }}>Organic Chemistry Isomers</span>
-                <span style={{ color: '#D97706', fontWeight: 700 }}>52% (Gap)</span>
-              </div>
-              <div style={{ padding: '10px 12px', borderRadius: '8px', background: 'var(--slate-50)', display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                <span style={{ fontWeight: 600 }}>Calculus & Chain Rule</span>
-                <span style={{ color: 'var(--emerald-600)', fontWeight: 700 }}>88% (Mastered)</span>
-              </div>
-            </div>
-          </section>
-        </div>
+        {/* ---------------------------------------------------- Subjects */}
+        <section className="ui-card dash__subjects">
+          <h3>My subjects</h3>
+          <ul>
+            {SUBJECTS.map((s) => {
+              const l = level(s.mastery);
+              return (
+                <li key={s.name}>
+                  <div className="dash__subj-top">
+                    <strong>{s.name}</strong>
+                    <span className={`ui-chip ui-chip--${l.tone}`}>{l.label}</span>
+                  </div>
+                  <div className={`dash__subj-bar is-${l.tone}`} aria-hidden>
+                    <i style={{ width: `${s.mastery}%` }} />
+                  </div>
+                  <div className="dash__subj-foot">
+                    <span>
+                      {s.mastery}% · work on: {s.weak}
+                    </span>
+                    <button type="button" onClick={onLaunchCBT}>
+                      Practise <ArrowRight size={14} aria-hidden />
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       </div>
 
-      {/* Verified Questions Guarantee & Offline Repository Banner */}
-      <section
-        style={{
-          background: 'var(--white)',
-          border: '1.5px solid var(--emerald-100)',
-          borderRadius: 'var(--radius-lg)',
-          padding: '24px 32px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '24px',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <div
-            style={{
-              width: '52px',
-              height: '52px',
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--emerald-50)',
-              color: 'var(--emerald-600)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}
-          >
-            <ShieldCheckIcon size={30} color="var(--emerald-600)" />
-          </div>
+      {/* --------------------------------------------------------- Upgrade */}
+      {!isPremium && (
+        <section className="dash__upgrade">
+          <span className="dash__upgrade-icon">
+            <LockOpen size={20} aria-hidden />
+          </span>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-              <span className="pill-badge pill-verified" style={{ fontSize: '12px' }}>
-                100% Verified Past Questions
-              </span>
-              <span style={{ fontSize: '13px', color: 'var(--slate-500)' }}>
-                JAMB UTME 2014 – 2024
-              </span>
-            </div>
-            <p style={{ fontSize: '14px', color: 'var(--slate-600)', maxWidth: '680px' }}>
-              Every single question in i-Tutor is scrubbed of syllabus typos and checked by university examiners. Explanations show complete step-by-step logic, never blind answer keys.
-            </p>
+            <strong>Get unlimited help from the AI tutor</strong>
+            <p>Free accounts get 5 tutor questions a day. Premium from ₦2,500 a month.</p>
           </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={onOpenSyllabus}
-          className="btn-outline-teal"
-          style={{ whiteSpace: 'nowrap' }}
-        >
-          <BookOpenIcon size={16} /> Explore Question Bank
-        </button>
-      </section>
+          <button type="button" className="ui-btn ui-btn--primary" onClick={onUpgrade}>
+            Upgrade
+          </button>
+        </section>
+      )}
     </div>
   );
 };

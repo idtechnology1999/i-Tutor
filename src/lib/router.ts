@@ -15,6 +15,7 @@ export type AppView =
   | 'cbt'
   | 'syllabus'
   | 'setup'
+  | 'upgrade'
   // Account
   | 'signup'
   | 'otp'
@@ -35,6 +36,7 @@ export const VIEW_PATHS: Record<AppView, string> = {
   syllabus: '/syllabus',
   dashboard: '/dashboard',
   setup: '/setup',
+  upgrade: '/upgrade',
   signup: '/register',
   otp: '/verify',
   login: '/login',
@@ -75,6 +77,16 @@ const ACCOUNT_VIEWS: ReadonlySet<AppView> = new Set<AccountView>([
   'baseline',
 ]);
 
+const APP_VIEWS: ReadonlySet<AppView> = new Set<AppView>([
+  'dashboard',
+  'syllabus',
+  'setup',
+  'upgrade',
+]);
+
+/** Signed-in pages that share the app navigation (tab bar on phones). */
+export const isAppView = (view: AppView) => APP_VIEWS.has(view);
+
 /** True for the registration and onboarding sequence (A04–A14). */
 export const isAccountFlowView = (view: AppView): view is AccountView =>
   ACCOUNT_VIEWS.has(view);
@@ -98,6 +110,9 @@ const ALIASES: Record<string, AppView> = {
   '/index.html': 'home',
   '/home': 'home',
   '/portal': 'dashboard',
+  '/premium': 'upgrade',
+  '/billing': 'upgrade',
+  '/pay': 'upgrade',
   '/sign-up': 'signup',
   '/signup': 'signup',
   '/register/': 'signup',

@@ -1,9 +1,19 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronRight, Menu, MessageSquareText, X } from 'lucide-react';
-import { useScrollDirection, useSheetDrag } from '../../lib/ui';
+import {
+  BookOpenCheck,
+  ChevronRight,
+  ClipboardList,
+  House,
+  LockOpen,
+  Menu,
+  MessageSquareText,
+  UserRound,
+  X,
+} from 'lucide-react';
 import type { UserProfile } from '../../types';
 import type { AppView } from '../../lib/router';
-import { pathForView, isAccountFlowView } from '../../lib/router';
+import { pathForView, isAppView } from '../../lib/router';
+import { useScrollDirection, useSheetDrag } from '../../lib/ui';
 import { BrandMark } from './BrandMark';
 
 interface Props {
@@ -14,18 +24,46 @@ interface Props {
   onToggleTutor: () => void;
 }
 
-const NAV_ITEMS: { label: string; view: AppView }[] = [
-  { label: 'Home', view: 'home' },
-  { label: 'CBT practice', view: 'cbt' },
-  { label: 'Syllabus', view: 'syllabus' },
-  { label: 'Dashboard', view: 'dashboard' },
+/* Signed-in destinations. Same four everywhere: top bar on desktop, tab bar
+   on phones. Plain words, one icon each. */
+const APP_TABS: { label: string; short: string; view: AppView; icon: typeof House }[] = [
+  { label: 'Home', short: 'Home', view: 'dashboard', icon: House },
+  { label: 'Practice exam', short: 'Practice', view: 'cbt', icon: ClipboardList },
+  { label: 'Past questions', short: 'Questions', view: 'syllabus', icon: BookOpenCheck },
 ];
 
-/* In-page sections, only offered while the landing page is on screen. */
+/* Visitor links on the landing page. */
 const HOME_ANCHORS = [
   { label: 'Features', href: '#features' },
+  { label: 'How it works', href: '#how' },
   { label: 'Pricing', href: '#pricing' },
 ];
+
+const goToPath = (path: string) => {
+  window.history.pushState({}, '', path);
+  window.dispatchEvent(new PopStateEvent('popstate'));
+};
+
+const RouteLink: React.FC<{
+  view: AppView;
+  active: boolean;
+  className: string;
+  onNavigate?: () => void;
+  children: React.ReactNode;
+}> = ({ view, active, className, onNavigate, children }) => (
+  <a
+    href={pathForView(view)}
+    onClick={(event) => {
+      event.preventDefault();
+      onNavigate?.();
+      goToPath(pathForView(view));
+    }}
+    className={`${className}${active ? ' is-active' : ''}`}
+    aria-current={active ? 'page' : undefined}
+  >
+    {children}
+  </a>
+);
 
 export const Navbar: React.FC<Props> = ({
   activeView,
@@ -35,14 +73,22 @@ export const Navbar: React.FC<Props> = ({
   onToggleTutor,
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const inAccountFlow = isAccountFlowView(activeView);
+  const inApp = isAppView(activeView);
   const onHome = activeView === 'home';
+  const isPremium = profile.plan === 'premium';
   const sheetRef = useRef<HTMLDivElement>(null);
   const { direction, atTop } = useScrollDirection();
-  const tucked = direction === 'down' && !menuOpen && !isTutorOpen;
+  const tucked = direction === 'down' && !menuOpen && !isTutorOpen && !inApp;
   const closeMenu = useCallback(() => setMenuOpen(false), []);
+  const initial = profile.fullName.charAt(0).toUpperCase() || 'A';
 
   useSheetDrag(sheetRef, menuOpen, closeMenu);
+
+  useEffect(() => {
+    const closeOnPopState = () => setMenuOpen(false);
+    window.addEventListener('popstate', closeOnPopState);
+    return () => window.removeEventListener('popstate', closeOnPopState);
+  }, []);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -53,17 +99,8 @@ export const Navbar: React.FC<Props> = ({
     return () => window.removeEventListener('keydown', onKey);
   }, [menuOpen]);
 
-  // Back/forward navigation can change the route without going through the
-  // links below, so close the mobile panel when the browser moves underneath.
-  useEffect(() => {
-    const closeOnPopState = () => setMenuOpen(false);
-    window.addEventListener('popstate', closeOnPopState);
-    return () => window.removeEventListener('popstate', closeOnPopState);
-  }, []);
-
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : '';
-    // Lets the page behind recede while the sheet is up, as iOS does.
     document.documentElement.classList.toggle('has-sheet', menuOpen);
     return () => {
       document.body.style.overflow = '';
@@ -71,159 +108,177 @@ export const Navbar: React.FC<Props> = ({
     };
   }, [menuOpen]);
 
-  const go = (view: AppView) => {
-    onChangeView(view);
-    setMenuOpen(false);
-  };
+  /* --------------------------------------------------------- Signed in */
+  if (inApp) {
+    return (
+      <>
+        <header className={`site-nav site-nav--app${atTop ? ' is-top' : ''}`}>
+          <div className="site-nav__inner">
+            <button
+              type="button"
+              className="site-nav__brand"
+              onClick={() => onChangeView('dashboard')}
+              aria-label="i-Teacher home"
+            >
+              <BrandMark />
+            </button>
 
-  const goToPath = (path: string) => {
-    window.history.pushState({}, '', path);
-    setMenuOpen(false);
-    window.dispatchEvent(new PopStateEvent('popstate'));
-  };
+            <nav className="site-nav__links" aria-label="Main">
+              {APP_TABS.map((tab) => (
+                <RouteLink
+                  key={tab.view}
+                  view={tab.view}
+                  active={activeView === tab.view}
+                  className="site-nav__link"
+                >
+                  {tab.label}
+                </RouteLink>
+              ))}
+            </nav>
 
-  const routeLink = (item: { label: string; view: AppView }) => (
-    <a
-      key={item.view}
-      href={pathForView(item.view)}
-      onClick={(event) => {
-        event.preventDefault();
-        goToPath(pathForView(item.view));
-      }}
-      className={`site-nav__link ${activeView === item.view ? 'is-active' : ''}`}
-      aria-current={activeView === item.view ? 'page' : undefined}
-    >
-      {item.label}
-    </a>
-  );
+            <div className="site-nav__actions">
+              <button
+                type="button"
+                onClick={onToggleTutor}
+                className={`site-nav__tutor site-nav__desk${isTutorOpen ? ' is-open' : ''}`}
+                aria-expanded={isTutorOpen}
+              >
+                <MessageSquareText size={16} aria-hidden />
+                <span>Ask tutor</span>
+              </button>
 
-  const anchorLinks = onHome
-    ? HOME_ANCHORS.map((anchor) => (
-        <a
-          key={anchor.href}
-          href={anchor.href}
-          className="site-nav__link"
-          onClick={() => setMenuOpen(false)}
-        >
-          {anchor.label}
-        </a>
-      ))
-    : null;
+              {isPremium ? (
+                <span className="site-nav__premium">Premium</span>
+              ) : (
+                <RouteLink view="upgrade" active={activeView === 'upgrade'} className="site-nav__upgrade">
+                  <LockOpen size={15} aria-hidden />
+                  Upgrade
+                </RouteLink>
+              )}
 
-  const authLink = inAccountFlow ? (
-    <a
-      href={pathForView('login')}
-      onClick={(event) => {
-        event.preventDefault();
-        goToPath(pathForView('login'));
-      }}
-      className="site-btn site-btn--outline"
-    >
-      Log in
-    </a>
-  ) : (
-    <a
-      href={pathForView('signup')}
-      onClick={(event) => {
-        event.preventDefault();
-        goToPath(pathForView('signup'));
-      }}
-      className="site-btn site-btn--primary"
-    >
-      Get started
-    </a>
+              <RouteLink
+                view="setup"
+                active={activeView === 'setup'}
+                className="site-nav__avatar site-nav__desk"
+              >
+                <span aria-label="My profile">{initial}</span>
+              </RouteLink>
+            </div>
+          </div>
+        </header>
+
+        {/* Phone tab bar */}
+        <nav className="tabbar" aria-label="Main">
+          {APP_TABS.map(({ view, short, icon: Icon }) => (
+            <RouteLink key={view} view={view} active={activeView === view} className="tabbar__item">
+              <Icon size={22} aria-hidden />
+              <span>{short}</span>
+            </RouteLink>
+          ))}
+          <button
+            type="button"
+            className={`tabbar__item${isTutorOpen ? ' is-active' : ''}`}
+            onClick={onToggleTutor}
+            aria-expanded={isTutorOpen}
+          >
+            <MessageSquareText size={22} aria-hidden />
+            <span>Tutor</span>
+          </button>
+          <RouteLink view="setup" active={activeView === 'setup'} className="tabbar__item">
+            <UserRound size={22} aria-hidden />
+            <span>Me</span>
+          </RouteLink>
+        </nav>
+      </>
+    );
+  }
+
+  /* ----------------------------------------------------------- Visitor */
+  const onLogin = activeView === 'login';
+  const authActions = (
+    <>
+      {!onLogin && (
+        <RouteLink view="login" active={false} className="site-btn site-btn--quiet" onNavigate={closeMenu}>
+          Log in
+        </RouteLink>
+      )}
+      <RouteLink view="signup" active={false} className="site-btn site-btn--primary" onNavigate={closeMenu}>
+        {onLogin ? 'Create account' : 'Get started free'}
+      </RouteLink>
+    </>
   );
 
   return (
     <>
-    <header
-      className={`site-nav${tucked ? ' is-tucked' : ''}${atTop ? ' is-top' : ''}`}
-    >
-      <div className="site-nav__inner">
-        <button
-          type="button"
-          className="site-nav__brand"
-          onClick={() => go('home')}
-          aria-label="i-Teacher home"
-        >
-          <BrandMark />
-        </button>
-
-        <nav className="site-nav__links" aria-label="Primary">
-          {NAV_ITEMS.map(routeLink)}
-          {anchorLinks}
-        </nav>
-
-        <div className="site-nav__actions">
+      <header className={`site-nav${tucked ? ' is-tucked' : ''}${atTop ? ' is-top' : ''}`}>
+        <div className="site-nav__inner">
           <button
             type="button"
-            onClick={onToggleTutor}
-            className={`site-nav__tutor ${isTutorOpen ? 'is-open' : ''}`}
-            aria-expanded={isTutorOpen}
+            className="site-nav__brand"
+            onClick={() => onChangeView('home')}
+            aria-label="i-Teacher home"
           >
-            {isTutorOpen ? <X size={16} aria-hidden /> : <MessageSquareText size={16} aria-hidden />}
-            <span>{isTutorOpen ? 'Close tutor' : 'Ask tutor'}</span>
+            <BrandMark />
           </button>
 
-          <span className="site-nav__auth">{authLink}</span>
+          <nav className="site-nav__links" aria-label="Primary">
+            {onHome &&
+              HOME_ANCHORS.map((anchor) => (
+                <a key={anchor.href} href={anchor.href} className="site-nav__link">
+                  {anchor.label}
+                </a>
+              ))}
+          </nav>
 
-          <button
-            type="button"
-            onClick={() => go('setup')}
-            className="site-nav__avatar"
-            title="Candidate profile and goals"
-            aria-label="Candidate profile and goals"
-          >
-            {profile.fullName.charAt(0).toUpperCase() || 'A'}
-          </button>
-
-          <button
-            type="button"
-            className="site-nav__toggle"
-            onClick={() => setMenuOpen((open) => !open)}
-            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-            aria-expanded={menuOpen}
-          >
-            {menuOpen ? <X size={20} aria-hidden /> : <Menu size={20} aria-hidden />}
-          </button>
-        </div>
-      </div>
-
-    </header>
-
-    {/* Mobile menu: an iOS-style bottom sheet over a frosted backdrop. It
-        stays mounted so it can animate out; `inert` keeps it out of the tab
-        order while closed. */}
-    <div
-      className={`sheet-backdrop${menuOpen ? ' is-open' : ''}`}
-      onClick={closeMenu}
-      aria-hidden
-    />
-    <div
-      ref={sheetRef}
-      className={`sheet${menuOpen ? ' is-open' : ''}`}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Menu"
-      inert={!menuOpen}
-    >
-      <div className="sheet__handle" data-sheet-handle>
-        <span />
-      </div>
-      <nav className="sheet__list" aria-label="Mobile">
-        {[...NAV_ITEMS.map(routeLink), ...(anchorLinks ?? [])].map((link, index) => (
-          <div
-            className="sheet__row"
-            key={index}
-            style={{ ['--i' as string]: index }}
-          >
-            {link}
-            <ChevronRight size={18} aria-hidden />
+          <div className="site-nav__actions">
+            <span className="site-nav__auth">{authActions}</span>
+            {onHome && (
+              <button
+                type="button"
+                className="site-nav__toggle"
+                onClick={() => setMenuOpen((open) => !open)}
+                aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+                aria-expanded={menuOpen}
+              >
+                {menuOpen ? <X size={20} aria-hidden /> : <Menu size={20} aria-hidden />}
+              </button>
+            )}
           </div>
-        ))}
-      </nav>
-      <div className="sheet__cta">{authLink}</div>
-    </div>
+        </div>
+      </header>
+
+      {onHome && (
+        <>
+          <div
+            className={`sheet-backdrop${menuOpen ? ' is-open' : ''}`}
+            onClick={closeMenu}
+            aria-hidden
+          />
+          <div
+            ref={sheetRef}
+            className={`sheet${menuOpen ? ' is-open' : ''}`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu"
+            inert={!menuOpen}
+          >
+            <div className="sheet__handle" data-sheet-handle>
+              <span />
+            </div>
+            <nav className="sheet__list" aria-label="Mobile">
+              {HOME_ANCHORS.map((anchor, index) => (
+                <div className="sheet__row" key={anchor.href} style={{ ['--i' as string]: index }}>
+                  <a href={anchor.href} className="site-nav__link" onClick={closeMenu}>
+                    {anchor.label}
+                  </a>
+                  <ChevronRight size={18} aria-hidden />
+                </div>
+              ))}
+            </nav>
+            <div className="sheet__cta">{authActions}</div>
+          </div>
+        </>
+      )}
     </>
   );
 };

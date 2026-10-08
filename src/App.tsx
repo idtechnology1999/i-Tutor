@@ -2,15 +2,26 @@ import { useEffect, useState } from 'react';
 import type { UserProfile } from './types';
 import { Navbar } from './components/web/Navbar';
 import { initMotion } from './lib/motion';
-import { useRouter, pathForView, isAccountFlowView } from './lib/router';
+import { useRouter, pathForView, isAccountFlowView, isAppView } from './lib/router';
 import type { AppView } from './lib/router';
 import { HomePageView } from './components/web/HomePageView';
 import { DashboardView } from './components/web/DashboardView';
 import { CBTExamView } from './components/web/CBTExamView';
 import { SyllabusView } from './components/web/SyllabusView';
-import { SetupWizardView } from './components/web/SetupWizardView';
+import { ProfileView } from './components/web/ProfileView';
+import { UpgradeView } from './components/web/UpgradeView';
 import { AITutorDrawer } from './components/web/AITutorDrawer';
 import { RegistrationFlow } from './components/screens/web/RegistrationFlow';
+
+const PLAN_KEY = 'iteacher-plan';
+
+const storedPlan = (): UserProfile['plan'] => {
+  try {
+    return window.localStorage.getItem(PLAN_KEY) === 'premium' ? 'premium' : 'free';
+  } catch {
+    return 'free';
+  }
+};
 
 const DEFAULT_PROFILE: UserProfile = {
   fullName: 'Amina Chinedu',
@@ -28,22 +39,45 @@ const DEFAULT_PROFILE: UserProfile = {
   offlineCacheEnabled: true,
   diagnosticCompleted: true,
   diagnosticScore: 78,
+  plan: 'free',
+};
+
+const TITLES: Record<AppView, string> = {
+  home: 'i-Teacher — UTME & Post-UTME practice that teaches',
+  cbt: 'Practice exam — i-Teacher',
+  syllabus: 'Past questions — i-Teacher',
+  dashboard: 'Home — i-Teacher',
+  setup: 'My profile — i-Teacher',
+  upgrade: 'Upgrade — i-Teacher',
+  signup: 'Create your account — i-Teacher',
+  otp: 'Verify your contact — i-Teacher',
+  login: 'Log in — i-Teacher',
+  forgot: 'Reset your password — i-Teacher',
+  reset: 'Set a new password — i-Teacher',
+  track: 'Step 1 · Exam track — i-Teacher',
+  subjects: 'Step 2 · Subjects — i-Teacher',
+  institution: 'Step 3 · Institution & course — i-Teacher',
+  goals: 'Step 4 · Exam date & goal — i-Teacher',
+  permissions: 'Step 5 · Reminders & offline — i-Teacher',
+  baseline: 'Step 6 · Placement test — i-Teacher',
 };
 
 export function App() {
   const { view: activeView, navigate } = useRouter();
-  const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
+  const [profile, setProfile] = useState<UserProfile>(() => ({ ...DEFAULT_PROFILE, plan: storedPlan() }));
   // The demo profile is pre-filled, so onboarding has to be gated on whether a
   // candidate actually went through A04/A05 rather than on the profile being
   // non-empty.
   const [hasAccount, setHasAccount] = useState(false);
   const [isTutorOpen, setIsTutorOpen] = useState(false);
   const isCbt = activeView === 'cbt';
+  const inApp = isAppView(activeView);
 
   const goTo = (view: AppView) => navigate(pathForView(view));
+  const openTutor = () => setIsTutorOpen(true);
 
-  // The CBT hall owns the viewport while it is running — a shared header that
-  // scrolls away mid-paper costs the candidate the timer and palette.
+  // The exam owns the whole screen: no site header, no footer, no exits
+  // except its own (which ask first).
   useEffect(() => {
     document.documentElement.classList.toggle('is-cbt', isCbt);
     document.body.classList.toggle('cbt-active', isCbt);
@@ -52,6 +86,10 @@ export function App() {
       document.body.classList.remove('cbt-active');
     };
   }, [isCbt]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('has-tabbar', inApp);
+  }, [inApp]);
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => initMotion());
@@ -63,44 +101,37 @@ export function App() {
   }, [activeView]);
 
   useEffect(() => {
-    const titles: Record<AppView, string> = {
-      home: 'i-Teacher — UTME & Post-UTME practice that teaches',
-      cbt: 'CBT Simulation — i-Teacher',
-      syllabus: 'Syllabus & Past Questions — i-Teacher',
-      dashboard: 'Student Portal — i-Teacher',
-      setup: 'Candidate Profile — i-Teacher',
-      signup: 'Create your account — i-Teacher',
-      otp: 'Verify your contact — i-Teacher',
-      login: 'Log in — i-Teacher',
-      forgot: 'Reset your password — i-Teacher',
-      reset: 'Set a new password — i-Teacher',
-      track: 'Step 1 · Exam track — i-Teacher',
-      subjects: 'Step 2 · Subjects — i-Teacher',
-      institution: 'Step 3 · Institution & course — i-Teacher',
-      goals: 'Step 4 · Exam date & goal — i-Teacher',
-      permissions: 'Step 5 · Reminders & offline — i-Teacher',
-      baseline: 'Step 6 · Placement test — i-Teacher',
-    };
-    document.title = titles[activeView];
+    document.title = TITLES[activeView];
   }, [activeView]);
 
   const handleUpdateProfile = (updated: Partial<UserProfile>) => {
     setProfile((prev) => ({ ...prev, ...updated }));
   };
 
+  const activatePremium = () => {
+    handleUpdateProfile({ plan: 'premium' });
+    try {
+      window.localStorage.setItem(PLAN_KEY, 'premium');
+    } catch {
+      /* not persisted when storage is blocked */
+    }
+  };
+
   return (
     <div className="app-container">
-      <Navbar
-        activeView={activeView}
-        onChangeView={goTo}
-        profile={profile}
-        isTutorOpen={isTutorOpen}
-        onToggleTutor={() => setIsTutorOpen(!isTutorOpen)}
-      />
+      {!isCbt && (
+        <Navbar
+          activeView={activeView}
+          onChangeView={goTo}
+          profile={profile}
+          isTutorOpen={isTutorOpen}
+          onToggleTutor={() => setIsTutorOpen(!isTutorOpen)}
+        />
+      )}
 
       <main>
         {isCbt && (
-          <CBTExamView profile={profile} onExit={() => goTo('dashboard')} />
+          <CBTExamView profile={profile} onExit={() => goTo('dashboard')} onOpenTutor={openTutor} />
         )}
 
         {activeView === 'home' && (
@@ -108,7 +139,8 @@ export function App() {
             onLaunchCBT={() => goTo('cbt')}
             onOpenSyllabus={() => goTo('syllabus')}
             onGoToDashboard={() => goTo('dashboard')}
-            onOpenTutor={() => setIsTutorOpen(true)}
+            onOpenTutor={openTutor}
+            onUpgrade={() => goTo('upgrade')}
           />
         )}
 
@@ -117,17 +149,32 @@ export function App() {
             profile={profile}
             onLaunchCBT={() => goTo('cbt')}
             onOpenSyllabus={() => goTo('syllabus')}
-            onOpenTutor={() => setIsTutorOpen(true)}
+            onOpenTutor={openTutor}
+            onUpgrade={() => goTo('upgrade')}
+            onEditGoal={() => goTo('setup')}
           />
         )}
 
-        {activeView === 'syllabus' && <SyllabusView />}
+        {activeView === 'syllabus' && <SyllabusView onOpenTutor={openTutor} />}
+
+        {activeView === 'upgrade' && (
+          <UpgradeView
+            profile={profile}
+            onActivated={activatePremium}
+            onOpenTutor={openTutor}
+            onGoHome={() => goTo('dashboard')}
+          />
+        )}
 
         {activeView === 'setup' && (
-          <SetupWizardView
+          <ProfileView
             profile={profile}
             onUpdateProfile={handleUpdateProfile}
-            onFinish={() => goTo('dashboard')}
+            onUpgrade={() => goTo('upgrade')}
+            onLogOut={() => {
+              setHasAccount(false);
+              goTo('home');
+            }}
           />
         )}
 
@@ -144,20 +191,21 @@ export function App() {
         )}
       </main>
 
-      <AITutorDrawer isOpen={isTutorOpen} onClose={() => setIsTutorOpen(false)} />
+      <AITutorDrawer
+        isOpen={isTutorOpen}
+        onClose={() => setIsTutorOpen(false)}
+        isPremium={profile.plan === 'premium'}
+        onUpgrade={() => goTo('upgrade')}
+        studentName={profile.fullName.split(' ')[0]}
+      />
 
-      {activeView !== 'home' && (
+      {!isCbt && activeView !== 'home' && (
         <footer className="app-footer">
           <div className="container app-footer__inner">
-            <div>
-              <strong>i-Teacher</strong> &middot; Study platform for Nigerian
-              WAEC, NECO, UTME and Post-UTME candidates
-            </div>
-            <div className="footer-compliance-tags" style={{ color: 'var(--slate-400)' }}>
-              <span>2,400+ worked questions</span>
-              <span>Offline capable</span>
-              <span>Syllabus aligned 2024&ndash;2026</span>
-            </div>
+            <span>
+              <strong>i-Teacher</strong> · UTME &amp; Post-UTME practice
+            </span>
+            <span>© 2026 i-Teacher · Not affiliated with JAMB</span>
           </div>
         </footer>
       )}

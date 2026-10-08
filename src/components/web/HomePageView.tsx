@@ -29,6 +29,7 @@ interface HomePageViewProps {
   onOpenSyllabus: () => void;
   onGoToDashboard: () => void;
   onOpenTutor: () => void;
+  onUpgrade?: () => void;
 }
 
 /* Real photographs of Nigerian secondary-school students in a CBT lab, by
@@ -256,6 +257,7 @@ export const HomePageView: React.FC<HomePageViewProps> = ({
   onOpenSyllabus,
   onGoToDashboard,
   onOpenTutor,
+  onUpgrade,
 }) => {
   const [openFaq, setOpenFaq] = useState(0);
   const heroVisualRef = useRef<HTMLDivElement>(null);
@@ -723,7 +725,11 @@ export const HomePageView: React.FC<HomePageViewProps> = ({
                   </li>
                 ))}
               </ul>
-              <button type="button" className="lp-btn lp-btn--primary lp-btn--block" onClick={onGoToDashboard}>
+              <button
+                type="button"
+                className="lp-btn lp-btn--primary lp-btn--block"
+                onClick={onUpgrade ?? onGoToDashboard}
+              >
                 Get Premium
               </button>
             </div>

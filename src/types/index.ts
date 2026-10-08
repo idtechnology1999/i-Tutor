@@ -36,6 +36,8 @@ export interface UserProfile {
   offlineCacheEnabled: boolean;
   diagnosticCompleted: boolean;
   diagnosticScore: number;
+  /** Premium unlocks unlimited AI tutor help. Missing means free. */
+  plan?: 'free' | 'premium';
 }
 
 export type NetworkMode = '4G' | 'SLOW_3G' | 'OFFLINE';

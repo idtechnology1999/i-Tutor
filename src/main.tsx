@@ -5,6 +5,7 @@ import './styles/registration.css'
 import './styles/site.css'
 import './styles/previews.css'
 import './styles/motion.css'
+import './styles/app.css'
 import App from './App.tsx'
 
 createRoot(document.getElementById('root')!).render(
