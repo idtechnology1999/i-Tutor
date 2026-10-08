@@ -19,6 +19,7 @@ export type AppView =
   | 'admin'
   | 'course'
   | 'postutme'
+  | 'classroom'
   // Account
   | 'signup'
   | 'otp'
@@ -44,6 +45,7 @@ export const VIEW_PATHS: Record<AppView, string> = {
   admin: '/admin',
   course: '/practice/course',
   postutme: '/post-utme',
+  classroom: '/classroom',
   signup: '/register',
   otp: '/verify',
   login: '/login',
@@ -94,6 +96,7 @@ const APP_VIEWS: ReadonlySet<AppView> = new Set<AppView>([
   'upgrade',
   'course',
   'postutme',
+  'classroom',
 ]);
 
 /** Signed-in pages that share the app navigation (tab bar on phones). */

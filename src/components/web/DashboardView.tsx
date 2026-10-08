@@ -46,6 +46,7 @@ interface Props {
   /** Start a practice exam for one exam body (WAEC, NECO…). */
   onStartPractice: (practice: { name: string; subjects: string[]; exam: string }) => void;
   onOpenPastQuestions: (exam: ExamType) => void;
+  onOpenClassroom: () => void;
   /** Premium: the student's personal tutor. */
   tutor?: TutorPersona;
 }
@@ -84,6 +85,7 @@ export const DashboardView: React.FC<Props> = ({
   onOpenPastQuestions,
   onEditGoal,
   tutor,
+  onOpenClassroom,
 }) => {
   // One "room" per exam the student chose; tabs switch between them.
   const exams = examsOf(profile);
@@ -117,6 +119,24 @@ export const DashboardView: React.FC<Props> = ({
           <Flame size={16} aria-hidden /> 4-day streak
         </span>
       </header>
+
+      {/* ------------------------------------------------ Personal classroom */}
+      <button type="button" className="dash__class" onClick={onOpenClassroom}>
+        <span className="dash__class-board" aria-hidden>
+          <i>x² − 5x + 6 = 0</i>
+          <i>(x − 2)(x − 3) = 0</i>
+        </span>
+        <span className="dash__class-text">
+          <strong>My classroom</strong>
+          <span>
+            {tutor ? `${tutor.name} teaches` : 'Your AI teacher teaches'} you on a whiteboard, topic by topic from your
+            syllabus.
+          </span>
+        </span>
+        <span className="dash__class-go">
+          Enter <ArrowRight size={18} aria-hidden />
+        </span>
+      </button>
 
       {exams.length > 1 && (
         <nav className="dash__rooms" role="tablist" aria-label="Your exams">

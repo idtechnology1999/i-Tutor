@@ -15,6 +15,7 @@ import { RegistrationFlow } from './components/screens/web/RegistrationFlow';
 import { AdminApp } from './components/admin/AdminApp';
 import { CourseView } from './components/web/CourseView';
 import { PostUtmeView } from './components/web/PostUtmeView';
+import { ClassroomView } from './components/web/ClassroomView';
 import type { ExamType } from './lib/cms';
 import { tutorById } from './data/tutors';
 import { FREE_DAILY, readUsed, writeUsed } from './lib/tutor-quota';
@@ -69,6 +70,7 @@ const TITLES: Record<AppView, string> = {
   admin: 'Admin — i-Tutor',
   course: 'Practise for your course — i-Tutor',
   postutme: 'Post-UTME by school — i-Tutor',
+  classroom: 'My classroom — i-Tutor',
   signup: 'Create your account — i-Tutor',
   otp: 'Verify your contact — i-Tutor',
   login: 'Log in — i-Tutor',
@@ -233,6 +235,7 @@ export function App() {
             onEditGoal={() => goTo('setup')}
             onOpenCourse={() => goTo('course')}
             onOpenPostUtme={() => goTo('postutme')}
+            onOpenClassroom={() => goTo('classroom')}
             onStartPractice={launchCourseExam}
             tutor={tutor}
             onOpenPastQuestions={(exam) => {
@@ -252,6 +255,10 @@ export function App() {
             initialExam={pq.exam}
             initialSchool={pq.school}
           />
+        )}
+
+        {activeView === 'classroom' && (
+          <ClassroomView profile={profile} isPremium={isPremium} tutor={tutor} onUpgrade={() => goTo('upgrade')} />
         )}
 
         {activeView === 'postutme' && (
