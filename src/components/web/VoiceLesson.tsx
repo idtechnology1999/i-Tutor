@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { canSpeak, pickVoice, recogniserCtor } from '../../lib/speech';
+import type { Recogniser } from '../../lib/speech';
 import { ArrowLeft, Keyboard, Mic, PhoneOff, RotateCcw, SendHorizontal, Square } from 'lucide-react';
 
 /* -----------------------------------------------------------------------------
@@ -99,40 +101,6 @@ interface Line {
   who: 'tutor' | 'you';
   text: string;
 }
-
-/* Minimal typing for the browser speech recogniser (not in every TS DOM lib). */
-interface Recogniser {
-  lang: string;
-  interimResults: boolean;
-  continuous: boolean;
-  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null;
-  onend: (() => void) | null;
-  onerror: ((e: { error: string }) => void) | null;
-  start: () => void;
-  stop: () => void;
-  abort: () => void;
-}
-type RecogniserCtor = new () => Recogniser;
-
-const recogniserCtor = (): RecogniserCtor | null => {
-  if (typeof window === 'undefined') return null;
-  const w = window as unknown as { SpeechRecognition?: RecogniserCtor; webkitSpeechRecognition?: RecogniserCtor };
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
-};
-
-const canSpeak = () => typeof window !== 'undefined' && 'speechSynthesis' in window;
-
-/** A warm, clear English voice — Nigerian if the device has one. */
-const pickVoice = () => {
-  const voices = window.speechSynthesis.getVoices();
-  return (
-    voices.find((v) => v.lang === 'en-NG') ??
-    voices.find((v) => v.lang === 'en-GB' && /female|samantha|serena|google/i.test(v.name)) ??
-    voices.find((v) => v.lang === 'en-GB') ??
-    voices.find((v) => v.lang.startsWith('en')) ??
-    null
-  );
-};
 
 interface Props {
   studentName: string;

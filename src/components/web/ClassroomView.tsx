@@ -1,5 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Eraser, GraduationCap, ListChecks, PenLine, Play, RotateCcw, SendHorizontal, SkipForward, Volume2, VolumeX } from 'lucide-react';
+import {
+  Eraser,
+  GraduationCap,
+  ListChecks,
+  Lock,
+  Mic,
+  PenLine,
+  Play,
+  RotateCcw,
+  SendHorizontal,
+  SkipForward,
+  Square,
+  Volume2,
+  VolumeX,
+} from 'lucide-react';
+import { recogniserCtor, speakText } from '../../lib/speech';
+import type { Recogniser } from '../../lib/speech';
 import type { UserProfile } from '../../types';
 import type { TutorPersona } from '../../data/tutors';
 import { SYLLABUS, lessonFor, outlineFor, syllabusSubject } from '../../data/syllabus';
@@ -67,6 +83,10 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
       text: `Hi ${profile.fullName.split(' ')[0]}, welcome to your classroom. I know your syllabus for ${subjects.join(', ') || 'your subjects'}. Pick a topic and say “start”, or type “teach me” and a topic.`,
     },
   ]);
+  const [listening, setListening] = useState(false);
+  const recRef = useRef<Recogniser | null>(null);
+  const heardRef = useRef('');
+  const hasMic = recogniserCtor() !== null;
   const boardRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
 
@@ -90,18 +110,62 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
   useEffect(
     () => () => {
       if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      recRef.current?.abort();
     },
     [],
   );
 
+  // `voiced` keeps talking back when the student spoke to the teacher.
+  const voicedRef = useRef(false);
   const say = (line: string, extra?: Partial<Chat>) => {
     setChat((prev) => [...prev, { who: 'teacher', text: line, ...extra }]);
-    if (speak && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(line);
-      u.lang = 'en-GB';
-      u.rate = 0.97;
-      window.speechSynthesis.speak(u);
+    if (speak || voicedRef.current) speakText(line.replace(/\n/g, '. '));
+  };
+
+  /** Premium: tap the mic, speak, and the teacher acts on it and answers aloud. */
+  const talk = () => {
+    if (!isPremium) {
+      say(`Talking to ${tutor?.name ?? 'your teacher'} out loud is part of Premium. You can still type to me.`, { upgrade: true });
+      return;
+    }
+    if (listening) {
+      recRef.current?.stop();
+      return;
+    }
+    const Ctor = recogniserCtor();
+    if (!Ctor) return;
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    heardRef.current = '';
+    const rec = new Ctor();
+    rec.lang = 'en-NG';
+    rec.interimResults = true;
+    rec.continuous = false;
+    rec.onresult = (e) => {
+      const heard = Array.from(e.results)
+        .map((r) => r[0].transcript)
+        .join(' ');
+      heardRef.current = heard;
+      setText(heard);
+    };
+    rec.onerror = (e) => {
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        say('Your microphone is blocked. Allow it in the browser, or type to me instead.');
+      }
+    };
+    rec.onend = () => {
+      recRef.current = null;
+      setListening(false);
+      if (heardRef.current.trim()) {
+        voicedRef.current = true;
+        handle(heardRef.current);
+      }
+    };
+    recRef.current = rec;
+    setListening(true);
+    try {
+      rec.start();
+    } catch {
+      setListening(false);
     }
   };
 
@@ -354,10 +418,21 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
               handle(text);
             }}
           >
+            {hasMic && (
+              <button
+                type="button"
+                className={`cls__mic${listening ? ' is-on' : ''}${isPremium ? '' : ' is-locked'}`}
+                onClick={talk}
+                aria-label={listening ? 'Stop listening' : `Talk to ${teacher}`}
+                aria-pressed={listening}
+              >
+                {listening ? <Square size={16} aria-hidden /> : isPremium ? <Mic size={18} aria-hidden /> : <Lock size={16} aria-hidden />}
+              </button>
+            )}
             <input
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Say “teach me indices”…"
+              placeholder={listening ? 'Listening…' : 'Say or type “teach me indices”…'}
               aria-label={`Message ${teacher}`}
             />
             <button type="submit" disabled={!text.trim()} aria-label="Send">
