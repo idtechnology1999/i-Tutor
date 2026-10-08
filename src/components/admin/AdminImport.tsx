@@ -15,7 +15,7 @@ import { CMS_SUBJECTS, EXAM_TYPES, cms } from '../../lib/cms';
 import type { CmsSubject, ExamType, QuestionDraft } from '../../lib/cms';
 import { organiseWithAI } from '../../lib/question-import';
 import type { ImportResult, ParsedQuestion } from '../../lib/question-import';
-import type { AdminNav } from './AdminApp';
+import type { AdminNav, ImportPreset } from './AdminApp';
 import { PageHead } from './AdminApp';
 import { publishProblems } from '../../lib/question-rules';
 
@@ -51,11 +51,13 @@ interface ReviewItem extends ParsedQuestion {
   include: boolean;
 }
 
-export const AdminImport: React.FC<{ nav: AdminNav }> = ({ nav }) => {
+export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null }> = ({ nav, preset }) => {
   const [stage, setStage] = useState<Stage>('setup');
-  const [subject, setSubject] = useState<CmsSubject>('Physics');
+  const [subject, setSubject] = useState<CmsSubject>(preset?.subject ?? 'Physics');
   const [examType, setExamType] = useState<ExamType>('UTME');
-  const [year, setYear] = useState('');
+  const [year, setYear] = useState(preset?.year ? String(preset.year) : '');
+  // Coming from a subject/year in the bank: details are already known.
+  const [showDetails, setShowDetails] = useState(!preset);
   const [source, setSource] = useState('');
   const [text, setText] = useState('');
   const [file, setFile] = useState<File | null>(null);
@@ -211,8 +213,17 @@ export const AdminImport: React.FC<{ nav: AdminNav }> = ({ nav }) => {
             {summary.drafts > 0 && <>{summary.drafts} saved as drafts for you to check.</>}
           </p>
           <div className="adm-row-actions">
-            <button type="button" className="adm-btn adm-btn--primary" onClick={() => nav.go('questions', { filter: summary.drafts ? 'review' : 'all' })}>
-              {summary.drafts ? 'Review drafts' : 'View questions'}
+            <button
+              type="button"
+              className="adm-btn adm-btn--primary"
+              onClick={() =>
+                nav.go('questions', {
+                  filter: summary.drafts ? 'review' : 'all',
+                  scope: { subject, year: year ? Number(year) : null },
+                })
+              }
+            >
+              {summary.drafts ? 'Review drafts' : `View ${subject}${year ? ` ${year}` : ''}`}
             </button>
             <button type="button" className="adm-btn" onClick={reset}>
               Import another paper
@@ -382,11 +393,37 @@ export const AdminImport: React.FC<{ nav: AdminNav }> = ({ nav }) => {
   return (
     <div className="adm-page">
       <PageHead
-        title="Import with AI"
-        sub="Paste a past-question paper or upload it. The AI sorts it into questions, options, answers and explanations for you to check."
+        title={preset ? `Add ${subject} past questions` : 'Import with AI'}
+        sub="Paste the paper or upload it. The AI sorts it into questions, options, answers and explanations for you to check."
+        actions={
+          preset ? (
+            <button
+              type="button"
+              className="adm-btn"
+              onClick={() => nav.go('questions', { scope: { subject, year: year ? Number(year) : null } })}
+            >
+              <ArrowLeft size={16} aria-hidden /> Back to {subject}
+              {year ? ` ${year}` : ''}
+            </button>
+          ) : undefined
+        }
       />
 
-      <div className="adm-import">
+      {!showDetails && (
+        <div className="adm-target">
+          <span className="adm-target__label">Adding to</span>
+          <strong>
+            {subject} · {examType}
+            {year ? ` · ${year}` : ''}
+          </strong>
+          <button type="button" className="adm-link" onClick={() => setShowDetails(true)}>
+            Change
+          </button>
+        </div>
+      )}
+
+      <div className={`adm-import${showDetails ? '' : ' adm-import--single'}`}>
+        {showDetails && (
         <section className="adm-card">
           <h2 className="adm-card__title">
             <span className="adm-num">1</span> About this paper
@@ -422,13 +459,22 @@ export const AdminImport: React.FC<{ nav: AdminNav }> = ({ nav }) => {
             </label>
           </div>
         </section>
+        )}
 
         <section className="adm-card">
           <div className="adm-card__head">
             <h2 className="adm-card__title">
-              <span className="adm-num">2</span> Paste or upload the paper
+              {showDetails && <span className="adm-num">2</span>} Paste the paper or the questions you want
             </h2>
-            <button type="button" className="adm-link" onClick={() => { setText(SAMPLE); setFile(null); setSubject('Physics'); setExamType('UTME'); setYear('2019'); }}>
+            <button type="button" className="adm-link" onClick={() => {
+                setText(SAMPLE);
+                setFile(null);
+                if (!preset) {
+                  setSubject('Physics');
+                  setExamType('UTME');
+                  setYear('2019');
+                }
+              }}>
               <ClipboardPaste size={16} aria-hidden /> Try a sample paper
             </button>
           </div>
@@ -438,7 +484,7 @@ export const AdminImport: React.FC<{ nav: AdminNav }> = ({ nav }) => {
             rows={11}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={'Paste the questions here exactly as you copied them — messy is fine.\n\n1. Which of the following…\nA. …  B. …  C. …  D. …\n\nAnswers: 1. B  2. D …'}
+            placeholder={`Paste the whole ${subject}${year ? ` ${year}` : ''} paper here, or just the questions for the topics you want — exactly as you copied it, messy is fine.\n\n1. Which of the following…\nA. …  B. …  C. …  D. …\n\nAnswers: 1. B  2. D …`}
             aria-label="Paper text"
           />
 

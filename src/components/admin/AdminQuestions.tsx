@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { Plus, ScanText, Search, Trash2 } from 'lucide-react';
 import { CMS_SUBJECTS, cms, useCms } from '../../lib/cms';
-import type { CmsQuestion, QuestionDraft } from '../../lib/cms';
-import type { AdminNav, QuestionFilter } from './AdminApp';
+import type { CmsQuestion, CmsSubject, QuestionDraft } from '../../lib/cms';
+import type { AdminNav, BankScope, QuestionFilter } from './AdminApp';
 import { PageHead, StatusChip } from './AdminApp';
 import { QuestionEditor } from './QuestionEditor';
 import { blankQuestion, publishProblems } from '../../lib/question-rules';
@@ -14,34 +14,56 @@ const FILTERS: Array<{ id: QuestionFilter; label: string }> = [
   { id: 'review', label: 'Needs review' },
 ];
 
+const THIS_YEAR = new Date().getFullYear();
+// Papers from 2000 to last year, newest first.
+const YEARS = Array.from({ length: THIS_YEAR - 2000 }, (_, i) => THIS_YEAR - 1 - i);
+
 export const AdminQuestions: React.FC<{
   nav: AdminNav;
   filter: QuestionFilter;
   onFilter: (f: QuestionFilter) => void;
-}> = ({ nav, filter, onFilter }) => {
+  scope: BankScope;
+  onScope: (s: BankScope) => void;
+}> = ({ nav, filter, onFilter, scope, onScope }) => {
   const { questions } = useCms();
-  const [subject, setSubject] = useState<string>('All');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [editing, setEditing] = useState<CmsQuestion | 'new' | null>(null);
 
-  const list = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    return questions.filter((q) => {
-      if (subject !== 'All' && q.subject !== subject) return false;
-      if (filter === 'published' && q.status !== 'published') return false;
-      if (filter === 'draft' && q.status !== 'draft') return false;
-      if (filter === 'review' && !(q.needsReview || q.status === 'draft')) return false;
-      if (term && !`${q.question} ${q.topic} ${q.source} ${q.year ?? ''}`.toLowerCase().includes(term)) return false;
-      return true;
-    });
-  }, [questions, subject, filter, search]);
+  const subject = scope.subject;
+  const year = scope.year;
+  const inSubject = questions.filter((q) => subject === 'All' || q.subject === subject);
+  const inScope = inSubject.filter((q) => year === null || q.year === year);
+
+  const term = search.trim().toLowerCase();
+  const list = inScope.filter((q) => {
+    if (filter === 'published' && q.status !== 'published') return false;
+    if (filter === 'draft' && q.status !== 'draft') return false;
+    if (filter === 'review' && !(q.needsReview || q.status === 'draft')) return false;
+    if (term && !`${q.question} ${q.topic} ${q.source} ${q.year ?? ''}`.toLowerCase().includes(term)) return false;
+    return true;
+  });
 
   const counts = {
-    all: questions.length,
-    published: questions.filter((q) => q.status === 'published').length,
-    draft: questions.filter((q) => q.status === 'draft').length,
-    review: questions.filter((q) => q.needsReview || q.status === 'draft').length,
+    all: inScope.length,
+    published: inScope.filter((q) => q.status === 'published').length,
+    draft: inScope.filter((q) => q.status === 'draft').length,
+    review: inScope.filter((q) => q.needsReview || q.status === 'draft').length,
+  };
+
+  const yearCount = (y: number) => inSubject.filter((q) => q.year === y).length;
+  const undated = inSubject.filter((q) => q.year === null).length;
+  const label = `${subject === 'All' ? 'All subjects' : subject}${year ? ` ${year}` : ''}`;
+  const addLabel = subject === 'All' ? 'Add past questions' : `Add past questions to ${subject}${year ? ` ${year}` : ''}`;
+
+  const openImport = () =>
+    nav.go('import', {
+      preset: subject === 'All' ? null : { subject: subject as CmsSubject, year },
+    });
+
+  const setScope = (patch: Partial<BankScope>) => {
+    setSelected(new Set());
+    onScope({ ...scope, ...patch });
   };
 
   const allSelected = list.length > 0 && list.every((q) => selected.has(q.id));
@@ -92,20 +114,70 @@ export const AdminQuestions: React.FC<{
 
   return (
     <div className="adm-page">
-      <PageHead
-        title="Past questions"
-        sub={`${counts.published} published · ${counts.review} waiting for review`}
-        actions={
-          <>
-            <button type="button" className="adm-btn" onClick={() => setEditing('new')}>
-              <Plus size={18} aria-hidden /> Add one
-            </button>
-            <button type="button" className="adm-btn adm-btn--primary" onClick={() => nav.go('import')}>
-              <ScanText size={18} aria-hidden /> Import a paper
-            </button>
-          </>
-        }
-      />
+      <PageHead title="Past questions" sub="Choose a subject and year, then add that year’s paper — the AI arranges it for you." />
+
+      <section className="adm-card adm-scope">
+        <div className="adm-field">
+          <span>Subject</span>
+          <div className="adm-pills" role="radiogroup" aria-label="Subject">
+            {['All', ...CMS_SUBJECTS].map((s) => {
+              const n = s === 'All' ? questions.length : questions.filter((q) => q.subject === s).length;
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  role="radio"
+                  aria-checked={subject === s}
+                  className={subject === s ? 'is-on' : ''}
+                  onClick={() => setScope({ subject: s, year: null })}
+                >
+                  {s === 'All' ? 'All subjects' : s}
+                  <small>{n}</small>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="adm-scope__row">
+          <label className="adm-field adm-scope__year">
+            <span>Year</span>
+            <select
+              className="adm-input"
+              value={year ?? ''}
+              onChange={(e) => setScope({ year: e.target.value ? Number(e.target.value) : null })}
+            >
+              <option value="">All years ({inSubject.length})</option>
+              {YEARS.map((y) => {
+                const n = yearCount(y);
+                return (
+                  <option key={y} value={y}>
+                    {y}
+                    {n ? ` — ${n} question${n === 1 ? '' : 's'}` : ' — none yet'}
+                  </option>
+                );
+              })}
+            </select>
+          </label>
+
+          <button type="button" className="adm-btn adm-btn--primary adm-btn--lg adm-scope__add" onClick={openImport}>
+            <ScanText size={20} aria-hidden /> {addLabel}
+          </button>
+        </div>
+        {undated > 0 && year === null && (
+          <p className="adm-muted">{undated} question{undated === 1 ? ' has' : 's have'} no year yet — open one to add it.</p>
+        )}
+      </section>
+
+      <div className="adm-scope__title">
+        <h2>{label}</h2>
+        <span className="adm-muted">
+          {counts.all} question{counts.all === 1 ? '' : 's'} · {counts.published} published
+        </span>
+        <button type="button" className="adm-link" onClick={() => setEditing('new')}>
+          <Plus size={16} aria-hidden /> Type one in
+        </button>
+      </div>
 
       <div className="adm-toolbar">
         <label className="adm-input adm-input--icon adm-search">
@@ -114,16 +186,10 @@ export const AdminQuestions: React.FC<{
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search questions, topics, sources"
+            placeholder={`Search ${label} questions`}
             aria-label="Search questions"
           />
         </label>
-        <select className="adm-input adm-select" value={subject} onChange={(e) => setSubject(e.target.value)} aria-label="Subject">
-          <option>All</option>
-          {CMS_SUBJECTS.map((s) => (
-            <option key={s}>{s}</option>
-          ))}
-        </select>
       </div>
 
       <div className="adm-tabs" role="tablist" aria-label="Status">
@@ -144,11 +210,17 @@ export const AdminQuestions: React.FC<{
 
       {list.length === 0 ? (
         <div className="adm-empty">
-          <h3>No questions here</h3>
-          <p>{search ? 'Try a different search.' : 'Import a paper and the AI will organise it into questions for you.'}</p>
-          <button type="button" className="adm-btn adm-btn--primary" onClick={() => nav.go('import')}>
-            <ScanText size={18} aria-hidden /> Import a paper
-          </button>
+          <h3>{search ? 'Nothing matches that search' : `No ${label} questions yet`}</h3>
+          <p>
+            {search
+              ? 'Try a different word.'
+              : 'Paste the whole paper for this year (or just the questions you want) and the AI will arrange them for you to check and publish.'}
+          </p>
+          {!search && (
+            <button type="button" className="adm-btn adm-btn--primary" onClick={openImport}>
+              <ScanText size={18} aria-hidden /> {addLabel}
+            </button>
+          )}
         </div>
       ) : (
         <div className="adm-table" role="table" aria-label="Questions">
@@ -203,7 +275,11 @@ export const AdminQuestions: React.FC<{
 
       {editing && (
         <QuestionEditor
-          initial={editing === 'new' ? blankQuestion() : editing}
+          initial={
+            editing === 'new'
+              ? { ...blankQuestion(), ...(subject !== 'All' ? { subject: subject as CmsSubject } : {}), ...(year ? { year } : {}) }
+              : editing
+          }
           isNew={editing === 'new'}
           onClose={() => setEditing(null)}
           onSave={saveEdit}
