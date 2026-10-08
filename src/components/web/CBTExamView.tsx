@@ -39,6 +39,7 @@ interface Props {
   /** "Solve with my tutor" (Premium) in the answer review. */
   onSolve?: (req: SolveRequest) => void;
   solveLabel?: string;
+  askLabel?: string;
 }
 
 type Subject = string;
@@ -91,7 +92,7 @@ const minutesLabel = (count: number) => {
   return rest ? `${Math.floor(mins / 60)} hr ${rest} min` : `${mins / 60} hr`;
 };
 
-export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, presetSubject, presetCourse, onSolve, solveLabel }) => {
+export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, presetSubject, presetCourse, onSolve, solveLabel, askLabel }) => {
   // Published questions from the CMS, in the four CBT subjects.
   const { questions: cmsQuestions } = useCms();
   const bank = cmsQuestions
@@ -540,6 +541,25 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
             <span>
               Question <b>{currentQIndex + 1}</b> of {subjectQuestions.length}
             </span>
+            {onSolve && (
+              <button
+                type="button"
+                className="ask-ai"
+                onClick={() =>
+                  onSolve({
+                    subject: activeQuestion.subject,
+                    question: activeQuestion.question,
+                    options: activeQuestion.options,
+                    correctAnswer: activeQuestion.correctAnswer,
+                    explanation: activeQuestion.explanation,
+                    topic: activeQuestion.topic,
+                    mode: 'hint',
+                  })
+                }
+              >
+                <MessageSquareText size={15} aria-hidden /> {askLabel ?? 'Ask AI'}
+              </button>
+            )}
             <button
               type="button"
               className={`exam__flag${isFlagged ? ' is-on' : ''}`}

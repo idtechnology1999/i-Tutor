@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, AudioLines, BadgeCheck, LockOpen, MessageSquareText, Mic, SendHorizontal, X } from 'lucide-react';
 import { VoiceLesson } from './VoiceLesson';
-import { solveSteps } from '../../data/tutors';
+import { FREE_DAILY, readUsed, writeUsed } from '../../lib/tutor-quota';
+import { hintSteps, solveSteps } from '../../data/tutors';
 import type { SolveRequest, TutorPersona } from '../../data/tutors';
 import type { AppView } from '../../lib/router';
 
@@ -30,24 +31,6 @@ interface Message {
   links?: NavLink[];
 }
 
-const FREE_DAILY = 5;
-const quotaKey = () => `itutor-tutor-${new Date().toISOString().slice(0, 10)}`;
-
-const readUsed = () => {
-  try {
-    return Number(window.localStorage.getItem(quotaKey()) ?? 0) || 0;
-  } catch {
-    return 0;
-  }
-};
-
-const writeUsed = (n: number) => {
-  try {
-    window.localStorage.setItem(quotaKey(), String(n));
-  } catch {
-    /* storage blocked — the count simply resets on reload */
-  }
-};
 
 /** Light formatting: **bold**, $maths$ and a few LaTeX commands as plain text. */
 const formatText = (text: string) => {
@@ -174,8 +157,14 @@ export const AITutorDrawer: React.FC<Props> = ({
     },
     ...(solve
       ? [
-          { sender: 'user' as const, text: `Help me solve this ${solve.subject} question: ${solve.question}` },
-          { sender: 'tutor' as const, text: solveSteps(solve, tutor) },
+          {
+            sender: 'user' as const,
+            text:
+              solve.mode === 'hint'
+                ? `I’m stuck on this ${solve.subject} question — can I have a hint? ${solve.question}`
+                : `Please explain this ${solve.subject} question: ${solve.question}`,
+          },
+          { sender: 'tutor' as const, text: solve.mode === 'hint' ? hintSteps(solve, tutor) : solveSteps(solve, tutor) },
         ]
       : []),
   ]);

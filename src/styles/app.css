@@ -3202,3 +3202,33 @@ body.cbt-active {
   .dash__mytutor { flex-wrap: wrap; }
   .dash__mytutor .ui-btn { width: 100%; justify-content: center; }
 }
+
+/* "Ask AI" on every question */
+.ask-ai {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--brand) 25%, transparent);
+  border-radius: 999px;
+  background: var(--brand-tint);
+  color: var(--brand);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.3s var(--spring, ease);
+}
+.ask-ai:hover { background: #d8e8e6; }
+.ask-ai:active { transform: scale(0.95); }
+.pq__meta .ask-ai { margin-left: auto; }
+.exam__meta .ask-ai { margin-left: auto; margin-right: 8px; }
+@media (max-width: 640px) {
+  /* Verified tag and Ask AI share the top row; details go underneath. */
+  .pq__meta > span:not(.ui-chip) {
+    order: 3;
+    flex-basis: 100%;
+  }
+}

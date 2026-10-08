@@ -17,6 +17,7 @@ import { CourseView } from './components/web/CourseView';
 import { PostUtmeView } from './components/web/PostUtmeView';
 import type { ExamType } from './lib/cms';
 import { tutorById } from './data/tutors';
+import { FREE_DAILY, readUsed, writeUsed } from './lib/tutor-quota';
 import type { SolveRequest } from './data/tutors';
 
 const PLAN_KEY = 'itutor-plan';
@@ -102,16 +103,21 @@ export function App() {
   const isPremium = profile.plan === 'premium';
   const tutor = isPremium ? tutorById(profile.tutorId) : undefined;
   // "Solve this with my tutor": Premium opens a fresh session on that question.
-  const [solve, setSolve] = useState<{ req: SolveRequest; n: number } | null>(null);
+  const [solve, setSolve] = useState<{ req?: SolveRequest; n: number } | null>(null);
+  // Free students can ask too; each one uses one of today's free questions.
   const solveWithTutor = (req: SolveRequest) => {
+    let allowed = true;
     if (!isPremium) {
-      goTo('upgrade');
-      return;
+      const used = readUsed();
+      allowed = used < FREE_DAILY;
+      if (allowed) writeUsed(used + 1);
     }
-    setSolve((prev) => ({ req, n: (prev?.n ?? 0) + 1 }));
+    // When the free questions are used up the tutor opens on the upgrade prompt.
+    setSolve((prev) => (allowed ? { req, n: (prev?.n ?? 0) + 1 } : { n: (prev?.n ?? 0) + 1 }));
     setIsTutorOpen(true);
   };
-  const solveLabel = isPremium ? `Solve with ${tutor?.name ?? 'my tutor'}` : 'Solve step by step · Premium';
+  const solveLabel = isPremium ? `Solve with ${tutor?.name ?? 'my tutor'}` : 'Explain with AI';
+  const askLabel = isPremium ? `Ask ${tutor?.name ?? 'my tutor'}` : 'Ask AI';
   const chooseTutor = (tutorId: string) => {
     handleUpdateProfile({ tutorId });
     try {
@@ -193,6 +199,7 @@ export function App() {
           <CBTExamView
             onSolve={solveWithTutor}
             solveLabel={solveLabel}
+            askLabel={askLabel}
             key={examCourse ? `${examCourse.exam ?? 'UTME'}-${examCourse.school ?? ''}-${examCourse.name}` : (examSubject ?? 'any')}
             profile={profile}
             presetSubject={examSubject}
@@ -239,6 +246,7 @@ export function App() {
           <SyllabusView
             onSolve={solveWithTutor}
             solveLabel={solveLabel}
+            askLabel={askLabel}
             key={`${pq.exam ?? 'any'}-${pq.school ?? ''}`}
             onOpenTutor={openTutor}
             initialExam={pq.exam}

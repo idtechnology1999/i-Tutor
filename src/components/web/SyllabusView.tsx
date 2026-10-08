@@ -12,12 +12,14 @@ interface Props {
   /** "Solve with my tutor" (Premium) on a question. */
   onSolve?: (req: SolveRequest) => void;
   solveLabel?: string;
+  /** Label for the Ask button on every question ("Ask AI" / "Ask Tobi"). */
+  askLabel?: string;
 }
 
 // Always offered, even before questions exist, so the layout stays familiar.
 const CORE_SUBJECTS = ['English', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Economics'];
 
-export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initialSchool, onSolve, solveLabel }) => {
+export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initialSchool, onSolve, solveLabel, askLabel }) => {
   const [exam, setExam] = useState<ExamType>(initialExam ?? 'UTME');
   const [school, setSchool] = useState(initialSchool ?? '');
   const { questions: allQs } = useCms();
@@ -163,6 +165,25 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initia
                   {q.year ? ` ${q.year}` : ''} · Question {i + 1}
                   {q.topic ? ` · ${q.topic}` : ''}
                 </span>
+                {onSolve && (
+                  <button
+                    type="button"
+                    className="ask-ai"
+                    onClick={() =>
+                      onSolve({
+                        subject: q.subject,
+                        question: q.question,
+                        options: q.options,
+                        correctAnswer: q.correctAnswer,
+                        explanation: q.explanation,
+                        yourAnswer: tried[q.id],
+                        topic: q.topic,
+                      })
+                    }
+                  >
+                    <MessageSquareText size={15} aria-hidden /> {askLabel ?? 'Ask AI'}
+                  </button>
+                )}
               </div>
 
               <h2 className="pq__question">{q.question}</h2>

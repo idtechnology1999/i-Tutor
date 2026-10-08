@@ -53,7 +53,19 @@ export interface SolveRequest {
   correctAnswer: string;
   explanation: string;
   yourAnswer?: string;
+  topic?: string;
+  /** 'hint' during a timed exam: point the way, don't give the answer. */
+  mode?: 'solve' | 'hint';
 }
+
+/** During a timed practice exam: a nudge, never the answer. */
+export const hintSteps = (q: SolveRequest, tutor?: TutorPersona) =>
+  [
+    tutor ? `${tutor.name} here — no answers mid-exam, but here’s a nudge.` : 'No answers mid-exam, but here’s a nudge.',
+    `**What topic is this?** ${q.topic || q.subject}.`,
+    '**Try this:** underline the key words in the question, then cross out any option that clearly doesn’t match them. Pick from what’s left.',
+    'When you submit, tap the question in your results and I’ll show you the full working.',
+  ].join('\n\n');
 
 /** A worked, step-by-step solution in the tutor's voice. */
 export const solveSteps = (q: SolveRequest, tutor?: TutorPersona) => {
