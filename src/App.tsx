@@ -16,14 +16,25 @@ import { AdminApp } from './components/admin/AdminApp';
 import { CourseView } from './components/web/CourseView';
 import { PostUtmeView } from './components/web/PostUtmeView';
 import type { ExamType } from './lib/cms';
+import { tutorById } from './data/tutors';
+import type { SolveRequest } from './data/tutors';
 
 const PLAN_KEY = 'itutor-plan';
+const TUTOR_KEY = 'itutor-tutor';
 
 const storedPlan = (): UserProfile['plan'] => {
   try {
     return window.localStorage.getItem(PLAN_KEY) === 'premium' ? 'premium' : 'free';
   } catch {
     return 'free';
+  }
+};
+
+const storedTutor = () => {
+  try {
+    return window.localStorage.getItem(TUTOR_KEY) ?? undefined;
+  } catch {
+    return undefined;
   }
 };
 
@@ -73,7 +84,7 @@ const TITLES: Record<AppView, string> = {
 
 export function App() {
   const { view: activeView, path, navigate } = useRouter();
-  const [profile, setProfile] = useState<UserProfile>(() => ({ ...DEFAULT_PROFILE, plan: storedPlan() }));
+  const [profile, setProfile] = useState<UserProfile>(() => ({ ...DEFAULT_PROFILE, plan: storedPlan(), tutorId: storedTutor() }));
   // The demo profile is pre-filled, so onboarding has to be gated on whether a
   // candidate actually went through A04/A05 rather than on the profile being
   // non-empty.
@@ -88,6 +99,27 @@ export function App() {
 
   const goTo = (view: AppView) => navigate(pathForView(view));
   const openTutor = () => setIsTutorOpen(true);
+  const isPremium = profile.plan === 'premium';
+  const tutor = isPremium ? tutorById(profile.tutorId) : undefined;
+  // "Solve this with my tutor": Premium opens a fresh session on that question.
+  const [solve, setSolve] = useState<{ req: SolveRequest; n: number } | null>(null);
+  const solveWithTutor = (req: SolveRequest) => {
+    if (!isPremium) {
+      goTo('upgrade');
+      return;
+    }
+    setSolve((prev) => ({ req, n: (prev?.n ?? 0) + 1 }));
+    setIsTutorOpen(true);
+  };
+  const solveLabel = isPremium ? `Solve with ${tutor?.name ?? 'my tutor'}` : 'Solve step by step · Premium';
+  const chooseTutor = (tutorId: string) => {
+    handleUpdateProfile({ tutorId });
+    try {
+      window.localStorage.setItem(TUTOR_KEY, tutorId);
+    } catch {
+      /* not persisted when storage is blocked */
+    }
+  };
   const launchExam = (subject?: DiagnosticQuestion['subject']) => {
     setExamSubject(subject);
     setExamCourse(undefined);
@@ -159,6 +191,8 @@ export function App() {
       <main>
         {isCbt && (
           <CBTExamView
+            onSolve={solveWithTutor}
+            solveLabel={solveLabel}
             key={examCourse ? `${examCourse.exam ?? 'UTME'}-${examCourse.school ?? ''}-${examCourse.name}` : (examSubject ?? 'any')}
             profile={profile}
             presetSubject={examSubject}
@@ -193,6 +227,7 @@ export function App() {
             onOpenCourse={() => goTo('course')}
             onOpenPostUtme={() => goTo('postutme')}
             onStartPractice={launchCourseExam}
+            tutor={tutor}
             onOpenPastQuestions={(exam) => {
               setPq({ exam });
               goTo('syllabus');
@@ -202,6 +237,8 @@ export function App() {
 
         {activeView === 'syllabus' && (
           <SyllabusView
+            onSolve={solveWithTutor}
+            solveLabel={solveLabel}
             key={`${pq.exam ?? 'any'}-${pq.school ?? ''}`}
             onOpenTutor={openTutor}
             initialExam={pq.exam}
@@ -229,6 +266,8 @@ export function App() {
           <UpgradeView
             profile={profile}
             onActivated={activatePremium}
+            tutorId={profile.tutorId}
+            onChooseTutor={chooseTutor}
             onOpenTutor={openTutor}
             onGoHome={() => goTo('dashboard')}
           />
@@ -260,9 +299,12 @@ export function App() {
       </main>
 
       <AITutorDrawer
+        key={solve?.n ?? 0}
+        solve={solve?.req}
+        tutor={tutor}
         isOpen={isTutorOpen}
         onClose={() => setIsTutorOpen(false)}
-        isPremium={profile.plan === 'premium'}
+        isPremium={isPremium}
         onUpgrade={() => goTo('upgrade')}
         studentName={profile.fullName.split(' ')[0]}
         onNavigate={(view) => (view === 'cbt' ? launchExam() : goTo(view))}

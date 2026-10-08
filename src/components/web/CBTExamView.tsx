@@ -26,6 +26,7 @@ import type { DiagnosticQuestion, UserProfile } from '../../types';
 import { DIAGNOSTIC_QUESTIONS } from '../../data/nigerian-curriculum';
 import { ExamCalculator } from './ExamCalculator';
 import { CMS_SUBJECTS, toExamQuestion, useCms } from '../../lib/cms';
+import type { SolveRequest } from '../../data/tutors';
 
 interface Props {
   profile: UserProfile;
@@ -35,6 +36,9 @@ interface Props {
   presetSubject?: DiagnosticQuestion['subject'];
   /** Course mock: the four JAMB subjects for a course. */
   presetCourse?: { name: string; subjects: string[]; exam?: string; school?: string };
+  /** "Solve with my tutor" (Premium) in the answer review. */
+  onSolve?: (req: SolveRequest) => void;
+  solveLabel?: string;
 }
 
 type Subject = string;
@@ -87,7 +91,7 @@ const minutesLabel = (count: number) => {
   return rest ? `${Math.floor(mins / 60)} hr ${rest} min` : `${mins / 60} hr`;
 };
 
-export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, presetSubject, presetCourse }) => {
+export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, presetSubject, presetCourse, onSolve, solveLabel }) => {
   // Published questions from the CMS, in the four CBT subjects.
   const { questions: cmsQuestions } = useCms();
   const bank = cmsQuestions
@@ -402,10 +406,29 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
                         </p>
                       )}
                       <p className="exam-review__why">{q.explanation}</p>
-                      {onOpenTutor && (
-                        <button type="button" className="ui-link" onClick={onOpenTutor}>
-                          <MessageSquareText size={16} aria-hidden /> Still confused? Ask the tutor
+                      {onSolve ? (
+                        <button
+                          type="button"
+                          className="ui-link"
+                          onClick={() =>
+                            onSolve({
+                              subject: q.subject,
+                              question: q.question,
+                              options: q.options,
+                              correctAnswer: q.correctAnswer,
+                              explanation: q.explanation,
+                              yourAnswer: yours,
+                            })
+                          }
+                        >
+                          <MessageSquareText size={16} aria-hidden /> {solveLabel ?? 'Solve with my tutor'}
                         </button>
+                      ) : (
+                        onOpenTutor && (
+                          <button type="button" className="ui-link" onClick={onOpenTutor}>
+                            <MessageSquareText size={16} aria-hidden /> Still confused? Ask the tutor
+                          </button>
+                        )
                       )}
                     </div>
                   )}

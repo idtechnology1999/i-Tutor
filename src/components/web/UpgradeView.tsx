@@ -16,12 +16,16 @@ import {
   ChartNoAxesColumnIncreasing,
 } from 'lucide-react';
 import type { UserProfile } from '../../types';
+import { TutorPicker } from './TutorPicker';
+import { tutorById } from '../../data/tutors';
 
 interface Props {
   profile: UserProfile;
   onActivated: () => void;
   onOpenTutor: () => void;
   onGoHome: () => void;
+  tutorId?: string;
+  onChooseTutor: (id: string) => void;
 }
 
 /* -----------------------------------------------------------------------------
@@ -103,7 +107,7 @@ const CopyButton: React.FC<{ value: string }> = ({ value }) => {
   );
 };
 
-export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor, onGoHome }) => {
+export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor, onGoHome, tutorId, onChooseTutor }) => {
   const isPremium = profile.plan === 'premium';
   const [step, setStep] = useState<Step>('plan');
   const [plan, setPlan] = useState<PlanId>('quarter');
@@ -167,10 +171,15 @@ export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor
             <CircleCheckBig size={36} aria-hidden />
           </span>
           <h1>You’re on Premium</h1>
-          <p>The AI tutor is fully unlocked. Ask it as many questions as you like.</p>
+          <p>
+            {tutorById(tutorId)
+              ? `${tutorById(tutorId)?.name} is your personal tutor. Switch any time below.`
+              : 'Choose your personal tutor — they’ll help you solve every question.'}
+          </p>
+          <TutorPicker selected={tutorId} onSelect={onChooseTutor} />
           <div className="pay__actions">
-            <button type="button" className="ui-btn ui-btn--primary" onClick={onOpenTutor}>
-              <MessageSquareText size={18} aria-hidden /> Ask the tutor
+            <button type="button" className="ui-btn ui-btn--primary" onClick={onOpenTutor} disabled={!tutorId}>
+              <MessageSquareText size={18} aria-hidden /> {tutorById(tutorId) ? `Talk to ${tutorById(tutorId)?.name}` : 'Choose a tutor first'}
             </button>
             <button type="button" className="ui-btn ui-btn--ghost" onClick={onGoHome}>
               Back to home
@@ -189,15 +198,17 @@ export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor
           <span className="pay__success-icon">
             <CircleCheckBig size={40} aria-hidden />
           </span>
-          <h1>AI tutor activated</h1>
+          <h1>Meet your personal tutor</h1>
           <p>
-            Payment of <strong>{naira(amount)}</strong> received. You now have unlimited help
-            from the tutor for {PLANS[plan].name}.
+            Payment of <strong>{naira(amount)}</strong> received for {PLANS[plan].name}. Pick the tutor who’ll help
+            you solve every question — step by step, as often as you like.
           </p>
           <p className="pay__ref">Reference: {reference}</p>
+          <TutorPicker selected={tutorId} onSelect={onChooseTutor} />
           <div className="pay__actions">
-            <button type="button" className="ui-btn ui-btn--primary" onClick={onOpenTutor}>
-              <MessageSquareText size={18} aria-hidden /> Ask your first question
+            <button type="button" className="ui-btn ui-btn--primary" onClick={onOpenTutor} disabled={!tutorId}>
+              <MessageSquareText size={18} aria-hidden />{' '}
+              {tutorById(tutorId) ? `Start with ${tutorById(tutorId)?.name}` : 'Choose a tutor to continue'}
             </button>
             <button type="button" className="ui-btn ui-btn--ghost" onClick={onGoHome}>
               Back to home

@@ -19,6 +19,7 @@ import type { ExamType } from '../../lib/cms';
 import type { StudentExam } from '../../types';
 import { SCHOOL_CERT_EXAMS, examsOf } from '../../lib/student-exams';
 import { ExamRoom } from './ExamRoom';
+import type { TutorPersona } from '../../data/tutors';
 
 /** Short tab names for each exam room. */
 const ROOM_NAME: Record<StudentExam, string> = {
@@ -45,6 +46,8 @@ interface Props {
   /** Start a practice exam for one exam body (WAEC, NECO…). */
   onStartPractice: (practice: { name: string; subjects: string[]; exam: string }) => void;
   onOpenPastQuestions: (exam: ExamType) => void;
+  /** Premium: the student's personal tutor. */
+  tutor?: TutorPersona;
 }
 
 const SUBJECTS = [
@@ -80,6 +83,7 @@ export const DashboardView: React.FC<Props> = ({
   onStartPractice,
   onOpenPastQuestions,
   onEditGoal,
+  tutor,
 }) => {
   // One "room" per exam the student chose; tabs switch between them.
   const exams = examsOf(profile);
@@ -304,6 +308,32 @@ export const DashboardView: React.FC<Props> = ({
         />
       )}
 
+      {/* ------------------------------------------------- Personal tutor */}
+      {isPremium && (
+        <section className="dash__mytutor">
+          {tutor ? (
+            <span className={`tutor-avatar tutor-avatar--${tutor.id}`} aria-hidden>
+              {tutor.name.charAt(0)}
+            </span>
+          ) : (
+            <span className="tutor-avatar" aria-hidden>
+              ?
+            </span>
+          )}
+          <div>
+            <strong>{tutor ? `${tutor.name}, your personal tutor` : 'Choose your personal tutor'}</strong>
+            <p>
+              {tutor
+                ? `${tutor.style}. Stuck on a question? Tap “Solve with ${tutor.name}” under it.`
+                : 'Pick the AI tutor who’ll help you solve every question.'}
+            </p>
+          </div>
+          <button type="button" className="ui-btn ui-btn--primary" onClick={tutor ? onOpenTutor : onUpgrade}>
+            {tutor ? `Ask ${tutor.name}` : 'Choose tutor'}
+          </button>
+        </section>
+      )}
+
       {/* --------------------------------------------------------- Upgrade */}
       {!isPremium && (
         <section className="dash__upgrade">
@@ -311,8 +341,8 @@ export const DashboardView: React.FC<Props> = ({
             <LockOpen size={20} aria-hidden />
           </span>
           <div>
-            <strong>Get unlimited help from the AI tutor</strong>
-            <p>Free accounts get 5 tutor questions a day. Premium from ₦2,500 a month.</p>
+            <strong>Get your own personal AI tutor</strong>
+            <p>They’ll solve any question with you, step by step. Free accounts get 5 tutor questions a day. Premium from ₦2,500 a month.</p>
           </div>
           <button type="button" className="ui-btn ui-btn--primary" onClick={onUpgrade}>
             Upgrade

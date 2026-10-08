@@ -3123,3 +3123,82 @@ body.cbt-active {
 
 .setup-sc { display: grid; gap: 12px; margin-top: 8px; }
 .setup-sc h3 { margin: 0; font-size: 1.0625rem; }
+
+/* ======================================================= Personal tutors */
+
+.tutor-avatar {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--brand);
+  color: #fff;
+  font-weight: 600;
+  font-size: 1.0625rem;
+}
+.tutor-avatar--ada { background: linear-gradient(135deg, #1f6f6b, #0e3b3a); }
+.tutor-avatar--tobi { background: linear-gradient(135deg, #e8a33d, #b8741a); }
+.tutor-avatar--zainab { background: linear-gradient(135deg, #5b6fd6, #34419a); }
+
+.tutor-pick {
+  display: grid;
+  gap: 10px;
+  margin: 8px 0 4px;
+  text-align: left;
+}
+.tutor-pick__card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 44px 14px 14px;
+  border: 1.5px solid var(--rule);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, transform 0.35s var(--spring, ease);
+}
+.tutor-pick__card:active { transform: scale(0.98); }
+.tutor-pick__card.is-on { border-color: var(--brand); background: var(--brand-tint); }
+.tutor-pick__card .tutor-avatar { width: 44px; height: 44px; }
+.tutor-pick__text { display: grid; gap: 2px; min-width: 0; }
+.tutor-pick__text strong { font-size: 1rem; }
+.tutor-pick__text small { color: var(--brand); font-weight: 600; font-size: 0.8125rem; }
+.tutor-pick__text span { color: var(--ink-2); font-size: 0.875rem; line-height: 1.45; }
+.tutor-pick__tick {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 2px solid var(--rule-2);
+  color: #fff;
+}
+.tutor-pick__card.is-on .tutor-pick__tick { background: var(--brand); border-color: var(--brand); }
+.tutor-pick__note { margin: 2px 0 0; color: var(--ink-3); font-size: 0.8125rem; text-align: center; }
+
+.dash__mytutor {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: 20px;
+  border: 1px solid var(--rule);
+  background: #fff;
+}
+.dash__mytutor .tutor-avatar { width: 48px; height: 48px; font-size: 1.25rem; }
+.dash__mytutor > div { flex: 1; min-width: 0; }
+.dash__mytutor p { margin: 2px 0 0; color: var(--ink-2); font-size: 0.9375rem; }
+.dash__mytutor .ui-btn { flex: none; }
+@media (max-width: 560px) {
+  .dash__mytutor { flex-wrap: wrap; }
+  .dash__mytutor .ui-btn { width: 100%; justify-content: center; }
+}

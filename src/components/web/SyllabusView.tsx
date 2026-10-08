@@ -2,18 +2,22 @@ import React, { useState } from 'react';
 import { BadgeCheck, Check, MessageSquareText, RotateCcw, Search, X } from 'lucide-react';
 import { EXAM_FULL_NAME, EXAM_LABEL, EXAM_TYPES, SCHOOLS, needsSchool, useCms } from '../../lib/cms';
 import type { ExamType } from '../../lib/cms';
+import type { SolveRequest } from '../../data/tutors';
 
 interface Props {
   onOpenTutor?: () => void;
   /** Open on this exam (and Post-UTME school), e.g. from the Post-UTME page. */
   initialExam?: ExamType;
   initialSchool?: string;
+  /** "Solve with my tutor" (Premium) on a question. */
+  onSolve?: (req: SolveRequest) => void;
+  solveLabel?: string;
 }
 
 // Always offered, even before questions exist, so the layout stays familiar.
 const CORE_SUBJECTS = ['English', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Economics'];
 
-export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initialSchool }) => {
+export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initialSchool, onSolve, solveLabel }) => {
   const [exam, setExam] = useState<ExamType>(initialExam ?? 'UTME');
   const [school, setSchool] = useState(initialSchool ?? '');
   const { questions: allQs } = useCms();
@@ -205,10 +209,29 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initia
                     >
                       <RotateCcw size={16} aria-hidden /> Try again
                     </button>
-                    {onOpenTutor && (
-                      <button type="button" className="ui-link" onClick={onOpenTutor}>
-                        <MessageSquareText size={16} aria-hidden /> Ask the tutor
+                    {onSolve ? (
+                      <button
+                        type="button"
+                        className="ui-link"
+                        onClick={() =>
+                          onSolve({
+                            subject: q.subject,
+                            question: q.question,
+                            options: q.options,
+                            correctAnswer: q.correctAnswer,
+                            explanation: q.explanation,
+                            yourAnswer: tried[q.id],
+                          })
+                        }
+                      >
+                        <MessageSquareText size={16} aria-hidden /> {solveLabel ?? 'Solve with my tutor'}
                       </button>
+                    ) : (
+                      onOpenTutor && (
+                        <button type="button" className="ui-link" onClick={onOpenTutor}>
+                          <MessageSquareText size={16} aria-hidden /> Ask the tutor
+                        </button>
+                      )
                     )}
                   </div>
                 </div>

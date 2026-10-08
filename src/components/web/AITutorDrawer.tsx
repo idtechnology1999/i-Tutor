@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, AudioLines, BadgeCheck, LockOpen, MessageSquareText, Mic, SendHorizontal, X } from 'lucide-react';
 import { VoiceLesson } from './VoiceLesson';
+import { solveSteps } from '../../data/tutors';
+import type { SolveRequest, TutorPersona } from '../../data/tutors';
 import type { AppView } from '../../lib/router';
 
 interface Props {
@@ -11,6 +13,10 @@ interface Props {
   studentName?: string;
   /** Lets the tutor send students to a page ("take me to past questions"). */
   onNavigate?: (view: AppView) => void;
+  /** Premium: the student's own tutor. */
+  tutor?: TutorPersona;
+  /** Opened from "Solve with my tutor": start on this question. */
+  solve?: SolveRequest;
 }
 
 interface NavLink {
@@ -156,12 +162,22 @@ export const AITutorDrawer: React.FC<Props> = ({
   onUpgrade,
   studentName = 'there',
   onNavigate,
+  tutor,
+  solve,
 }) => {
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = useState<Message[]>(() => [
     {
       sender: 'tutor',
-      text: `Hi ${studentName}! I'm your i-Tutor tutor. Ask me about any JAMB question in English, Maths, Physics or Chemistry. I'll guide you to the answer step by step. You can also ask me how to find anything on the site.`,
+      text: tutor
+        ? `Hi ${studentName}, it’s ${tutor.name}, your personal tutor. Send me any question — or tap “Solve with ${tutor.name}” under a question — and we’ll work through it together.`
+        : `Hi ${studentName}! I'm your i-Tutor tutor. Ask me about any JAMB question in English, Maths, Physics or Chemistry. I'll guide you to the answer step by step. You can also ask me how to find anything on the site.`,
     },
+    ...(solve
+      ? [
+          { sender: 'user' as const, text: `Help me solve this ${solve.subject} question: ${solve.question}` },
+          { sender: 'tutor' as const, text: solveSteps(solve, tutor) },
+        ]
+      : []),
   ]);
   const [inputText, setInputText] = useState('');
   const [typing, setTyping] = useState(false);
@@ -227,14 +243,20 @@ export const AITutorDrawer: React.FC<Props> = ({
       <div className="tutor-backdrop" onClick={onClose} aria-hidden />
       <aside className="tutor" role="dialog" aria-label="Ask the tutor">
         <header className="tutor__head">
-          <span className="tutor__avatar">
-            <MessageSquareText size={18} aria-hidden />
-          </span>
+          {tutor ? (
+            <span className={`tutor-avatar tutor-avatar--${tutor.id}`} aria-hidden>
+              {tutor.name.charAt(0)}
+            </span>
+          ) : (
+            <span className="tutor__avatar">
+              <MessageSquareText size={18} aria-hidden />
+            </span>
+          )}
           <div className="tutor__title">
-            <strong>Ask the tutor</strong>
+            <strong>{tutor ? `${tutor.name} · your tutor` : 'Ask the tutor'}</strong>
             {isPremium ? (
               <span className="tutor__plan is-premium">
-                <BadgeCheck size={13} aria-hidden /> Premium · unlimited
+                <BadgeCheck size={13} aria-hidden /> {tutor ? `${tutor.style} · unlimited` : 'Premium · unlimited'}
               </span>
             ) : (
               <span className="tutor__plan">

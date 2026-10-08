@@ -51,6 +51,8 @@ export interface UserProfile {
   diagnosticScore: number;
   /** Premium unlocks unlimited AI tutor help. Missing means free. */
   plan?: 'free' | 'premium';
+  /** Premium: the personal AI tutor the student picked (see data/tutors). */
+  tutorId?: string;
 }
 
 export type NetworkMode = '4G' | 'SLOW_3G' | 'OFFLINE';
