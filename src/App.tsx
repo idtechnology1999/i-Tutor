@@ -210,6 +210,7 @@ export function App() {
               setPqSchool(school);
               goTo('syllabus');
             }}
+            onChangeSchool={() => goTo('setup')}
           />
         )}
 

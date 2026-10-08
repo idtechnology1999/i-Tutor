@@ -634,3 +634,92 @@
   .course__facset { flex-wrap: wrap; }
   .course__facset .ui-btn { width: 100%; justify-content: center; }
 }
+
+/* =========================================================== Post-UTME */
+/* The student's own school only — one calm column. */
+
+.pu {
+  max-width: 600px;
+  margin: 0 auto;
+  display: grid;
+  gap: 20px;
+}
+.pu__head p {
+  margin: 0 0 4px;
+  color: var(--brand);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.pu__head h1 {
+  margin: 0 0 8px;
+  font-size: clamp(1.625rem, 4vw, 2.125rem);
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+.pu__where {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-3);
+  font-size: 0.9375rem;
+}
+.pu__card {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 20px;
+  background: #fff;
+  border: 1px solid var(--rule);
+}
+.pu__card h2 { margin: 0; font-size: 1.0625rem; }
+.pu__subjects {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: 14px;
+  border: 1px solid var(--rule);
+  overflow: hidden;
+}
+.pu__subjects li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+}
+.pu__subjects li + li { border-top: 1px solid var(--rule); }
+.pu__subjects li span:last-child { color: var(--ink-3); }
+.pu__years { margin: 0; color: var(--ink-3); font-size: 0.875rem; }
+.pu__soon,
+.pu__card--empty {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 16px 4px;
+  text-align: center;
+}
+.pu__card--empty { padding: 32px 20px; }
+.pu__soon p,
+.pu__card--empty p { margin: 0; max-width: 40ch; color: var(--ink-2); line-height: 1.5; }
+.pu__card--empty h1 { margin: 0; font-size: 1.5rem; }
+.pu__icon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: var(--brand-tint);
+  color: var(--brand);
+}
+.pu__foot {
+  margin: 0;
+  text-align: center;
+  color: var(--ink-3);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+.pu__foot .ui-link {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 8px auto 0;
+}
