@@ -11,7 +11,7 @@ import {
   Upload,
   X,
 } from 'lucide-react';
-import { CMS_SUBJECTS, EXAM_TYPES, cms } from '../../lib/cms';
+import { CMS_SUBJECTS, EXAM_TYPES, cms, paperSize, questionKey, takenExams, useCms } from '../../lib/cms';
 import type { CmsSubject, ExamType, QuestionDraft } from '../../lib/cms';
 import { organiseWithAI } from '../../lib/question-import';
 import type { ImportResult, ParsedQuestion } from '../../lib/question-import';
@@ -46,15 +46,23 @@ const STEPS = ['Reading the paper', 'Finding questions and options', 'Matching a
 
 type Stage = 'setup' | 'working' | 'review' | 'done';
 
+const THIS_YEAR = new Date().getFullYear();
+const YEARS = Array.from({ length: THIS_YEAR - 2000 }, (_, i) => THIS_YEAR - 1 - i);
+
 interface ReviewItem extends ParsedQuestion {
   key: number;
   include: boolean;
 }
 
 export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null }> = ({ nav, preset }) => {
+  const { questions } = useCms();
   const [stage, setStage] = useState<Stage>('setup');
   const [subject, setSubject] = useState<CmsSubject>(preset?.subject ?? 'Physics');
-  const [examType, setExamType] = useState<ExamType>('UTME');
+  // Start on the first exam that doesn't already have this year's paper.
+  const [examType, setExamType] = useState<ExamType>(() => {
+    const taken = takenExams(questions, preset?.subject ?? 'Physics', preset?.year ?? null);
+    return EXAM_TYPES.find((t) => !taken.includes(t)) ?? 'UTME';
+  });
   const [year, setYear] = useState(preset?.year ? String(preset.year) : '');
   // Coming from a subject/year in the bank: details are already known.
   const [showDetails, setShowDetails] = useState(!preset);
@@ -67,7 +75,11 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
   const [result, setResult] = useState<ImportResult | null>(null);
   const [items, setItems] = useState<ReviewItem[]>([]);
   const [openKey, setOpenKey] = useState<number | null>(null);
-  const [summary, setSummary] = useState({ published: 0, drafts: 0 });
+  const [summary, setSummary] = useState({ published: 0, drafts: 0, skipped: 0 });
+
+  const yearNum = year ? Number(year) : null;
+  const existing = paperSize(questions, subject, examType, yearNum);
+  const takenHere = takenExams(questions, subject, yearNum);
   const fileInput = useRef<HTMLInputElement>(null);
 
   // Walk through the progress steps while the import runs.
@@ -96,6 +108,16 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
   };
 
   const run = async () => {
+    if (!yearNum) {
+      setShowDetails(true);
+      setError('Choose the year of this paper first.');
+      return;
+    }
+    if (existing > 0) {
+      setShowDetails(true);
+      setError(`${subject} ${examType} ${yearNum} is already added (${existing} questions). Each year’s paper can only be added once — edit it in Past questions instead.`);
+      return;
+    }
     if (!text.trim() && !file) {
       setError('Paste the paper or attach a file first.');
       return;
@@ -120,7 +142,7 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
         res.questions.map((q, i) => ({
           ...q,
           key: i,
-          year: q.year || (year ? Number(year) : 0),
+          year: yearNum ?? 0,
           include: true,
         })),
       );
@@ -140,7 +162,7 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
   const toDraft = (it: ReviewItem, publish: boolean): QuestionDraft => ({
     subject,
     examType,
-    year: it.year || null,
+    year: yearNum,
     topic: it.topic,
     question: it.question.trim(),
     options: it.options.filter((o) => o.text.trim()),
@@ -155,13 +177,21 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
 
   const save = (publishReady: boolean) => {
     const readyKeys = new Set(ready.map((r) => r.key));
-    const drafts = chosen.map((it) => toDraft(it, publishReady && readyKeys.has(it.key)));
+    const seen = new Set(questions.filter((q) => q.subject === subject).map((q) => questionKey(q.question)));
+    const fresh = chosen.filter((it) => {
+      const k = questionKey(it.question);
+      if (!k || seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+    const skipped = chosen.length - fresh.length;
+    const drafts = fresh.map((it) => toDraft(it, publishReady && readyKeys.has(it.key)));
     const published = drafts.filter((d) => d.status === 'published').length;
     cms.addQuestions(
       drafts,
       `Imported ${drafts.length} ${subject} question${drafts.length === 1 ? '' : 's'}${published ? ` (${published} published)` : ''}.`,
     );
-    setSummary({ published, drafts: drafts.length - published });
+    setSummary({ published, drafts: drafts.length - published, skipped });
     setStage('done');
   };
 
@@ -210,7 +240,13 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
           <h2>Questions added</h2>
           <p>
             {summary.published > 0 && <>{summary.published} published and live for students. </>}
-            {summary.drafts > 0 && <>{summary.drafts} saved as drafts for you to check.</>}
+            {summary.drafts > 0 && <>{summary.drafts} saved as drafts for you to check. </>}
+            {summary.skipped > 0 && (
+              <>
+                {summary.skipped} skipped because {summary.skipped === 1 ? 'it is' : 'they are'} already in the {subject} bank.
+              </>
+            )}
+            {summary.published + summary.drafts === 0 && summary.skipped === 0 && <>Nothing was saved.</>}
           </p>
           <div className="adm-row-actions">
             <button
@@ -409,6 +445,13 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
         }
       />
 
+      {existing > 0 && (
+        <div className="adm-note is-warn" role="alert">
+          {subject} {examType} {yearNum} is already added ({existing} questions). Choose another year or exam — each
+          paper can only be added once.
+        </div>
+      )}
+
       {!showDetails && (
         <div className="adm-target">
           <span className="adm-target__label">Adding to</span>
@@ -441,17 +484,41 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
           <div className="adm-field">
             <span>Exam</span>
             <div className="adm-seg" role="radiogroup" aria-label="Exam">
-              {EXAM_TYPES.map((t) => (
-                <button key={t} type="button" role="radio" aria-checked={examType === t} className={examType === t ? 'is-on' : ''} onClick={() => setExamType(t)}>
-                  {t}
-                </button>
-              ))}
+              {EXAM_TYPES.map((t) => {
+                const taken = takenHere.includes(t);
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    role="radio"
+                    aria-checked={examType === t}
+                    className={`${examType === t ? 'is-on' : ''}${taken ? ' is-taken' : ''}`}
+                    onClick={() => setExamType(t)}
+                    disabled={taken}
+                    title={taken ? `${subject} ${t} ${yearNum} is already added` : undefined}
+                  >
+                    {t}
+                    {taken && <small>added</small>}
+                  </button>
+                );
+              })}
             </div>
           </div>
           <div className="adm-grid-2">
             <label className="adm-field">
               <span>Year</span>
-              <input className="adm-input" inputMode="numeric" value={year} onChange={(e) => setYear(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="e.g. 2019" />
+              <select className="adm-input" value={year} onChange={(e) => setYear(e.target.value)}>
+                <option value="">Choose the year</option>
+                {YEARS.map((y) => {
+                  const n = paperSize(questions, subject, examType, y);
+                  return (
+                    <option key={y} value={y} disabled={n > 0}>
+                      {y}
+                      {n > 0 ? ` — already added (${n})` : ''}
+                    </option>
+                  );
+                })}
+              </select>
             </label>
             <label className="adm-field">
               <span>Source (optional)</span>
@@ -472,7 +539,7 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
                 if (!preset) {
                   setSubject('Physics');
                   setExamType('UTME');
-                  setYear('2019');
+                  setYear(paperSize(questions, 'Physics', 'UTME', 2019) ? '' : '2019');
                 }
               }}>
               <ClipboardPaste size={16} aria-hidden /> Try a sample paper

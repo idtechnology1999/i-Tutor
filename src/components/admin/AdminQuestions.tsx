@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, ScanText, Search, Trash2 } from 'lucide-react';
-import { CMS_SUBJECTS, cms, useCms } from '../../lib/cms';
+import { CMS_SUBJECTS, EXAM_TYPES, cms, paperSize, takenExams, useCms } from '../../lib/cms';
 import type { CmsQuestion, CmsSubject, QuestionDraft } from '../../lib/cms';
 import type { AdminNav, BankScope, QuestionFilter } from './AdminApp';
 import { PageHead, StatusChip } from './AdminApp';
@@ -54,6 +54,9 @@ export const AdminQuestions: React.FC<{
   const yearCount = (y: number) => inSubject.filter((q) => q.year === y).length;
   const undated = inSubject.filter((q) => q.year === null).length;
   const label = `${subject === 'All' ? 'All subjects' : subject}${year ? ` ${year}` : ''}`;
+  // One paper per subject + exam + year.
+  const taken = subject !== 'All' && year ? takenExams(questions, subject, year) : [];
+  const allTaken = taken.length === EXAM_TYPES.length;
   const addLabel = subject === 'All' ? 'Add past questions' : `Add past questions to ${subject}${year ? ` ${year}` : ''}`;
 
   const openImport = () =>
@@ -160,10 +163,30 @@ export const AdminQuestions: React.FC<{
             </select>
           </label>
 
-          <button type="button" className="adm-btn adm-btn--primary adm-btn--lg adm-scope__add" onClick={openImport}>
-            <ScanText size={20} aria-hidden /> {addLabel}
+          <button
+            type="button"
+            className="adm-btn adm-btn--primary adm-btn--lg adm-scope__add"
+            onClick={openImport}
+            disabled={allTaken}
+          >
+            <ScanText size={20} aria-hidden /> {allTaken ? `${label} is complete` : addLabel}
           </button>
         </div>
+        {taken.length > 0 && (
+          <p className="adm-scope__taken">
+            <span>Already added for {year}:</span>
+            {taken.map((t) => (
+              <span key={t} className="adm-chip is-live">
+                {t} ({paperSize(questions, subject, t, year)})
+              </span>
+            ))}
+            {!allTaken && (
+              <span className="adm-muted">
+                You can still add {EXAM_TYPES.filter((t) => !taken.includes(t)).join(', ')}.
+              </span>
+            )}
+          </p>
+        )}
         {undated > 0 && year === null && (
           <p className="adm-muted">{undated} question{undated === 1 ? ' has' : 's have'} no year yet — open one to add it.</p>
         )}

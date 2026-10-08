@@ -1909,3 +1909,26 @@
     text-align: center;
   }
 }
+
+/* One paper per year: what's already there */
+.adm-scope__taken {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.875rem;
+  color: var(--ink-2);
+}
+
+.adm-seg button.is-taken {
+  color: var(--ink-3);
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.adm-seg button small {
+  margin-left: 6px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--ok);
+}

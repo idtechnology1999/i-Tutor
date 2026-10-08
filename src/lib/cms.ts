@@ -157,6 +157,30 @@ export const toExamQuestion = (q: CmsQuestion): DiagnosticQuestion => ({
 
 export const EXAM_SUBJECTS = ['English', 'Mathematics', 'Physics', 'Chemistry'];
 
+/* -------------------------------------------------- One paper per year */
+
+/** A paper is one subject + exam + year. Each may only be added once. */
+export const paperSize = (
+  questions: CmsQuestion[],
+  subject: string,
+  examType: ExamType,
+  year: number | null,
+) =>
+  year === null
+    ? 0
+    : questions.filter((q) => q.subject === subject && q.examType === examType && q.year === year).length;
+
+/** Exam types that already have a paper for this subject and year. */
+export const takenExams = (questions: CmsQuestion[], subject: string, year: number | null) =>
+  EXAM_TYPES.filter((t) => paperSize(questions, subject, t, year) > 0);
+
+/** Comparable form of a question, so re-pasted copies are recognised. */
+export const questionKey = (text: string) =>
+  text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
 /* ---------------------------------------------------------------- Actions */
 
 let idCounter = Date.now();
