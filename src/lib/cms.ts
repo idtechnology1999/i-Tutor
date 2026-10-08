@@ -317,6 +317,19 @@ export const cms = {
     commit({ ...state, news: state.news.filter((n) => n.id !== id) }, `Deleted news: “${item?.title ?? id}”.`);
   },
 
+  publishNews(ids: string[]) {
+    const set = new Set(ids);
+    commit(
+      { ...state, news: state.news.map((n) => (set.has(n.id) ? { ...n, status: 'published' as Status } : n)) },
+      `Published ${ids.length} news article${ids.length === 1 ? '' : 's'}.`,
+    );
+  },
+
+  /** Record something done outside the content store (e.g. an email sent). */
+  log(text: string) {
+    commit({ ...state }, text);
+  },
+
   saveCourse(course: CmsCourse) {
     const exists = state.courses.some((c) => c.id === course.id);
     const courses = exists ? state.courses.map((c) => (c.id === course.id ? course : c)) : [...state.courses, course];

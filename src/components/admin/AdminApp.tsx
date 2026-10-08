@@ -11,6 +11,7 @@ import {
   Newspaper,
   ScanText,
   Settings,
+  Workflow,
 } from 'lucide-react';
 import { BrandMark } from '../web/BrandMark';
 import { adminKey, checkAdmin } from '../../lib/question-import';
@@ -23,6 +24,7 @@ import { AdminNews } from './AdminNews';
 import { AdminSettings } from './AdminSettings';
 import { AdminCourses } from './AdminCourses';
 import { AdminPostUtme } from './AdminPostUtme';
+import { AdminAuto } from './AdminAuto';
 
 export type Section = 'overview' | 'questions' | 'import' | 'postutme' | 'courses' | 'news' | 'settings';
 export type QuestionFilter = 'all' | 'published' | 'draft' | 'review';
@@ -156,6 +158,21 @@ export const AdminApp: React.FC<{
   const [bankScope, setBankScope] = useState<BankScope>({ exam: 'UTME', school: '', subject: 'English', year: null });
   const [importPreset, setImportPreset] = useState<{ value: ImportPreset | null; n: number }>({ value: null, n: 0 });
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null);
+  const [autoOpen, setAutoOpen] = useState(false);
+
+  // Ctrl/⌘ + K opens i-Auto from anywhere in the admin; Esc closes it.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setAutoOpen((o) => !o);
+      } else if (e.key === 'Escape') {
+        setAutoOpen(false);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
   const { questions } = useCms();
   const reviewCount = questions.filter((q) => q.needsReview || q.status === 'draft').length;
 
@@ -207,6 +224,11 @@ export const AdminApp: React.FC<{
           <BrandMark />
           <span className="adm-side__tag">Admin</span>
         </div>
+        <button type="button" className="adm-side__auto" onClick={() => setAutoOpen(true)}>
+          <Workflow size={18} aria-hidden />
+          <span>i-Auto</span>
+          <kbd>Ctrl K</kbd>
+        </button>
         <nav className="adm-side__nav" aria-label="Admin">
           {NAV.map(({ id, label, icon: Icon }) => (
             <button
@@ -252,6 +274,14 @@ export const AdminApp: React.FC<{
         {section === 'news' && <AdminNews nav={nav} />}
         {section === 'settings' && <AdminSettings nav={nav} mode={mode} />}
       </main>
+
+      {!autoOpen && (
+        <button type="button" className="auto-fab" onClick={() => setAutoOpen(true)} aria-label="Open i-Auto">
+          <Workflow size={20} aria-hidden />
+          <span>i-Auto</span>
+        </button>
+      )}
+      <AdminAuto open={autoOpen} onClose={() => setAutoOpen(false)} nav={nav} />
 
       {toast && (
         <div className="adm-toast" key={toast.id} role="status">
