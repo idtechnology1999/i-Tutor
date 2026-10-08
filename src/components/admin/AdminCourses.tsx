@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Search, Trash2, X } from 'lucide-react';
+import { Layers, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { CMS_SUBJECTS, EXAM_FULL_NAME, EXAM_LABEL, cms, useCms } from '../../lib/cms';
-import type { CmsCourse } from '../../lib/cms';
+import type { CmsCourse, FacultySet } from '../../lib/cms';
 import { COURSE_EXAMS, FACULTIES } from '../../data/courses';
 import type { CourseExam } from '../../data/courses';
 import type { AdminNav } from './AdminApp';
@@ -166,10 +166,96 @@ const CourseEditor: React.FC<{
   );
 };
 
+/* ----------------------------------------------------- Faculty practice set */
+
+const FacultySetEditor: React.FC<{
+  initial: FacultySet;
+  onClose: () => void;
+  onSave: (f: FacultySet) => void;
+}> = ({ initial, onClose, onSave }) => {
+  const [f, setF] = useState<FacultySet>(initial);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+    };
+  }, [onClose]);
+
+  const setSubject = (i: number, value: string) =>
+    setF((prev) => ({ ...prev, subjects: prev.subjects.map((s, j) => (j === i ? value : s)) }));
+
+  const save = () => {
+    if (new Set(f.subjects).size !== f.subjects.length) return setError('Each subject can only be listed once.');
+    onSave({ ...f, note: f.note.trim() });
+  };
+
+  return (
+    <div className="adm-drawer" onClick={onClose}>
+      <aside className="adm-drawer__panel" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Faculty practice">
+        <header className="adm-drawer__head">
+          <h2>{f.faculty} · faculty practice</h2>
+          <button type="button" className="adm-icon-btn" onClick={onClose} aria-label="Close">
+            <X size={20} aria-hidden />
+          </button>
+        </header>
+        <div className="adm-drawer__body">
+          <p className="adm-muted">
+            Most {f.faculty} courses share these four JAMB subjects. Every {f.faculty} student sees this combination
+            and can take it as one practice exam.
+          </p>
+          <fieldset className="adm-field">
+            <span>JAMB subjects (four)</span>
+            <div className="adm-course-subjects">
+              {f.subjects.map((s, i) => (
+                <div key={i} className="adm-course-subject">
+                  <label className="adm-field">
+                    <small className="adm-muted">{i === 0 ? 'Compulsory' : `Subject ${i + 1}`}</small>
+                    <select className="adm-input" value={s} disabled={i === 0} onChange={(e) => setSubject(i, e.target.value)}>
+                      {CMS_SUBJECTS.map((opt) => (
+                        <option key={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              ))}
+            </div>
+          </fieldset>
+          <label className="adm-field">
+            <span>Note for students (optional)</span>
+            <textarea
+              className="adm-input adm-textarea"
+              rows={3}
+              value={f.note}
+              onChange={(e) => setF({ ...f, note: e.target.value })}
+              placeholder="e.g. Some schools accept Geography in place of Chemistry."
+            />
+          </label>
+          {error && <p className="adm-error">{error}</p>}
+        </div>
+        <footer className="adm-drawer__foot">
+          <span className="adm-spacer" />
+          <button type="button" className="adm-btn" onClick={onClose}>
+            Cancel
+          </button>
+          <button type="button" className="adm-btn adm-btn--primary" onClick={save}>
+            Save faculty practice
+          </button>
+        </footer>
+      </aside>
+    </div>
+  );
+};
+
 /* -------------------------------------------------------------------- Page */
 
 export const AdminCourses: React.FC<{ nav: AdminNav }> = ({ nav }) => {
-  const { courses, questions } = useCms();
+  const { courses, questions, facultySets } = useCms();
+  const [editingSet, setEditingSet] = useState<FacultySet | null>(null);
   const [exam, setExam] = useState<CourseExam>('UTME');
   const [editing, setEditing] = useState<CmsCourse | 'new' | null>(null);
   const [search, setSearch] = useState('');
@@ -184,6 +270,42 @@ export const AdminCourses: React.FC<{ nav: AdminNav }> = ({ nav }) => {
   const groups = isUtme
     ? [...new Set(inExam.map((c) => c.faculty || 'Other'))].sort((a, b) => facultyOrder(a) - facultyOrder(b) || a.localeCompare(b))
     : [''];
+
+  const facultyCard = (g: string) => {
+    const set = facultySets.find((f) => f.faculty === g) ?? {
+      faculty: g,
+      subjects: ['English', 'Mathematics', 'Physics', 'Chemistry'],
+      note: '',
+    };
+    const total = set.subjects.reduce((n, s) => n + countFor(s), 0);
+    return (
+      <button type="button" className="adm-facset" onClick={() => setEditingSet(set)}>
+        <span className="adm-facset__icon">
+          <Layers size={18} aria-hidden />
+        </span>
+        <span className="adm-facset__text">
+          <strong>Faculty practice · {g}</strong>
+          <span className="adm-courses__subjects">
+            {set.subjects.map((s) => {
+              const n = countFor(s);
+              return (
+                <span key={s} className={`adm-courses__subject${n ? '' : ' is-empty'}`}>
+                  {s}
+                  <b>{n}</b>
+                </span>
+              );
+            })}
+          </span>
+          <small className="adm-muted">
+            Shown to every {g} student · {total} questions ready
+          </small>
+        </span>
+        <span className="adm-facset__edit">
+          <Pencil size={16} aria-hidden /> Edit
+        </span>
+      </button>
+    );
+  };
 
   const card = (c: CmsCourse) => {
     const total = c.subjects.reduce((n, s) => n + countFor(s), 0);
@@ -278,10 +400,23 @@ export const AdminCourses: React.FC<{ nav: AdminNav }> = ({ nav }) => {
                 {g} <span className="adm-muted">{group.length} course{group.length === 1 ? '' : 's'}</span>
               </h2>
             )}
+            {isUtme && facultyCard(g)}
             <ul className="adm-courses">{group.map(card)}</ul>
           </section>
         );
       })}
+
+      {editingSet && (
+        <FacultySetEditor
+          initial={editingSet}
+          onClose={() => setEditingSet(null)}
+          onSave={(set) => {
+            cms.saveFacultySet(set);
+            nav.notify(`Saved ${set.faculty} faculty practice.`);
+            setEditingSet(null);
+          }}
+        />
+      )}
 
       {editing && (
         <CourseEditor

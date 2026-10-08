@@ -5,15 +5,23 @@ import type { ExamType } from '../../lib/cms';
 
 interface Props {
   onOpenTutor?: () => void;
+  /** Open on this exam (and Post-UTME school), e.g. from the Post-UTME page. */
+  initialExam?: ExamType;
+  initialSchool?: string;
 }
 
 // Always offered, even before questions exist, so the layout stays familiar.
 const CORE_SUBJECTS = ['English', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Economics'];
 
-export const SyllabusView: React.FC<Props> = ({ onOpenTutor }) => {
-  const [exam, setExam] = useState<ExamType>('UTME');
-  const [school, setSchool] = useState('');
-  const [selectedSubject, setSelectedSubject] = useState('English');
+export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initialSchool }) => {
+  const [exam, setExam] = useState<ExamType>(initialExam ?? 'UTME');
+  const [school, setSchool] = useState(initialSchool ?? '');
+  const { questions: allQs } = useCms();
+  const [selectedSubject, setSelectedSubject] = useState<string>(() => {
+    if (!initialSchool) return 'English';
+    const first = allQs.find((q) => q.status === 'published' && q.examType === initialExam && q.school === initialSchool);
+    return first?.subject ?? 'English';
+  });
   const [year, setYear] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   // The option the student tried for each question.

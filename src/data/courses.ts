@@ -86,3 +86,24 @@ export const COURSE_SEED: CourseSeed[] = [
     })),
   ),
 ];
+
+/** The subject combination most courses in a faculty share (JAMB), so a
+    student can practise for the whole faculty in one go. */
+export interface FacultySet {
+  faculty: string;
+  subjects: string[];
+  note: string;
+}
+
+export const FACULTY_SET_SEED: FacultySet[] = [
+  { faculty: 'Engineering', subjects: ['English', 'Mathematics', 'Physics', 'Chemistry'], note: '' },
+  { faculty: 'Medicine & Health', subjects: ['English', 'Biology', 'Chemistry', 'Physics'], note: '' },
+  { faculty: 'Science', subjects: ['English', 'Mathematics', 'Physics', 'Chemistry'], note: 'Life-science courses often take Biology instead of Mathematics.' },
+  { faculty: 'Environmental Sciences', subjects: ['English', 'Mathematics', 'Physics', 'Chemistry'], note: 'Some schools accept Geography in place of Chemistry.' },
+  { faculty: 'Law', subjects: ['English', 'Literature', 'Government', 'CRS'], note: 'IRS can replace CRS.' },
+  { faculty: 'Social Sciences', subjects: ['English', 'Mathematics', 'Economics', 'Government'], note: '' },
+  { faculty: 'Management Sciences', subjects: ['English', 'Mathematics', 'Economics', 'Accounting'], note: 'Commerce is often accepted in place of Accounting.' },
+  { faculty: 'Arts', subjects: ['English', 'Literature', 'Government', 'CRS'], note: '' },
+  { faculty: 'Education', subjects: ['English', 'Mathematics', 'Biology', 'Chemistry'], note: 'Depends on your teaching subject.' },
+  { faculty: 'Agriculture', subjects: ['English', 'Biology', 'Chemistry', 'Agricultural Science'], note: '' },
+];

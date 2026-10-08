@@ -615,3 +615,22 @@
 .course__item-text {
   flex: 1 1 auto;
 }
+
+/* Whole-faculty practice, above the course list */
+.course__facset {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--brand) 7%, transparent);
+  border: 1px solid color-mix(in srgb, var(--brand) 25%, transparent);
+}
+.course__facset .course__item-text { flex: 1; min-width: 0; }
+.course__facset-note { display: block; margin-top: 4px; opacity: 0.8; }
+.course__facset .ui-btn { flex: none; }
+@media (max-width: 480px) {
+  .course__facset { flex-wrap: wrap; }
+  .course__facset .ui-btn { width: 100%; justify-content: center; }
+}

@@ -4,6 +4,7 @@ import {
   ChevronRight,
   ClipboardList,
   House,
+  Landmark,
   LockOpen,
   Menu,
   MessageSquareText,
@@ -30,6 +31,7 @@ const APP_TABS: { label: string; short: string; view: AppView; icon: typeof Hous
   { label: 'Home', short: 'Home', view: 'dashboard', icon: House },
   { label: 'Practice exam', short: 'Practice', view: 'cbt', icon: ClipboardList },
   { label: 'Past questions', short: 'Questions', view: 'syllabus', icon: BookOpenCheck },
+  { label: 'Post-UTME', short: 'Post-UTME', view: 'postutme', icon: Landmark },
 ];
 
 /* Visitor links on the landing page. */
@@ -223,6 +225,9 @@ export const Navbar: React.FC<Props> = ({
           </button>
 
           <nav className="site-nav__links" aria-label="Primary">
+            <RouteLink view="postutme" active={false} className="site-nav__link">
+              Post-UTME
+            </RouteLink>
             {onHome &&
               HOME_ANCHORS.map((anchor) => (
                 <a key={anchor.href} href={anchor.href} className="site-nav__link">

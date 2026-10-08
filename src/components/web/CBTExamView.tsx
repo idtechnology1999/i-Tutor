@@ -36,7 +36,7 @@ interface Props {
   /** Subject the student tapped to get here, pre-selected in the setup. */
   presetSubject?: DiagnosticQuestion['subject'];
   /** Course mock: the four JAMB subjects for a course. */
-  presetCourse?: { name: string; subjects: string[]; exam?: string };
+  presetCourse?: { name: string; subjects: string[]; exam?: string; school?: string };
 }
 
 type Subject = string;
@@ -93,7 +93,12 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
   // Published questions from the CMS, in the four CBT subjects.
   const { questions: cmsQuestions } = useCms();
   const bank = cmsQuestions
-    .filter((q) => q.status === 'published' && q.examType === (presetCourse?.exam ?? 'UTME'))
+    .filter(
+      (q) =>
+        q.status === 'published' &&
+        q.examType === (presetCourse?.exam ?? 'UTME') &&
+        (!presetCourse?.school || q.school === presetCourse.school),
+    )
     .map(toExamQuestion);
   const courseSubjects = presetCourse?.subjects ?? [];
 

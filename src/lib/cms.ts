@@ -3,8 +3,10 @@ import type { DiagnosticQuestion } from '../types';
 import { DIAGNOSTIC_QUESTIONS } from '../data/nigerian-curriculum';
 import { NEWS } from '../data/news';
 import type { NewsItem } from '../data/news';
-import { COURSE_SEED } from '../data/courses';
-import type { CourseExam } from '../data/courses';
+import { COURSE_SEED, FACULTY_SET_SEED } from '../data/courses';
+import type { CourseExam, FacultySet } from '../data/courses';
+
+export type { FacultySet };
 import { NIGERIAN_INSTITUTIONS } from '../data/nigerian-curriculum';
 
 /* -----------------------------------------------------------------------------
@@ -114,11 +116,15 @@ interface CmsState {
   questions: CmsQuestion[];
   news: CmsNews[];
   courses: CmsCourse[];
+  /** JAMB faculty practice sets: one subject combination per faculty. */
+  facultySets: FacultySet[];
   activity: Activity[];
 }
 
 const KEY = 'itutor-cms-v1';
 const now = () => new Date().toISOString();
+
+const seedSets = () => FACULTY_SET_SEED.map((f) => ({ ...f, subjects: [...f.subjects] }));
 
 const seed = (): CmsState => ({
   version: 1,
@@ -142,6 +148,7 @@ const seed = (): CmsState => ({
   })),
   news: NEWS.map((n) => ({ ...n, status: 'published' as Status })),
   courses: COURSE_SEED.map((c) => ({ ...c, subjects: [...c.subjects] })),
+  facultySets: seedSets(),
   activity: [{ at: now(), text: 'Content store created with the starter questions and news.' }],
 });
 
@@ -162,6 +169,7 @@ const load = (): CmsState => {
         if (!parsed.courses.some((c) => c.exam !== 'UTME')) {
           parsed.courses.push(...COURSE_SEED.filter((c) => c.exam !== 'UTME').map((c) => ({ ...c, subjects: [...c.subjects] })));
         }
+        if (!Array.isArray(parsed.facultySets)) parsed.facultySets = seedSets();
         return parsed;
       }
     }
@@ -321,6 +329,13 @@ export const cms = {
     commit({ ...state, courses: state.courses.filter((c) => c.id !== id) }, `Deleted course: ${course?.name ?? id}.`);
   },
 
+  saveFacultySet(set: FacultySet) {
+    const facultySets = state.facultySets.some((f) => f.faculty === set.faculty)
+      ? state.facultySets.map((f) => (f.faculty === set.faculty ? set : f))
+      : [...state.facultySets, set];
+    commit({ ...state, facultySets }, `Updated ${set.faculty} faculty practice: ${set.subjects.join(', ')}.`);
+  },
+
   exportJson: () => JSON.stringify(state, null, 2),
 
   importJson(raw: string) {
@@ -329,6 +344,7 @@ export const cms = {
       throw new Error('This file is not an i-Tutor backup.');
     }
     if (!Array.isArray(parsed.courses)) parsed.courses = COURSE_SEED.map((c) => ({ ...c, subjects: [...c.subjects] }));
+    if (!Array.isArray(parsed.facultySets)) parsed.facultySets = seedSets();
     commit(parsed, 'Restored content from a backup file.');
   },
 

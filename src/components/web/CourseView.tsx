@@ -9,6 +9,7 @@ import {
   FlaskConical,
   GraduationCap,
   Info,
+  Layers,
   Palette,
   Play,
   Scale,
@@ -57,7 +58,7 @@ const facultyOrder = (f: string) => {
 
 /** Student page: faculty → course → a JAMB practice exam from its four subjects. */
 export const CourseView: React.FC<Props> = ({ profile, onStart, onUpdateProfile }) => {
-  const { courses: allCourses, questions } = useCms();
+  const { courses: allCourses, questions, facultySets } = useCms();
   const [exam, setExam] = useState<CourseExam>('UTME');
   const isUtme = exam === 'UTME';
   const courses = allCourses.filter((c) => (c.exam ?? 'UTME') === exam);
@@ -90,6 +91,9 @@ export const CourseView: React.FC<Props> = ({ profile, onStart, onUpdateProfile 
     setFaculty(own?.faculty ?? first[0]?.faculty ?? '');
     setPicked(own ?? null);
   };
+  // One combination shared by the whole faculty, set in admin.
+  const facultySet = isUtme && !term ? facultySets.find((f) => f.faculty === faculty) : undefined;
+  const facultyReady = facultySet ? facultySet.subjects.reduce((n, s) => n + countFor(s), 0) : 0;
   const total = picked ? picked.subjects.reduce((n, s) => n + countFor(s), 0) : 0;
   const isMine = picked && normal(picked.name) === normal(profile.targetCourse);
 
@@ -198,6 +202,26 @@ export const CourseView: React.FC<Props> = ({ profile, onStart, onUpdateProfile 
               </>
             )}
           </h2>
+          {facultySet && (
+            <div className="course__facset">
+              <span className="course__class-icon">
+                <Layers size={20} aria-hidden />
+              </span>
+              <div className="course__item-text">
+                <strong>All {faculty} courses</strong>
+                <small>{facultySet.subjects.join(' · ')}</small>
+                {facultySet.note && <small className="course__facset-note">{facultySet.note}</small>}
+              </div>
+              <button
+                type="button"
+                className="ui-btn ui-btn--primary"
+                disabled={facultyReady === 0}
+                onClick={() => onStart({ name: `${faculty} faculty`, subjects: facultySet.subjects, exam: 'UTME' })}
+              >
+                <Play size={16} aria-hidden /> Take it
+              </button>
+            </div>
+          )}
           {list.length === 0 && <p className="course__empty">No course matches “{search}”.</p>}
           <ul>
             {list.map((c) => {

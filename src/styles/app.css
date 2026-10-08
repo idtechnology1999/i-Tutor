@@ -307,7 +307,7 @@ a.site-nav__avatar.is-active {
     bottom: 0;
     z-index: 70;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
     background: rgba(255, 255, 255, 0.92);
     backdrop-filter: saturate(180%) blur(20px);
@@ -326,8 +326,10 @@ a.site-nav__avatar.is-active {
     background: none;
     border-radius: 14px;
     color: var(--ink-3);
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     font-weight: 600;
+    white-space: nowrap;
+    min-width: 0;
     -webkit-tap-highlight-color: transparent;
     transition: color 160ms ease, transform 400ms var(--spring, ease);
   }

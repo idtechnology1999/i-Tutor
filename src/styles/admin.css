@@ -1932,3 +1932,53 @@
   font-weight: 600;
   color: var(--ok);
 }
+
+/* Faculty practice set (one per faculty) */
+.adm-facset {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  margin: 0 0 12px;
+  padding: 14px 16px;
+  text-align: left;
+  border: 1px dashed color-mix(in srgb, var(--brand) 45%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--brand) 6%, transparent);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.adm-facset:hover {
+  background: color-mix(in srgb, var(--brand) 10%, transparent);
+  border-color: var(--brand);
+}
+.adm-facset__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--brand);
+  color: #fff;
+}
+.adm-facset__text {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+.adm-facset__edit {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--brand);
+}
+@media (max-width: 640px) {
+  .adm-facset { flex-wrap: wrap; }
+  .adm-facset__edit { margin-left: 50px; }
+}

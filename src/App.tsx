@@ -14,6 +14,7 @@ import { AITutorDrawer } from './components/web/AITutorDrawer';
 import { RegistrationFlow } from './components/screens/web/RegistrationFlow';
 import { AdminApp } from './components/admin/AdminApp';
 import { CourseView } from './components/web/CourseView';
+import { PostUtmeView } from './components/web/PostUtmeView';
 
 const PLAN_KEY = 'itutor-plan';
 
@@ -53,6 +54,7 @@ const TITLES: Record<AppView, string> = {
   upgrade: 'Upgrade — i-Tutor',
   admin: 'Admin — i-Tutor',
   course: 'Practise for your course — i-Tutor',
+  postutme: 'Post-UTME by school — i-Tutor',
   signup: 'Create your account — i-Tutor',
   otp: 'Verify your contact — i-Tutor',
   login: 'Log in — i-Tutor',
@@ -76,7 +78,7 @@ export function App() {
   const [isTutorOpen, setIsTutorOpen] = useState(false);
   // Subject the student tapped before opening the exam (pre-selected in setup).
   const [examSubject, setExamSubject] = useState<DiagnosticQuestion['subject'] | undefined>();
-  const [examCourse, setExamCourse] = useState<{ name: string; subjects: string[]; exam?: string } | undefined>();
+  const [examCourse, setExamCourse] = useState<{ name: string; subjects: string[]; exam?: string; school?: string } | undefined>();
   const isCbt = activeView === 'cbt';
   const isAdmin = activeView === 'admin';
   const inApp = isAppView(activeView);
@@ -88,7 +90,9 @@ export function App() {
     setExamCourse(undefined);
     goTo('cbt');
   };
-  const launchCourseExam = (course: { name: string; subjects: string[]; exam?: string }) => {
+  // Past questions opened from the Post-UTME page land on that school.
+  const [pqSchool, setPqSchool] = useState<string | undefined>();
+  const launchCourseExam = (course: { name: string; subjects: string[]; exam?: string; school?: string }) => {
     setExamSubject(undefined);
     setExamCourse(course);
     goTo('cbt');
@@ -152,7 +156,7 @@ export function App() {
       <main>
         {isCbt && (
           <CBTExamView
-            key={examCourse ? `${examCourse.exam ?? 'UTME'}-${examCourse.name}` : (examSubject ?? 'any')}
+            key={examCourse ? `${examCourse.exam ?? 'UTME'}-${examCourse.school ?? ''}-${examCourse.name}` : (examSubject ?? 'any')}
             profile={profile}
             presetSubject={examSubject}
             presetCourse={examCourse}
@@ -187,7 +191,25 @@ export function App() {
           />
         )}
 
-        {activeView === 'syllabus' && <SyllabusView onOpenTutor={openTutor} />}
+        {activeView === 'syllabus' && (
+          <SyllabusView
+            key={pqSchool ?? 'all'}
+            onOpenTutor={openTutor}
+            initialExam={pqSchool ? 'Post-UTME' : undefined}
+            initialSchool={pqSchool}
+          />
+        )}
+
+        {activeView === 'postutme' && (
+          <PostUtmeView
+            profile={profile}
+            onStart={launchCourseExam}
+            onBrowse={(school) => {
+              setPqSchool(school);
+              goTo('syllabus');
+            }}
+          />
+        )}
 
         {activeView === 'course' && (
           <CourseView profile={profile} onStart={launchCourseExam} onUpdateProfile={handleUpdateProfile} />

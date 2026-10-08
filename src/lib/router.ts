@@ -18,6 +18,7 @@ export type AppView =
   | 'upgrade'
   | 'admin'
   | 'course'
+  | 'postutme'
   // Account
   | 'signup'
   | 'otp'
@@ -41,6 +42,7 @@ export const VIEW_PATHS: Record<AppView, string> = {
   upgrade: '/upgrade',
   admin: '/admin',
   course: '/practice/course',
+  postutme: '/post-utme',
   signup: '/register',
   otp: '/verify',
   login: '/login',
@@ -87,6 +89,7 @@ const APP_VIEWS: ReadonlySet<AppView> = new Set<AppView>([
   'setup',
   'upgrade',
   'course',
+  'postutme',
 ]);
 
 /** Signed-in pages that share the app navigation (tab bar on phones). */
@@ -118,6 +121,8 @@ const ALIASES: Record<string, AppView> = {
   '/premium': 'upgrade',
   '/cms': 'admin',
   '/courses': 'course',
+  '/postutme': 'postutme',
+  '/post-utme/': 'postutme',
   '/course': 'course',
   '/dashboard/admin': 'admin',
   '/billing': 'upgrade',
