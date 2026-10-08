@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, CalendarDays, Clock3, ExternalLink, Newspaper, X } from 'lucide-react';
-import { NEWS } from '../../data/news';
+import { useCms } from '../../lib/cms';
 import type { NewsCategory, NewsItem } from '../../data/news';
 
 const FILTERS: Array<'All' | NewsCategory> = ['All', 'Admissions', 'Exam tips', 'i-Tutor update'];
@@ -81,7 +81,8 @@ export const NewsSection: React.FC = () => {
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>('All');
   const [open, setOpen] = useState<NewsItem | null>(null);
 
-  const items = NEWS.filter((n) => filter === 'All' || n.category === filter);
+  const { news } = useCms();
+  const items = news.filter((n) => n.status === 'published' && (filter === 'All' || n.category === filter));
   const [lead, ...rest] = items;
 
   return (

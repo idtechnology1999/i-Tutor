@@ -12,6 +12,7 @@ import { ProfileView } from './components/web/ProfileView';
 import { UpgradeView } from './components/web/UpgradeView';
 import { AITutorDrawer } from './components/web/AITutorDrawer';
 import { RegistrationFlow } from './components/screens/web/RegistrationFlow';
+import { AdminApp } from './components/admin/AdminApp';
 
 const PLAN_KEY = 'itutor-plan';
 
@@ -49,6 +50,7 @@ const TITLES: Record<AppView, string> = {
   dashboard: 'Home — i-Tutor',
   setup: 'My profile — i-Tutor',
   upgrade: 'Upgrade — i-Tutor',
+  admin: 'Admin — i-Tutor',
   signup: 'Create your account — i-Tutor',
   otp: 'Verify your contact — i-Tutor',
   login: 'Log in — i-Tutor',
@@ -73,6 +75,7 @@ export function App() {
   // Subject the student tapped before opening the exam (pre-selected in setup).
   const [examSubject, setExamSubject] = useState<DiagnosticQuestion['subject'] | undefined>();
   const isCbt = activeView === 'cbt';
+  const isAdmin = activeView === 'admin';
   const inApp = isAppView(activeView);
 
   const goTo = (view: AppView) => navigate(pathForView(view));
@@ -122,6 +125,8 @@ export function App() {
       /* not persisted when storage is blocked */
     }
   };
+
+  if (isAdmin) return <AdminApp onExit={() => goTo('home')} />;
 
   return (
     <div className="app-container">

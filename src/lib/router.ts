@@ -16,6 +16,7 @@ export type AppView =
   | 'syllabus'
   | 'setup'
   | 'upgrade'
+  | 'admin'
   // Account
   | 'signup'
   | 'otp'
@@ -37,6 +38,7 @@ export const VIEW_PATHS: Record<AppView, string> = {
   dashboard: '/dashboard',
   setup: '/setup',
   upgrade: '/upgrade',
+  admin: '/admin',
   signup: '/register',
   otp: '/verify',
   login: '/login',
@@ -111,6 +113,8 @@ const ALIASES: Record<string, AppView> = {
   '/home': 'home',
   '/portal': 'dashboard',
   '/premium': 'upgrade',
+  '/cms': 'admin',
+  '/dashboard/admin': 'admin',
   '/billing': 'upgrade',
   '/pay': 'upgrade',
   '/sign-up': 'signup',

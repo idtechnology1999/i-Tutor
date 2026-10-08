@@ -1,19 +1,12 @@
 import React, { useState } from 'react';
 import { BadgeCheck, Check, MessageSquareText, RotateCcw, Search, X } from 'lucide-react';
-import { DIAGNOSTIC_QUESTIONS } from '../../data/nigerian-curriculum';
+import { useCms } from '../../lib/cms';
 
 interface Props {
   onOpenTutor?: () => void;
 }
 
-const SUBJECTS = [
-  { name: 'Physics', count: 420 },
-  { name: 'Chemistry', count: 380 },
-  { name: 'Mathematics', count: 460 },
-  { name: 'English', count: 520 },
-  { name: 'Biology', count: 390 },
-  { name: 'Economics', count: 310 },
-];
+const SUBJECTS = ['Physics', 'Chemistry', 'Mathematics', 'English', 'Biology', 'Economics'];
 
 export const SyllabusView: React.FC<Props> = ({ onOpenTutor }) => {
   const [selectedSubject, setSelectedSubject] = useState('Physics');
@@ -21,8 +14,10 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor }) => {
   // The option the student tried for each question.
   const [tried, setTried] = useState<Record<number, string>>({});
 
+  const { questions } = useCms();
+  const published = questions.filter((q) => q.status === 'published');
   const query = searchQuery.trim().toLowerCase();
-  const filteredQuestions = DIAGNOSTIC_QUESTIONS.filter((q) => {
+  const filteredQuestions = published.filter((q) => {
     const matchesSubject = q.subject.toLowerCase() === selectedSubject.toLowerCase();
     const matchesSearch =
       !query || q.question.toLowerCase().includes(query) || q.topic.toLowerCase().includes(query);
@@ -39,15 +34,15 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor }) => {
       <div className="pq__subjects" role="tablist" aria-label="Subjects">
         {SUBJECTS.map((s) => (
           <button
-            key={s.name}
+            key={s}
             type="button"
             role="tab"
-            aria-selected={selectedSubject === s.name}
-            className={selectedSubject === s.name ? 'is-on' : ''}
-            onClick={() => setSelectedSubject(s.name)}
+            aria-selected={selectedSubject === s}
+            className={selectedSubject === s ? 'is-on' : ''}
+            onClick={() => setSelectedSubject(s)}
           >
-            {s.name}
-            <small>{s.count}</small>
+            {s}
+            <small>{published.filter((q) => q.subject === s).length}</small>
           </button>
         ))}
       </div>
@@ -70,7 +65,7 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor }) => {
             <p>
               {query
                 ? `Nothing in ${selectedSubject} matches “${searchQuery}”. Try another word.`
-                : `${selectedSubject} questions are coming soon. Try Physics, Chemistry, Maths or English.`}
+                : `${selectedSubject} questions are coming soon. Try another subject.`}
             </p>
           </div>
         )}

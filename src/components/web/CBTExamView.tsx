@@ -24,6 +24,7 @@ import {
 import type { DiagnosticQuestion, UserProfile } from '../../types';
 import { DIAGNOSTIC_QUESTIONS } from '../../data/nigerian-curriculum';
 import { ExamCalculator } from './ExamCalculator';
+import { EXAM_SUBJECTS, toExamQuestion, useCms } from '../../lib/cms';
 
 interface Props {
   profile: UserProfile;
@@ -39,8 +40,8 @@ const SUBJECTS: Subject[] = ['English', 'Mathematics', 'Physics', 'Chemistry'];
 const COUNT_STEPS = [5, 10, 20, 40, 60];
 const SECONDS_PER_QUESTION = 60;
 
-const poolFor = (choice: Choice) =>
-  choice === 'all' ? DIAGNOSTIC_QUESTIONS : DIAGNOSTIC_QUESTIONS.filter((q) => q.subject === choice);
+const poolFor = (bank: DiagnosticQuestion[], choice: Choice) =>
+  choice === 'all' ? bank : bank.filter((q) => q.subject === choice);
 
 // Sensible counts for the pool size, always ending with "all of them".
 const countOptions = (available: number) => {
@@ -65,10 +66,16 @@ const minutesLabel = (count: number) => {
 };
 
 export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, presetSubject }) => {
+  // Published questions from the CMS, in the four CBT subjects.
+  const { questions: cmsQuestions } = useCms();
+  const bank = cmsQuestions
+    .filter((q) => q.status === 'published' && EXAM_SUBJECTS.includes(q.subject))
+    .map(toExamQuestion);
+
   // Setup: nothing runs until the student has chosen and pressed Start.
   const [config, setConfig] = useState<null | { choice: Choice; count: number }>(null);
   const [pickChoice, setPickChoice] = useState<Choice>(presetSubject ?? 'all');
-  const [pickCount, setPickCount] = useState(() => poolFor(presetSubject ?? 'all').length);
+  const [pickCount, setPickCount] = useState(() => poolFor(bank, presetSubject ?? 'all').length);
 
   const [activeSubject, setActiveSubject] = useState<Subject>('English');
   const [currentQIndex, setCurrentQIndex] = useState(0);
@@ -83,7 +90,7 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
 
   const tabsRef = useRef<HTMLElement>(null);
 
-  const examQuestions = config ? poolFor(config.choice).slice(0, config.count) : [];
+  const examQuestions = config ? poolFor(bank, config.choice).slice(0, config.count) : [];
   const examSubjects = SUBJECTS.filter((s) => examQuestions.some((q) => q.subject === s));
 
   // Keep the chosen subject tab visible when the strip scrolls on phones.
@@ -109,7 +116,7 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
   }, [running, finished]);
 
   const startExam = () => {
-    const pool = poolFor(pickChoice);
+    const pool = poolFor(bank, pickChoice);
     const count = Math.min(pickCount, pool.length);
     const chosen = pool.slice(0, count);
     const first = SUBJECTS.find((s) => chosen.some((q) => q.subject === s)) ?? 'English';
@@ -170,7 +177,7 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
 
   /* ================================================================== Setup */
   if (!running) {
-    const pool = poolFor(pickChoice);
+    const pool = poolFor(bank, pickChoice);
     const options = countOptions(pool.length);
     const count = Math.min(pickCount, pool.length);
     const choices: Array<{ id: Choice; label: string; note: string; icon: typeof Layers }> = [
@@ -216,7 +223,7 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
                   {choices.map((c, i) => {
                     const Icon = c.icon;
                     const on = pickChoice === c.id;
-                    const n = poolFor(c.id).length;
+                    const n = poolFor(bank, c.id).length;
                     return (
                       <button
                         key={c.id}
@@ -269,7 +276,11 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
                     </button>
                   ))}
                 </div>
-                <p className="xs__hint">You get about 1 minute per question, like the real exam.</p>
+                <p className="xs__hint">
+                  {count === 0
+                    ? 'No questions for this subject yet — pick another subject.'
+                    : 'You get about 1 minute per question, like the real exam.'}
+                </p>
               </section>
 
               {/* Step 3 */}
@@ -328,7 +339,7 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
                     <dd>{minutesLabel(count)}</dd>
                   </div>
                 </dl>
-                <button type="button" className="xs__start" onClick={startExam}>
+                <button type="button" className="xs__start" onClick={startExam} disabled={count === 0}>
                   <Play size={18} aria-hidden /> Start exam
                 </button>
                 <p className="xs__fine">Answers and explanations are shown after you submit.</p>
@@ -344,7 +355,7 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
               {count} {count === 1 ? 'question' : 'questions'} · {minutesLabel(count)}
             </span>
           </div>
-          <button type="button" className="xs__start" onClick={startExam}>
+          <button type="button" className="xs__start" onClick={startExam} disabled={count === 0}>
             <Play size={18} aria-hidden /> Start
           </button>
         </div>
