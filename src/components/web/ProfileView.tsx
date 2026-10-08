@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { examsLabel, examsOf } from '../../lib/student-exams';
 import { ArrowLeft, BadgeCheck, GraduationCap, LockOpen, LogOut, PencilLine, Target } from 'lucide-react';
 import type { UserProfile } from '../../types';
 import { SetupWizardView } from './SetupWizardView';
@@ -9,12 +10,6 @@ interface Props {
   onUpgrade: () => void;
   onLogOut: () => void;
 }
-
-const TRACK_LABEL: Record<UserProfile['track'], string> = {
-  jamb: 'UTME only',
-  'post-jamb': 'Post-UTME only',
-  both: 'UTME and Post-UTME',
-};
 
 /** "Me" tab: a plain summary first; the step-by-step editor only on request. */
 export const ProfileView: React.FC<Props> = ({ profile, onUpdateProfile, onUpgrade, onLogOut }) => {
@@ -96,7 +91,7 @@ export const ProfileView: React.FC<Props> = ({ profile, onUpdateProfile, onUpgra
           <div>
             <dt>Exam</dt>
             <dd>
-              {TRACK_LABEL[profile.track]} · {profile.examMonth}
+              {examsLabel(examsOf(profile))} · {profile.examMonth}
             </dd>
           </div>
         </dl>

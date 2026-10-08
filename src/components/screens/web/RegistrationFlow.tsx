@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
+import { examsLabel, examsOf, toggleExam } from '../../../lib/student-exams';
 import type {
   Course,
-  ExamTrack,
   Institution,
   UserProfile,
 } from '../../../types';
@@ -51,12 +51,6 @@ const ONBOARDING_VIEWS: FlowView[] = [
   'permissions',
   'baseline',
 ];
-
-const TRACK_LABELS: Record<ExamTrack, string> = {
-  jamb: 'JAMB / UTME',
-  'post-jamb': 'Post-UTME',
-  both: 'JAMB / UTME and Post-UTME',
-};
 
 /**
  * Owns the A04–A14 sequence and keeps the candidate's answers in the shared
@@ -195,8 +189,8 @@ export const RegistrationFlow: React.FC<Props> = ({
     case 'track':
       return (
         <A09_ExamTrack
-          selectedTrack={profile.track}
-          onSelectTrack={(track) => onUpdateProfile({ track })}
+          selected={examsOf(profile)}
+          onToggle={(exam) => onUpdateProfile(toggleExam(examsOf(profile), exam))}
           onBack={() => onNavigate('signup')}
           onContinue={() => onNavigate('subjects')}
         />
@@ -245,7 +239,7 @@ export const RegistrationFlow: React.FC<Props> = ({
           onChangeDailyCommitment={(dailyCommitment) =>
             onUpdateProfile({ dailyCommitment })
           }
-          trackLabel={TRACK_LABELS[profile.track]}
+          trackLabel={examsLabel(examsOf(profile))}
           subjectCount={profile.selectedSubjects.length}
           onBack={() => onNavigate('institution')}
           onContinue={() => onNavigate('permissions')}
@@ -272,7 +266,7 @@ export const RegistrationFlow: React.FC<Props> = ({
       return (
         <A14_PlacementDiagnostic
           subjectCount={profile.selectedSubjects.length}
-          trackLabel={TRACK_LABELS[profile.track]}
+          trackLabel={examsLabel(examsOf(profile))}
           targetScore={profile.targetScore}
           onBack={() => onNavigate('permissions')}
           onStart={onFinish}

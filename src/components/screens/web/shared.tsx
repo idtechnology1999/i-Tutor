@@ -24,18 +24,21 @@ export const FormField: React.FC<FormFieldProps> = ({
       <label className="form-field__label" htmlFor={id}>
         {label}
       </label>
-      {hint ? <span className="form-field__hint">{hint}</span> : null}
+      {/* The tick sits in the label row so nothing below moves when it
+          appears — a shift there made the submit button dodge clicks. */}
+      {valid ? (
+        <span className="form-field__ok" id={`${id}-ok`}>
+          <CheckIcon size={13} />
+          {id === 'phoneOrEmail' ? 'Looks good' : 'Verified'}
+        </span>
+      ) : hint ? (
+        <span className="form-field__hint">{hint}</span>
+      ) : null}
     </div>
     {children}
     {error ? (
       <p className="form-field__error" id={`${id}-error`} role="alert">
         {error}
-      </p>
-    ) : null}
-    {valid ? (
-      <p className="form-field__ok" id={`${id}-ok`}>
-        <CheckIcon size={13} />
-        {id === 'phoneOrEmail' ? 'Looks good' : 'Verified'}
       </p>
     ) : null}
   </div>
@@ -193,7 +196,7 @@ export const StepRail: React.FC<{
 );
 
 const ONBOARDING_STEPS = [
-  'Exam track',
+  'Your exams',
   'Subjects',
   'Institution & course',
   'Date & goal',

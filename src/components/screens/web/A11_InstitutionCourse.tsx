@@ -59,7 +59,7 @@ export const A11_InstitutionCourse: React.FC<Props> = ({
     <OnboardingShell
       step={3}
       title="Where are you aiming?"
-      lede="Tell us your target institution and course so we can benchmark your scores and prioritise the topics that carry the most weight in your admission."
+      lede="Your school sets your Post-UTME, so we’ll prepare you with its past questions. Your course decides your four JAMB subjects and the cut-off mark to aim for."
       aside={
         <p className="onboard__hint">
           Not sure yet? Skip it — your diagnostic will still show what to work on,

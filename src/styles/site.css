@@ -1975,3 +1975,9 @@
     padding-top: 32px;
   }
 }
+
+/* Valid tick sits in the label row (no layout shift below the field). */
+.form-field__head .form-field__ok {
+  display: inline-flex;
+  white-space: nowrap;
+}

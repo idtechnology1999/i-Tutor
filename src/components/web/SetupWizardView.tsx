@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import type { UserProfile, ExamTrack, DailyCommitment } from '../../types';
+import { ExamPicker } from './ExamPicker';
+import { examsOf, toggleExam } from '../../lib/student-exams';
+import type { UserProfile, DailyCommitment } from '../../types';
 import { JAMB_SUBJECTS, NIGERIAN_INSTITUTIONS, POPULAR_COURSES } from '../../data/nigerian-curriculum';
 import {
   OwlBookLogo,
@@ -127,84 +129,17 @@ export const SetupWizardView: React.FC<Props> = ({ profile, onUpdateProfile, onF
                   STEP 1 OF 5
                 </span>
                 <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 700, color: 'var(--slate-900)' }}>
-                  Which exam are you preparing for?
+                  Which exams are you preparing for?
                 </h2>
                 <p style={{ color: 'var(--slate-600)', fontSize: '15px', marginTop: '4px' }}>
-                  Choose your target examination track to personalize question weighting.
+                  Tick all that apply — you can change this any time.
                 </p>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                {[
-                  {
-                    id: 'jamb' as ExamTrack,
-                    title: 'JAMB UTME Only',
-                    badge: '400 Marks',
-                    desc: 'Comprehensive coverage of all 4 registered subjects based strictly on the current syllabus.',
-                  },
-                  {
-                    id: 'post-jamb' as ExamTrack,
-                    title: 'Post-UTME Screening Drills',
-                    badge: 'University Aptitude',
-                    desc: 'University-specific screening drills, past aptitude test patterns, and general paper mock modules.',
-                  },
-                  {
-                    id: 'both' as ExamTrack,
-                    title: 'Both (Recommended Track)',
-                    isRecommended: true,
-                    badge: 'Full Admission Journey',
-                    desc: 'Unified preparation taking you from high JAMB UTME score through to final university post-UTME screening.',
-                  },
-                ].map((track) => {
-                  const isSelected = profile.track === track.id;
-                  return (
-                    <div
-                      key={track.id}
-                      onClick={() => onUpdateProfile({ track: track.id })}
-                      style={{
-                        padding: '18px 20px',
-                        borderRadius: 'var(--radius-lg)',
-                        border: isSelected ? '2px solid var(--teal-900)' : '1px solid var(--slate-200)',
-                        backgroundColor: isSelected ? 'var(--teal-50)' : 'var(--white)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '6px',
-                        position: 'relative',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--slate-900)' }}>
-                            {track.title}
-                          </span>
-                          <span className="pill-badge pill-amber" style={{ fontSize: '11px' }}>
-                            {track.badge}
-                          </span>
-                        </div>
-                        <div
-                          style={{
-                            width: '22px',
-                            height: '22px',
-                            borderRadius: '50%',
-                            border: isSelected ? '2px solid var(--teal-900)' : '2px solid var(--slate-300)',
-                            backgroundColor: isSelected ? 'var(--teal-900)' : 'transparent',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          {isSelected && <CheckIcon size={14} color="#FFFFFF" />}
-                        </div>
-                      </div>
-                      <p style={{ fontSize: '13px', color: 'var(--slate-600)', lineHeight: '1.5' }}>
-                        {track.desc}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
+              <ExamPicker
+                selected={examsOf(profile)}
+                onToggle={(exam) => onUpdateProfile(toggleExam(examsOf(profile), exam))}
+              />
             </div>
           )}
 

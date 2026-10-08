@@ -18,12 +18,17 @@ export type ScreenId =
 
 export type ExamTrack = 'jamb' | 'post-jamb' | 'both';
 
+/** Exams a student is sitting; most sit more than one. */
+export type StudentExam = 'UTME' | 'Post-UTME' | 'WAEC' | 'NECO' | 'GCE' | 'NABTEB';
+
 export type DailyCommitment = '30min' | '1hour' | '2hours' | '3hours';
 
 export interface UserProfile {
   fullName: string;
   phoneOrEmail: string;
   track: ExamTrack;
+  /** Every exam the student is preparing for. Older profiles only have `track`. */
+  exams?: StudentExam[];
   selectedSubjects: string[];
   targetInstitution: string;
   targetInstitutionType: 'Federal' | 'State' | 'Private';
