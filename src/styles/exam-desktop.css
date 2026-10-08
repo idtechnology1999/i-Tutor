@@ -1,0 +1,113 @@
+/* =============================================================================
+   CBT as a desktop app (computers only): wallpaper, menu bar, app window.
+   Below 1024px the frame is invisible and the exam fills the screen.
+   ============================================================================= */
+
+.dsk__menubar,
+.dsk__titlebar {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .dsk {
+    --menubar: 30px;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: calc(var(--menubar) + 28px) 40px 32px;
+    background:
+      radial-gradient(900px 600px at 12% 18%, rgba(70, 160, 150, 0.55), transparent 60%),
+      radial-gradient(800px 600px at 88% 12%, rgba(232, 163, 61, 0.35), transparent 60%),
+      radial-gradient(1000px 700px at 70% 100%, rgba(29, 78, 216, 0.28), transparent 60%),
+      linear-gradient(160deg, #0b2b2a 0%, #123f3d 45%, #0e2f3a 100%);
+  }
+
+  .dsk__menubar {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 100;
+    height: var(--menubar);
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    padding: 0 18px;
+    background: rgba(255, 255, 255, 0.22);
+    backdrop-filter: saturate(180%) blur(24px);
+    -webkit-backdrop-filter: saturate(180%) blur(24px);
+    color: #fff;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  }
+  .dsk__app { display: inline-flex; align-items: center; font-weight: 700; }
+  .dsk__app .brand-mark,
+  .dsk__app img,
+  .dsk__app svg { max-height: 18px; }
+  .dsk__app * { color: #fff !important; }
+  .dsk__clock { margin-left: auto; font-variant-numeric: tabular-nums; }
+
+  .dsk__window {
+    max-width: 1240px;
+    margin: 0 auto;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.18),
+      0 30px 80px -20px rgba(0, 0, 0, 0.55),
+      0 12px 30px -12px rgba(0, 0, 0, 0.35);
+    animation: dsk-open 420ms var(--ease-ios, ease) both;
+  }
+  @keyframes dsk-open {
+    from { opacity: 0; transform: scale(0.97) translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  .dsk__titlebar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 40px;
+    padding: 0 14px;
+    background: linear-gradient(180deg, #f6f7f7, #e9ecec);
+    border-bottom: 1px solid #d5dad9;
+  }
+  .dsk__lights { display: flex; gap: 8px; z-index: 1; }
+  .dsk__light {
+    width: 12px;
+    height: 12px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.25);
+  }
+  .dsk__light--close { background: #ff5f57; cursor: pointer; }
+  .dsk__light--min { background: #febc2e; }
+  .dsk__light--max { background: #28c840; }
+  .dsk__light--close:hover { box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.25), 0 0 0 3px rgba(255, 95, 87, 0.25); }
+  .dsk__title {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: #3d4f4e;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    pointer-events: none;
+  }
+
+  /* The page scrolls inside the window, like an app. */
+  .dsk__body {
+    height: calc(100vh - var(--menubar) - 28px - 32px - 40px);
+    height: calc(100dvh - var(--menubar) - 28px - 32px - 40px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .dsk__body .xs,
+  .dsk__body .exam {
+    min-height: 100%;
+  }
+  .dsk__body .ui-page {
+    padding-top: 24px;
+    padding-bottom: 32px;
+  }
+}

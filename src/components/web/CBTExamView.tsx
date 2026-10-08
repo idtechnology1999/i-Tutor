@@ -25,6 +25,7 @@ import {
 import type { DiagnosticQuestion, UserProfile } from '../../types';
 import { DIAGNOSTIC_QUESTIONS } from '../../data/nigerian-curriculum';
 import { ExamCalculator } from './ExamCalculator';
+import { DesktopWindow } from './DesktopWindow';
 import { CMS_SUBJECTS, toExamQuestion, useCms } from '../../lib/cms';
 import type { SolveRequest } from '../../data/tutors';
 
@@ -92,7 +93,16 @@ const minutesLabel = (count: number) => {
   return rest ? `${Math.floor(mins / 60)} hr ${rest} min` : `${mins / 60} hr`;
 };
 
-export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, presetSubject, presetCourse, onSolve, solveLabel, askLabel }) => {
+export const CBTExamView: React.FC<Props> = ({
+  profile,
+  onExit,
+  onOpenTutor,
+  presetSubject,
+  presetCourse,
+  onSolve,
+  solveLabel,
+  askLabel,
+}) => {
   // Published questions from the CMS, in the four CBT subjects.
   const { questions: cmsQuestions } = useCms();
   const bank = cmsQuestions
@@ -174,11 +184,9 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
     setCurrentQIndex(0);
   };
 
-  const handleSelectOption = (label: string) =>
-    setAnswers((prev) => ({ ...prev, [activeQuestion.id]: label }));
+  const handleSelectOption = (label: string) => setAnswers((prev) => ({ ...prev, [activeQuestion.id]: label }));
 
-  const toggleFlag = () =>
-    setFlagged((prev) => ({ ...prev, [activeQuestion.id]: !prev[activeQuestion.id] }));
+  const toggleFlag = () => setFlagged((prev) => ({ ...prev, [activeQuestion.id]: !prev[activeQuestion.id] }));
 
   // Keyboard: A–D or 1–4 to answer, N / P to move, F to flag. The listener is
   // attached once and always calls the latest handler through a ref.
@@ -231,102 +239,105 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
     const chosen = choices.find((c) => c.id === pickChoice) ?? choices[0];
 
     return (
-      <div className="xs">
-        <header className="xs__bar">
-          <button type="button" className="xs__back" onClick={onExit}>
-            <ArrowLeft size={18} aria-hidden /> Home
-          </button>
-        </header>
-
-        <div className="xs__wrap">
-          <header className="xs__intro">
-            <h1>{presetCourse ? presetCourse.name : 'Practice exam'}</h1>
-            <p>Pick a subject, choose how many questions, then start. You get about 1 minute per question.</p>
+      <DesktopWindow title="Practice exam — i-Tutor CBT" onClose={onExit}>
+        <div className="xs">
+          <header className="xs__bar">
+            <button type="button" className="xs__back" onClick={onExit}>
+              <ArrowLeft size={18} aria-hidden /> Home
+            </button>
           </header>
 
-          <section className="xs__group" aria-labelledby="xs-subject">
-            <h2 id="xs-subject">Subject</h2>
-            <div className="xs__list" role="radiogroup" aria-labelledby="xs-subject">
-              {choices.map((c) => {
-                const Icon = c.icon;
-                const on = pickChoice === c.id;
-                const n = poolFor(bank, c.id, courseSubjects).length;
-                return (
-                  <button
-                    key={c.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={on}
-                    className={`xs__row${on ? ' is-on' : ''}`}
-                    disabled={n === 0}
-                    onClick={() => {
-                      setPickChoice(c.id);
-                      setPickCount(n);
-                    }}
-                  >
-                    <span className="xs__row-icon">
-                      <Icon size={18} aria-hidden />
-                    </span>
-                    <span className="xs__row-name">{c.label}</span>
-                    <span className="xs__row-n">{n === 0 ? 'Coming soon' : n}</span>
-                    <span className="xs__row-tick" aria-hidden>
-                      {on && <Check size={18} strokeWidth={2.5} />}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
+          <div className="xs__wrap">
+            <header className="xs__intro">
+              <h1>{presetCourse ? presetCourse.name : 'Practice exam'}</h1>
+              <p>Pick a subject, choose how many questions, then start. You get about 1 minute per question.</p>
+            </header>
 
-          {count > 0 && (
-            <section className="xs__group" aria-labelledby="xs-count">
-              <h2 id="xs-count">Questions</h2>
-              <div className="xs__seg" role="radiogroup" aria-labelledby="xs-count">
-                {options.map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    role="radio"
-                    aria-checked={count === n}
-                    className={count === n ? 'is-on' : ''}
-                    onClick={() => setPickCount(n)}
-                  >
-                    {n === pool.length && options.length > 1 ? `All ${n}` : n}
-                  </button>
-                ))}
+            <section className="xs__group" aria-labelledby="xs-subject">
+              <h2 id="xs-subject">Subject</h2>
+              <div className="xs__list" role="radiogroup" aria-labelledby="xs-subject">
+                {choices.map((c) => {
+                  const Icon = c.icon;
+                  const on = pickChoice === c.id;
+                  const n = poolFor(bank, c.id, courseSubjects).length;
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={on}
+                      className={`xs__row${on ? ' is-on' : ''}`}
+                      disabled={n === 0}
+                      onClick={() => {
+                        setPickChoice(c.id);
+                        setPickCount(n);
+                      }}
+                    >
+                      <span className="xs__row-icon">
+                        <Icon size={18} aria-hidden />
+                      </span>
+                      <span className="xs__row-name">{c.label}</span>
+                      <span className="xs__row-n">{n === 0 ? 'Coming soon' : n}</span>
+                      <span className="xs__row-tick" aria-hidden>
+                        {on && <Check size={18} strokeWidth={2.5} />}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </section>
-          )}
 
-          <div className="xs__go">
-            <p className="xs__sum">
-              <strong>{chosen.label}</strong> · {count} {count === 1 ? 'question' : 'questions'} · {minutesLabel(count)}
-            </p>
-            <button type="button" className="xs__start" onClick={startExam} disabled={count === 0}>
-              <Play size={18} aria-hidden /> Start exam
-            </button>
-            <p className="xs__fine">The timer starts when you press Start.</p>
+            {count > 0 && (
+              <section className="xs__group" aria-labelledby="xs-count">
+                <h2 id="xs-count">Questions</h2>
+                <div className="xs__seg" role="radiogroup" aria-labelledby="xs-count">
+                  {options.map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      role="radio"
+                      aria-checked={count === n}
+                      className={count === n ? 'is-on' : ''}
+                      onClick={() => setPickCount(n)}
+                    >
+                      {n === pool.length && options.length > 1 ? `All ${n}` : n}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            <div className="xs__go">
+              <p className="xs__sum">
+                <strong>{chosen.label}</strong> · {count} {count === 1 ? 'question' : 'questions'} ·{' '}
+                {minutesLabel(count)}
+              </p>
+              <button type="button" className="xs__start" onClick={startExam} disabled={count === 0}>
+                <Play size={18} aria-hidden /> Start exam
+              </button>
+              <p className="xs__fine">The timer starts when you press Start.</p>
+            </div>
+
+            <details className="xs__how">
+              <summary>How the exam works</summary>
+              <ul>
+                <li>
+                  <Check size={16} aria-hidden /> Tap an answer to choose it. You can change it any time.
+                </li>
+                <li>
+                  <Flag size={16} aria-hidden /> Not sure? Flag it and come back later.
+                </li>
+                <li>
+                  <Calculator size={16} aria-hidden /> There’s a calculator if you need it.
+                </li>
+                <li>
+                  <Clock3 size={16} aria-hidden /> When time runs out, your answers are submitted for you.
+                </li>
+              </ul>
+            </details>
           </div>
-
-          <details className="xs__how">
-            <summary>How the exam works</summary>
-            <ul>
-              <li>
-                <Check size={16} aria-hidden /> Tap an answer to choose it. You can change it any time.
-              </li>
-              <li>
-                <Flag size={16} aria-hidden /> Not sure? Flag it and come back later.
-              </li>
-              <li>
-                <Calculator size={16} aria-hidden /> There’s a calculator if you need it.
-              </li>
-              <li>
-                <Clock3 size={16} aria-hidden /> When time runs out, your answers are submitted for you.
-              </li>
-            </ul>
-          </details>
         </div>
-      </div>
+      </DesktopWindow>
     );
   }
 
@@ -337,108 +348,113 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
     const estimate = Math.round(160 + (scorePct / 100) * 200);
 
     return (
-      <div className="ui-page exam-result">
-        <section className="ui-card exam-result__hero">
-          <span className="exam-result__badge">
-            <Check size={28} aria-hidden />
-          </span>
-          <h1>Exam finished</h1>
-          <p>Here’s how you did, {profile.fullName.split(' ')[0]}.</p>
+      <DesktopWindow title="Results — i-Tutor CBT" onClose={onExit}>
+        <div className="ui-page exam-result">
+          <section className="ui-card exam-result__hero">
+            <span className="exam-result__badge">
+              <Check size={28} aria-hidden />
+            </span>
+            <h1>Exam finished</h1>
+            <p>Here’s how you did, {profile.fullName.split(' ')[0]}.</p>
 
-          <div className="exam-result__stats">
-            <div>
-              <strong>
-                {correctCount}/{total}
-              </strong>
-              <span>Correct</span>
+            <div className="exam-result__stats">
+              <div>
+                <strong>
+                  {correctCount}/{total}
+                </strong>
+                <span>Correct</span>
+              </div>
+              <div>
+                <strong>{scorePct}%</strong>
+                <span>Score</span>
+              </div>
+              <div className="is-key">
+                <strong>{estimate}</strong>
+                <span>Likely JAMB score</span>
+              </div>
             </div>
-            <div>
-              <strong>{scorePct}%</strong>
-              <span>Score</span>
-            </div>
-            <div className="is-key">
-              <strong>{estimate}</strong>
-              <span>Likely JAMB score</span>
-            </div>
-          </div>
 
-          <div className="exam-result__actions">
-            <button type="button" className="ui-btn ui-btn--primary ui-btn--lg" onClick={onExit}>
-              Back to home
-            </button>
-            <button type="button" className="ui-btn ui-btn--ghost ui-btn--lg" onClick={restart}>
-              <RotateCcw size={18} aria-hidden /> Try again
-            </button>
-          </div>
-        </section>
+            <div className="exam-result__actions">
+              <button type="button" className="ui-btn ui-btn--primary ui-btn--lg" onClick={onExit}>
+                Back to home
+              </button>
+              <button type="button" className="ui-btn ui-btn--ghost ui-btn--lg" onClick={restart}>
+                <RotateCcw size={18} aria-hidden /> Try again
+              </button>
+            </div>
+          </section>
 
-        <section className="ui-card exam-review">
-          <h2>Check your answers</h2>
-          <p className="exam-review__sub">Tap a question to see the right answer and why.</p>
-          <ol>
-            {examQuestions.map((q, i) => {
-              const yours = answers[q.id];
-              const right = yours === q.correctAnswer;
-              const open = openReview === q.id;
-              const correctText = q.options.find((o) => o.label === q.correctAnswer)?.text;
-              const yourText = q.options.find((o) => o.label === yours)?.text;
-              return (
-                <li key={q.id} className={`exam-review__item ${right ? 'is-right' : 'is-wrong'}${open ? ' is-open' : ''}`}>
-                  <button type="button" onClick={() => setOpenReview(open ? null : q.id)} aria-expanded={open}>
-                    <span className="exam-review__mark" aria-hidden>
-                      {right ? <Check size={14} /> : <X size={14} />}
-                    </span>
-                    <span className="exam-review__q">
-                      <small>
-                        {i + 1}. {q.subject}
-                      </small>
-                      {q.question}
-                    </span>
-                    <ChevronDown size={18} className="exam-review__chev" aria-hidden />
-                  </button>
-                  {open && (
-                    <div className="exam-review__body">
-                      <p>
-                        <b>Your answer:</b> {yours ? `${yours}. ${yourText}` : 'Not answered'}
-                      </p>
-                      {!right && (
+          <section className="ui-card exam-review">
+            <h2>Check your answers</h2>
+            <p className="exam-review__sub">Tap a question to see the right answer and why.</p>
+            <ol>
+              {examQuestions.map((q, i) => {
+                const yours = answers[q.id];
+                const right = yours === q.correctAnswer;
+                const open = openReview === q.id;
+                const correctText = q.options.find((o) => o.label === q.correctAnswer)?.text;
+                const yourText = q.options.find((o) => o.label === yours)?.text;
+                return (
+                  <li
+                    key={q.id}
+                    className={`exam-review__item ${right ? 'is-right' : 'is-wrong'}${open ? ' is-open' : ''}`}
+                  >
+                    <button type="button" onClick={() => setOpenReview(open ? null : q.id)} aria-expanded={open}>
+                      <span className="exam-review__mark" aria-hidden>
+                        {right ? <Check size={14} /> : <X size={14} />}
+                      </span>
+                      <span className="exam-review__q">
+                        <small>
+                          {i + 1}. {q.subject}
+                        </small>
+                        {q.question}
+                      </span>
+                      <ChevronDown size={18} className="exam-review__chev" aria-hidden />
+                    </button>
+                    {open && (
+                      <div className="exam-review__body">
                         <p>
-                          <b>Right answer:</b> {q.correctAnswer}. {correctText}
+                          <b>Your answer:</b> {yours ? `${yours}. ${yourText}` : 'Not answered'}
                         </p>
-                      )}
-                      <p className="exam-review__why">{q.explanation}</p>
-                      {onSolve ? (
-                        <button
-                          type="button"
-                          className="ui-link"
-                          onClick={() =>
-                            onSolve({
-                              subject: q.subject,
-                              question: q.question,
-                              options: q.options,
-                              correctAnswer: q.correctAnswer,
-                              explanation: q.explanation,
-                              yourAnswer: yours,
-                            })
-                          }
-                        >
-                          <MessageSquareText size={16} aria-hidden /> {solveLabel ?? 'Solve with my tutor'}
-                        </button>
-                      ) : (
-                        onOpenTutor && (
-                          <button type="button" className="ui-link" onClick={onOpenTutor}>
-                            <MessageSquareText size={16} aria-hidden /> Still confused? Ask the tutor
+                        {!right && (
+                          <p>
+                            <b>Right answer:</b> {q.correctAnswer}. {correctText}
+                          </p>
+                        )}
+                        <p className="exam-review__why">{q.explanation}</p>
+                        {onSolve ? (
+                          <button
+                            type="button"
+                            className="ui-link"
+                            onClick={() =>
+                              onSolve({
+                                subject: q.subject,
+                                question: q.question,
+                                options: q.options,
+                                correctAnswer: q.correctAnswer,
+                                explanation: q.explanation,
+                                yourAnswer: yours,
+                              })
+                            }
+                          >
+                            <MessageSquareText size={16} aria-hidden /> {solveLabel ?? 'Solve with my tutor'}
                           </button>
-                        )
-                      )}
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ol>
-        </section>
-      </div>
+                        ) : (
+                          onOpenTutor && (
+                            <button type="button" className="ui-link" onClick={onOpenTutor}>
+                              <MessageSquareText size={16} aria-hidden /> Still confused? Ask the tutor
+                            </button>
+                          )
+                        )}
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+        </div>
+      </DesktopWindow>
     );
   }
 
@@ -460,7 +476,13 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
           const state =
             idx === currentQIndex ? 'is-current' : flagged[q.id] ? 'is-flag' : answers[q.id] ? 'is-done' : '';
           return (
-            <button key={q.id} type="button" className={state} onClick={() => goTo(idx)} aria-label={`Question ${idx + 1}`}>
+            <button
+              key={q.id}
+              type="button"
+              className={state}
+              onClick={() => goTo(idx)}
+              aria-label={`Question ${idx + 1}`}
+            >
               {idx + 1}
             </button>
           );
@@ -481,221 +503,236 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
   );
 
   return (
-    <div className="exam">
-      {/* ----------------------------------------------------------- Top bar */}
-      <header className="exam__bar">
-        <button type="button" className="exam__exit" onClick={() => setConfirm('exit')}>
-          <X size={18} aria-hidden />
-          <span>Exit</span>
-        </button>
-        <div className="exam__title">
-          <strong>Practice exam</strong>
-          <span>{profile.fullName}</span>
-        </div>
-        <div className="exam__bar-right">
-          <span className={`exam__timer${lowTime ? ' is-low' : ''}`} role="timer" aria-label="Time left">
-            <Clock3 size={16} aria-hidden />
-            {formatTime(timeLeft)}
-          </span>
-          <button
-            type="button"
-            className={`exam__icon-btn${showCalculator ? ' is-on' : ''}`}
-            onClick={() => setShowCalculator((v) => !v)}
-            aria-label="Calculator"
-            aria-pressed={showCalculator}
-          >
-            <Calculator size={18} aria-hidden />
+    <DesktopWindow title={`${profile.fullName} — i-Tutor CBT`} onClose={() => setConfirm('exit')}>
+      <div className="exam">
+        {/* ----------------------------------------------------------- Top bar */}
+        <header className="exam__bar">
+          <button type="button" className="exam__exit" onClick={() => setConfirm('exit')}>
+            <X size={18} aria-hidden />
+            <span>Exit</span>
           </button>
-          <button type="button" className="exam__submit" onClick={() => setConfirm('submit')}>
-            Submit
-          </button>
-        </div>
-      </header>
-
-      {/* ------------------------------------------------------ Subject tabs */}
-      <nav className="exam__tabs" aria-label="Subjects" ref={tabsRef}>
-        {examSubjects.map((subject) => {
-          const qs = examQuestions.filter((q) => q.subject === subject);
-          const done = qs.filter((q) => answers[q.id]).length;
-          return (
-            <button
-              key={subject}
-              type="button"
-              className={activeSubject === subject ? 'is-on' : ''}
-              onClick={() => switchSubject(subject)}
-              aria-current={activeSubject === subject ? 'true' : undefined}
-            >
-              {subject}
-              <small>
-                {done}/{qs.length}
-              </small>
-            </button>
-          );
-        })}
-      </nav>
-
-      <div className="exam__layout">
-        {/* ------------------------------------------------------ Question */}
-        <main className="exam__card">
-          <div className="exam__meta">
-            <span>
-              Question <b>{currentQIndex + 1}</b> of {subjectQuestions.length}
+          <div className="exam__title">
+            <strong>Practice exam</strong>
+            <span>{profile.fullName}</span>
+          </div>
+          <div className="exam__bar-right">
+            <span className={`exam__timer${lowTime ? ' is-low' : ''}`} role="timer" aria-label="Time left">
+              <Clock3 size={16} aria-hidden />
+              {formatTime(timeLeft)}
             </span>
-            {onSolve && (
-              <button
-                type="button"
-                className="ask-ai"
-                onClick={() =>
-                  onSolve({
-                    subject: activeQuestion.subject,
-                    question: activeQuestion.question,
-                    options: activeQuestion.options,
-                    correctAnswer: activeQuestion.correctAnswer,
-                    explanation: activeQuestion.explanation,
-                    topic: activeQuestion.topic,
-                    mode: 'hint',
-                  })
-                }
-              >
-                <MessageSquareText size={15} aria-hidden /> {askLabel ?? 'Ask AI'}
-              </button>
-            )}
             <button
               type="button"
-              className={`exam__flag${isFlagged ? ' is-on' : ''}`}
-              onClick={toggleFlag}
-              aria-pressed={isFlagged}
+              className={`exam__icon-btn${showCalculator ? ' is-on' : ''}`}
+              onClick={() => setShowCalculator((v) => !v)}
+              aria-label="Calculator"
+              aria-pressed={showCalculator}
             >
-              <Flag size={16} aria-hidden />
-              {isFlagged ? 'Flagged' : 'Flag'}
+              <Calculator size={18} aria-hidden />
+            </button>
+            <button type="button" className="exam__submit" onClick={() => setConfirm('submit')}>
+              Submit
             </button>
           </div>
+        </header>
 
-          <p className="exam__topic">{activeQuestion.topic}</p>
-          <h2 className="exam__question" key={activeQuestion.id}>
-            {activeQuestion.question}
-          </h2>
+        {/* ------------------------------------------------------ Subject tabs */}
+        <nav className="exam__tabs" aria-label="Subjects" ref={tabsRef}>
+          {examSubjects.map((subject) => {
+            const qs = examQuestions.filter((q) => q.subject === subject);
+            const done = qs.filter((q) => answers[q.id]).length;
+            return (
+              <button
+                key={subject}
+                type="button"
+                className={activeSubject === subject ? 'is-on' : ''}
+                onClick={() => switchSubject(subject)}
+                aria-current={activeSubject === subject ? 'true' : undefined}
+              >
+                {subject}
+                <small>
+                  {done}/{qs.length}
+                </small>
+              </button>
+            );
+          })}
+        </nav>
 
-          <div className="exam__options" role="radiogroup" aria-label="Answer options" key={`o${activeQuestion.id}`}>
-            {activeQuestion.options.map((opt, i) => {
-              const isSelected = answers[activeQuestion.id] === opt.label;
-              return (
+        <div className="exam__layout">
+          {/* ------------------------------------------------------ Question */}
+          <main className="exam__card">
+            <div className="exam__meta">
+              <span>
+                Question <b>{currentQIndex + 1}</b> of {subjectQuestions.length}
+              </span>
+              {onSolve && (
                 <button
-                  key={opt.label}
                   type="button"
-                  role="radio"
-                  aria-checked={isSelected}
-                  className={`exam__option${isSelected ? ' is-picked' : ''}`}
-                  style={{ ['--i' as string]: i }}
-                  onClick={() => handleSelectOption(opt.label)}
+                  className="ask-ai"
+                  onClick={() =>
+                    onSolve({
+                      subject: activeQuestion.subject,
+                      question: activeQuestion.question,
+                      options: activeQuestion.options,
+                      correctAnswer: activeQuestion.correctAnswer,
+                      explanation: activeQuestion.explanation,
+                      topic: activeQuestion.topic,
+                      mode: 'hint',
+                    })
+                  }
                 >
-                  <span className="exam__key">{opt.label}</span>
-                  <span>{opt.text}</span>
-                  {isSelected && <Check size={18} className="exam__picked" aria-hidden />}
+                  <MessageSquareText size={15} aria-hidden /> {askLabel ?? 'Ask AI'}
                 </button>
-              );
-            })}
-          </div>
-
-          <div className="exam__nav">
-            <button
-              type="button"
-              className="ui-btn ui-btn--ghost"
-              disabled={currentQIndex === 0}
-              onClick={() => goTo(currentQIndex - 1)}
-            >
-              <ChevronLeft size={18} aria-hidden /> Previous
-            </button>
-            <button type="button" className="ui-btn ui-btn--ghost exam__grid-btn" onClick={() => setPaletteOpen(true)}>
-              <LayoutGrid size={18} aria-hidden /> {currentQIndex + 1}/{subjectQuestions.length}
-            </button>
-            {currentQIndex < subjectQuestions.length - 1 ? (
-              <button type="button" className="ui-btn ui-btn--primary" onClick={() => goTo(currentQIndex + 1)}>
-                Next <ChevronRight size={18} aria-hidden />
-              </button>
-            ) : (
+              )}
               <button
                 type="button"
-                className="ui-btn ui-btn--primary"
-                onClick={() => {
-                  const nextSubject = examSubjects[(examSubjects.indexOf(activeSubject) + 1) % examSubjects.length];
-                  switchSubject(nextSubject);
-                }}
+                className={`exam__flag${isFlagged ? ' is-on' : ''}`}
+                onClick={toggleFlag}
+                aria-pressed={isFlagged}
               >
-                Next subject <ChevronRight size={18} aria-hidden />
+                <Flag size={16} aria-hidden />
+                {isFlagged ? 'Flagged' : 'Flag'}
               </button>
-            )}
-          </div>
-          <p className="exam__keys">Tip: press A–D to answer, N for next, P for previous, F to flag.</p>
-        </main>
+            </div>
 
-        {/* ------------------------------------------------ Side (desktop) */}
-        <aside className="exam__side">
-          <div className="ui-card exam-palette">{palette}</div>
-        </aside>
-      </div>
+            <p className="exam__topic">{activeQuestion.topic}</p>
+            <h2 className="exam__question" key={activeQuestion.id}>
+              {activeQuestion.question}
+            </h2>
 
-      {/* --------------------------------------------- Palette sheet (phone) */}
-      {paletteOpen && (
-        <div className="ui-overlay" onClick={() => setPaletteOpen(false)}>
-          <div className="ui-sheet exam-palette" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="All questions">
-            <div className="ui-sheet__grab" aria-hidden />
-            {palette}
-            <button type="button" className="ui-btn ui-btn--ghost ui-btn--block" onClick={() => setPaletteOpen(false)}>
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ----------------------------------------------------- Calculator */}
-      {showCalculator && <ExamCalculator onClose={() => setShowCalculator(false)} />}
-
-      {/* -------------------------------------------------------- Confirm */}
-      {confirm && (
-        <div className="ui-overlay ui-overlay--center" onClick={() => setConfirm(null)}>
-          <div className="ui-dialog" role="alertdialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-            {confirm === 'submit' ? (
-              <>
-                <h2>Submit your exam?</h2>
-                <p>
-                  You answered <b>{answeredCount}</b> of {total} questions.
-                  {total - answeredCount > 0 && ` ${total - answeredCount} still unanswered.`}
-                  {flaggedCount > 0 && ` ${flaggedCount} flagged to check.`}
-                </p>
-                <div className="ui-dialog__actions">
-                  <button type="button" className="ui-btn ui-btn--ghost" onClick={() => setConfirm(null)}>
-                    Keep working
-                  </button>
+            <div className="exam__options" role="radiogroup" aria-label="Answer options" key={`o${activeQuestion.id}`}>
+              {activeQuestion.options.map((opt, i) => {
+                const isSelected = answers[activeQuestion.id] === opt.label;
+                return (
                   <button
+                    key={opt.label}
                     type="button"
-                    className="ui-btn ui-btn--primary"
-                    onClick={() => {
-                      setConfirm(null);
-                      setIsSubmitted(true);
-                    }}
+                    role="radio"
+                    aria-checked={isSelected}
+                    className={`exam__option${isSelected ? ' is-picked' : ''}`}
+                    style={{ ['--i' as string]: i }}
+                    onClick={() => handleSelectOption(opt.label)}
                   >
-                    Yes, submit
+                    <span className="exam__key">{opt.label}</span>
+                    <span>{opt.text}</span>
+                    {isSelected && <Check size={18} className="exam__picked" aria-hidden />}
                   </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <h2>Leave the exam?</h2>
-                <p>Your answers in this practice exam will not be saved.</p>
-                <div className="ui-dialog__actions">
-                  <button type="button" className="ui-btn ui-btn--ghost" onClick={() => setConfirm(null)}>
-                    Stay
-                  </button>
-                  <button type="button" className="ui-btn ui-btn--danger" onClick={onExit}>
-                    Leave exam
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+                );
+              })}
+            </div>
+
+            <div className="exam__nav">
+              <button
+                type="button"
+                className="ui-btn ui-btn--ghost"
+                disabled={currentQIndex === 0}
+                onClick={() => goTo(currentQIndex - 1)}
+              >
+                <ChevronLeft size={18} aria-hidden /> Previous
+              </button>
+              <button
+                type="button"
+                className="ui-btn ui-btn--ghost exam__grid-btn"
+                onClick={() => setPaletteOpen(true)}
+              >
+                <LayoutGrid size={18} aria-hidden /> {currentQIndex + 1}/{subjectQuestions.length}
+              </button>
+              {currentQIndex < subjectQuestions.length - 1 ? (
+                <button type="button" className="ui-btn ui-btn--primary" onClick={() => goTo(currentQIndex + 1)}>
+                  Next <ChevronRight size={18} aria-hidden />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="ui-btn ui-btn--primary"
+                  onClick={() => {
+                    const nextSubject = examSubjects[(examSubjects.indexOf(activeSubject) + 1) % examSubjects.length];
+                    switchSubject(nextSubject);
+                  }}
+                >
+                  Next subject <ChevronRight size={18} aria-hidden />
+                </button>
+              )}
+            </div>
+            <p className="exam__keys">Tip: press A–D to answer, N for next, P for previous, F to flag.</p>
+          </main>
+
+          {/* ------------------------------------------------ Side (desktop) */}
+          <aside className="exam__side">
+            <div className="ui-card exam-palette">{palette}</div>
+          </aside>
         </div>
-      )}
-    </div>
+
+        {/* --------------------------------------------- Palette sheet (phone) */}
+        {paletteOpen && (
+          <div className="ui-overlay" onClick={() => setPaletteOpen(false)}>
+            <div
+              className="ui-sheet exam-palette"
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-label="All questions"
+            >
+              <div className="ui-sheet__grab" aria-hidden />
+              {palette}
+              <button
+                type="button"
+                className="ui-btn ui-btn--ghost ui-btn--block"
+                onClick={() => setPaletteOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ----------------------------------------------------- Calculator */}
+        {showCalculator && <ExamCalculator onClose={() => setShowCalculator(false)} />}
+
+        {/* -------------------------------------------------------- Confirm */}
+        {confirm && (
+          <div className="ui-overlay ui-overlay--center" onClick={() => setConfirm(null)}>
+            <div className="ui-dialog" role="alertdialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+              {confirm === 'submit' ? (
+                <>
+                  <h2>Submit your exam?</h2>
+                  <p>
+                    You answered <b>{answeredCount}</b> of {total} questions.
+                    {total - answeredCount > 0 && ` ${total - answeredCount} still unanswered.`}
+                    {flaggedCount > 0 && ` ${flaggedCount} flagged to check.`}
+                  </p>
+                  <div className="ui-dialog__actions">
+                    <button type="button" className="ui-btn ui-btn--ghost" onClick={() => setConfirm(null)}>
+                      Keep working
+                    </button>
+                    <button
+                      type="button"
+                      className="ui-btn ui-btn--primary"
+                      onClick={() => {
+                        setConfirm(null);
+                        setIsSubmitted(true);
+                      }}
+                    >
+                      Yes, submit
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h2>Leave the exam?</h2>
+                  <p>Your answers in this practice exam will not be saved.</p>
+                  <div className="ui-dialog__actions">
+                    <button type="button" className="ui-btn ui-btn--ghost" onClick={() => setConfirm(null)}>
+                      Stay
+                    </button>
+                    <button type="button" className="ui-btn ui-btn--danger" onClick={onExit}>
+                      Leave exam
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </DesktopWindow>
   );
 };
