@@ -4,6 +4,7 @@ import {
   BookOpenCheck,
   GraduationCap,
   KeyRound,
+  Landmark,
   LayoutDashboard,
   LoaderCircle,
   LogOut,
@@ -21,8 +22,9 @@ import { AdminImport } from './AdminImport';
 import { AdminNews } from './AdminNews';
 import { AdminSettings } from './AdminSettings';
 import { AdminCourses } from './AdminCourses';
+import { AdminPostUtme } from './AdminPostUtme';
 
-export type Section = 'overview' | 'questions' | 'import' | 'courses' | 'news' | 'settings';
+export type Section = 'overview' | 'questions' | 'import' | 'postutme' | 'courses' | 'news' | 'settings';
 export type QuestionFilter = 'all' | 'published' | 'draft' | 'review';
 
 /** Which part of the bank is open: a subject (or All) and a year (or all years). */
@@ -51,6 +53,7 @@ const NAV: Array<{ id: Section; label: string; icon: typeof LayoutDashboard }> =
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'questions', label: 'Past questions', icon: BookOpenCheck },
   { id: 'import', label: 'Import with AI', icon: ScanText },
+  { id: 'postutme', label: 'Post-UTME', icon: Landmark },
   { id: 'courses', label: 'Courses', icon: GraduationCap },
   { id: 'news', label: 'News', icon: Newspaper },
   { id: 'settings', label: 'Settings', icon: Settings },
@@ -61,6 +64,7 @@ const SECTION_PATH: Record<Section, string> = {
   overview: '/admin',
   questions: '/admin/past-questions',
   import: '/admin/import',
+  postutme: '/admin/post-utme',
   courses: '/admin/courses',
   news: '/admin/news',
   settings: '/admin/settings',
@@ -243,6 +247,7 @@ export const AdminApp: React.FC<{
           />
         )}
         {section === 'import' && <AdminImport key={importPreset.n} nav={nav} preset={importPreset.value} />}
+        {section === 'postutme' && <AdminPostUtme nav={nav} />}
         {section === 'courses' && <AdminCourses nav={nav} />}
         {section === 'news' && <AdminNews nav={nav} />}
         {section === 'settings' && <AdminSettings nav={nav} mode={mode} />}
