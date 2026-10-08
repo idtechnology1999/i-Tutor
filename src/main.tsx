@@ -9,6 +9,7 @@ import './styles/app.css'
 import './styles/exam-tools.css'
 import './styles/exam-start.css'
 import './styles/ask-ai.css'
+import './styles/news.css'
 import App from './App.tsx'
 
 createRoot(document.getElementById('root')!).render(

@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { BrandMark } from './BrandMark';
 import { CbtPreview, TutorPreview } from './ProductPreviews';
+import { NewsSection } from './NewsSection';
 
 interface HomePageViewProps {
   onLaunchCBT: () => void;
@@ -808,6 +809,9 @@ export const HomePageView: React.FC<HomePageViewProps> = ({
           </div>
         </div>
       </section>
+
+      {/* ---------------------------------------------------------------- News */}
+      <NewsSection />
 
       {/* -------------------------------------------------------------- Footer */}
       <footer className="lp-footer">

@@ -37,6 +37,7 @@ const HOME_ANCHORS = [
   { label: 'Features', href: '#features' },
   { label: 'How it works', href: '#how' },
   { label: 'Pricing', href: '#pricing' },
+  { label: 'News', href: '#news' },
 ];
 
 const goToPath = (path: string) => {
