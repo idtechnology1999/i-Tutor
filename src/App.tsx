@@ -15,6 +15,7 @@ import { RegistrationFlow } from './components/screens/web/RegistrationFlow';
 import { AdminApp } from './components/admin/AdminApp';
 import { CourseView } from './components/web/CourseView';
 import { PostUtmeView } from './components/web/PostUtmeView';
+import type { ExamType } from './lib/cms';
 
 const PLAN_KEY = 'itutor-plan';
 
@@ -62,6 +63,7 @@ const TITLES: Record<AppView, string> = {
   forgot: 'Reset your password — i-Tutor',
   reset: 'Set a new password — i-Tutor',
   track: 'Step 1 · Your exams — i-Tutor',
+  schoolcert: 'Your class & subjects — i-Tutor',
   subjects: 'Step 2 · Subjects — i-Tutor',
   institution: 'Step 3 · Institution & course — i-Tutor',
   goals: 'Step 4 · Exam date & goal — i-Tutor',
@@ -92,7 +94,7 @@ export function App() {
     goTo('cbt');
   };
   // Past questions opened from the Post-UTME page land on that school.
-  const [pqSchool, setPqSchool] = useState<string | undefined>();
+  const [pq, setPq] = useState<{ exam?: ExamType; school?: string }>({});
   const launchCourseExam = (course: { name: string; subjects: string[]; exam?: string; school?: string }) => {
     setExamSubject(undefined);
     setExamCourse(course);
@@ -190,15 +192,20 @@ export function App() {
             onEditGoal={() => goTo('setup')}
             onOpenCourse={() => goTo('course')}
             onOpenPostUtme={() => goTo('postutme')}
+            onStartPractice={launchCourseExam}
+            onOpenPastQuestions={(exam) => {
+              setPq({ exam });
+              goTo('syllabus');
+            }}
           />
         )}
 
         {activeView === 'syllabus' && (
           <SyllabusView
-            key={pqSchool ?? 'all'}
+            key={`${pq.exam ?? 'any'}-${pq.school ?? ''}`}
             onOpenTutor={openTutor}
-            initialExam={pqSchool ? 'Post-UTME' : undefined}
-            initialSchool={pqSchool}
+            initialExam={pq.exam}
+            initialSchool={pq.school}
           />
         )}
 
@@ -207,7 +214,7 @@ export function App() {
             profile={profile}
             onStart={launchCourseExam}
             onBrowse={(school) => {
-              setPqSchool(school);
+              setPq({ exam: 'Post-UTME', school });
               goTo('syllabus');
             }}
             onChangeSchool={() => goTo('setup')}

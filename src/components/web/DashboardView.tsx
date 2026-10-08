@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ArrowRight,
   BookOpenCheck,
@@ -15,6 +15,20 @@ import {
 import type { DiagnosticQuestion, UserProfile } from '../../types';
 import { useCms } from '../../lib/cms';
 import { NIGERIAN_INSTITUTIONS } from '../../data/nigerian-curriculum';
+import type { ExamType } from '../../lib/cms';
+import type { StudentExam } from '../../types';
+import { SCHOOL_CERT_EXAMS, examsOf } from '../../lib/student-exams';
+import { ExamRoom } from './ExamRoom';
+
+/** Short tab names for each exam room. */
+const ROOM_NAME: Record<StudentExam, string> = {
+  UTME: 'JAMB',
+  'Post-UTME': 'Post-UTME',
+  WAEC: 'WAEC',
+  NECO: 'NECO',
+  GCE: 'GCE',
+  NABTEB: 'NABTEB',
+};
 
 type Subject = DiagnosticQuestion['subject'];
 
@@ -28,6 +42,9 @@ interface Props {
   onOpenCourse: () => void;
   /** The student's school's Post-UTME page. */
   onOpenPostUtme: () => void;
+  /** Start a practice exam for one exam body (WAEC, NECO…). */
+  onStartPractice: (practice: { name: string; subjects: string[]; exam: string }) => void;
+  onOpenPastQuestions: (exam: ExamType) => void;
 }
 
 const SUBJECTS = [
@@ -58,10 +75,16 @@ export const DashboardView: React.FC<Props> = ({
   onOpenSyllabus,
   onOpenTutor,
   onUpgrade,
-
   onOpenCourse,
   onOpenPostUtme,
+  onStartPractice,
+  onOpenPastQuestions,
+  onEditGoal,
 }) => {
+  // One "room" per exam the student chose; tabs switch between them.
+  const exams = examsOf(profile);
+  const [room, setRoom] = useState<StudentExam>(exams[0] ?? 'UTME');
+  const current = exams.includes(room) ? room : (exams[0] ?? 'UTME');
   const { questions } = useCms();
   // The school picked at registration sets the student's Post-UTME.
   const school = NIGERIAN_INSTITUTIONS.find(
@@ -91,6 +114,25 @@ export const DashboardView: React.FC<Props> = ({
         </span>
       </header>
 
+      {exams.length > 1 && (
+        <nav className="dash__rooms" role="tablist" aria-label="Your exams">
+          {exams.map((e) => (
+            <button
+              key={e}
+              type="button"
+              role="tab"
+              aria-selected={current === e}
+              className={current === e ? 'is-on' : ''}
+              onClick={() => setRoom(e)}
+            >
+              {ROOM_NAME[e]}
+            </button>
+          ))}
+        </nav>
+      )}
+
+      {current === 'UTME' && (
+        <>
       {/* --------------------------------------------------- Today (primary) */}
       <section className="dash__today">
         <div className="dash__today-top">
@@ -163,28 +205,6 @@ export const DashboardView: React.FC<Props> = ({
         </button>
       </nav>
 
-      {/* ------------------------------------------------- Your Post-UTME */}
-      <section className="dash__pu">
-        <span className="dash__pu-icon">
-          <Landmark size={24} aria-hidden />
-        </span>
-        <div className="dash__pu-text">
-          <span className="dash__label">Your Post-UTME</span>
-          <h2>{school ? `${school.name} (${school.shortName})` : 'Choose your school'}</h2>
-          <p>
-            {!school
-              ? 'Each school sets its own Post-UTME. Pick yours to practise its past questions.'
-              : schoolQs.length
-                ? `${schoolQs.length} past question${schoolQs.length === 1 ? '' : 's'} ready · ${schoolSubjects.join(', ')}`
-                : `${school.shortName} past questions are coming soon. Meanwhile, keep practising for JAMB.`}
-          </p>
-        </div>
-        <button type="button" className="ui-btn ui-btn--primary dash__pu-btn" onClick={onOpenPostUtme}>
-          {school && schoolQs.length ? `Practise ${school.shortName} Post-UTME` : school ? 'See Post-UTME' : 'Choose school'}
-          <ArrowRight size={18} aria-hidden />
-        </button>
-      </section>
-
       <div className="dash__cols">
         {/* ------------------------------------------------------- Score */}
         <section className="ui-card dash__score">
@@ -242,6 +262,47 @@ export const DashboardView: React.FC<Props> = ({
           </ul>
         </section>
       </div>
+
+        </>
+      )}
+
+      {current === 'Post-UTME' && (
+        <>
+      {/* ------------------------------------------------- Your Post-UTME */}
+      <section className="dash__pu">
+        <span className="dash__pu-icon">
+          <Landmark size={24} aria-hidden />
+        </span>
+        <div className="dash__pu-text">
+          <span className="dash__label">Your Post-UTME</span>
+          <h2>{school ? `${school.name} (${school.shortName})` : 'Choose your school'}</h2>
+          <p>
+            {!school
+              ? 'Each school sets its own Post-UTME. Pick yours to practise its past questions.'
+              : schoolQs.length
+                ? `${schoolQs.length} past question${schoolQs.length === 1 ? '' : 's'} ready · ${schoolSubjects.join(', ')}`
+                : `${school.shortName} past questions are coming soon. Meanwhile, keep practising for JAMB.`}
+          </p>
+        </div>
+        <button type="button" className="ui-btn ui-btn--primary dash__pu-btn" onClick={onOpenPostUtme}>
+          {school && schoolQs.length ? `Practise ${school.shortName} Post-UTME` : school ? 'See Post-UTME' : 'Choose school'}
+          <ArrowRight size={18} aria-hidden />
+        </button>
+      </section>
+
+        </>
+      )}
+
+      {SCHOOL_CERT_EXAMS.includes(current) && (
+        <ExamRoom
+          key={current}
+          exam={current}
+          cert={profile.schoolCert}
+          onStart={onStartPractice}
+          onPastQuestions={onOpenPastQuestions}
+          onEdit={onEditGoal}
+        />
+      )}
 
       {/* --------------------------------------------------------- Upgrade */}
       {!isPremium && (

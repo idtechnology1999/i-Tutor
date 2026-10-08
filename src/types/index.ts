@@ -21,6 +21,12 @@ export type ExamTrack = 'jamb' | 'post-jamb' | 'both';
 /** Exams a student is sitting; most sit more than one. */
 export type StudentExam = 'UTME' | 'Post-UTME' | 'WAEC' | 'NECO' | 'GCE' | 'NABTEB';
 
+/** WAEC / NECO / GCE / NABTEB: the student's class and the subjects they sit. */
+export interface SchoolCert {
+  className: string;
+  subjects: string[];
+}
+
 export type DailyCommitment = '30min' | '1hour' | '2hours' | '3hours';
 
 export interface UserProfile {
@@ -29,6 +35,8 @@ export interface UserProfile {
   track: ExamTrack;
   /** Every exam the student is preparing for. Older profiles only have `track`. */
   exams?: StudentExam[];
+  /** Filled in when any school-certificate exam is chosen. */
+  schoolCert?: SchoolCert;
   selectedSubjects: string[];
   targetInstitution: string;
   targetInstitutionType: 'Federal' | 'State' | 'Private';

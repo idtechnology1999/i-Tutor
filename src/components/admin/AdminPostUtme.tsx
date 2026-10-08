@@ -1,72 +1,51 @@
-import React, { useState } from "react";
-import {
-  ArrowRight,
-  BookOpenCheck,
-  Landmark,
-  MapPin,
-  ScanText,
-  Search,
-  X,
-} from "lucide-react";
-import { CMS_SUBJECTS, paperSize, useCms } from "../../lib/cms";
-import type { CmsSubject } from "../../lib/cms";
-import { NIGERIAN_INSTITUTIONS } from "../../data/nigerian-curriculum";
-import type { AdminNav } from "./AdminApp";
-import { PageHead } from "./AdminApp";
+import React, { useState } from 'react';
+import { ArrowRight, BookOpenCheck, Landmark, MapPin, ScanText, Search, X } from 'lucide-react';
+import { CMS_SUBJECTS, paperSize, useCms } from '../../lib/cms';
+import type { CmsSubject } from '../../lib/cms';
+import { NIGERIAN_INSTITUTIONS } from '../../data/nigerian-curriculum';
+import type { AdminNav } from './AdminApp';
+import { PageHead } from './AdminApp';
 
-const TYPES = ["All", "Federal", "State", "Private"] as const;
+const TYPES = ['All', 'Federal', 'State', 'Private'] as const;
 const THIS_YEAR = new Date().getFullYear();
 // Papers from 2000 to last year, newest first.
-const YEARS = Array.from(
-  { length: THIS_YEAR - 2000 },
-  (_, i) => THIS_YEAR - 1 - i,
-);
-const SHOW = ["All schools", "With questions", "Empty"] as const;
+const YEARS = Array.from({ length: THIS_YEAR - 2000 }, (_, i) => THIS_YEAR - 1 - i);
+const SHOW = ['All schools', 'With questions', 'Empty'] as const;
 
 /** Post-UTME is set by each school, so the admin works school by school. */
 export const AdminPostUtme: React.FC<{ nav: AdminNav }> = ({ nav }) => {
   const { questions } = useCms();
-  const [type, setType] = useState<(typeof TYPES)[number]>("All");
-  const [show, setShow] = useState<(typeof SHOW)[number]>("All schools");
-  const [search, setSearch] = useState("");
+  const [type, setType] = useState<(typeof TYPES)[number]>('All');
+  const [show, setShow] = useState<(typeof SHOW)[number]>('All schools');
+  const [search, setSearch] = useState('');
   // The school whose “add a paper” form is open, and what's picked in it.
   const [adding, setAdding] = useState<string | null>(null);
-  const [subject, setSubject] = useState<CmsSubject>("English");
+  const [subject, setSubject] = useState<CmsSubject>('English');
   const [year, setYear] = useState<number | null>(null);
 
-  const postUtme = questions.filter((q) => q.examType === "Post-UTME");
-  const forSchool = (school: string) =>
-    postUtme.filter((q) => q.school === school);
-  const covered = NIGERIAN_INSTITUTIONS.filter(
-    (i) => forSchool(i.shortName).length > 0,
-  ).length;
+  const postUtme = questions.filter((q) => q.examType === 'Post-UTME');
+  const forSchool = (school: string) => postUtme.filter((q) => q.school === school);
+  const covered = NIGERIAN_INSTITUTIONS.filter((i) => forSchool(i.shortName).length > 0).length;
 
   const term = search.trim().toLowerCase();
   const list = NIGERIAN_INSTITUTIONS.filter((i) => {
     const n = forSchool(i.shortName).length;
     return (
-      (type === "All" || i.type === type) &&
-      (show === "All schools" ||
-        (show === "With questions" ? n > 0 : n === 0)) &&
-      (!term ||
-        `${i.name} ${i.shortName} ${i.location}`.toLowerCase().includes(term))
+      (type === 'All' || i.type === type) &&
+      (show === 'All schools' || (show === 'With questions' ? n > 0 : n === 0)) &&
+      (!term || `${i.name} ${i.shortName} ${i.location}`.toLowerCase().includes(term))
     );
-  }).sort(
-    (a, b) =>
-      forSchool(b.shortName).length - forSchool(a.shortName).length ||
-      a.name.localeCompare(b.name),
-  );
+  }).sort((a, b) => forSchool(b.shortName).length - forSchool(a.shortName).length || a.name.localeCompare(b.name));
 
   const startAdding = (school: string) => {
     setAdding(school);
-    setSubject("English");
+    setSubject('English');
     setYear(null);
   };
-  const addPaper = (school: string) =>
-    nav.go("import", { preset: { exam: "Post-UTME", school, subject, year } });
+  const addPaper = (school: string) => nav.go('import', { preset: { exam: 'Post-UTME', school, subject, year } });
   const openBank = (school: string) =>
-    nav.go("questions", {
-      scope: { exam: "Post-UTME", school, subject: "All", year: null },
+    nav.go('questions', {
+      scope: { exam: 'Post-UTME', school, subject: 'All', year: null },
     });
 
   return (
@@ -80,10 +59,7 @@ export const AdminPostUtme: React.FC<{ nav: AdminNav }> = ({ nav }) => {
         <div className="adm-stat">
           <span className="adm-muted">Schools with questions</span>
           <strong>
-            {covered}{" "}
-            <small className="adm-muted">
-              of {NIGERIAN_INSTITUTIONS.length}
-            </small>
+            {covered} <small className="adm-muted">of {NIGERIAN_INSTITUTIONS.length}</small>
           </strong>
         </div>
         <div className="adm-stat">
@@ -92,9 +68,7 @@ export const AdminPostUtme: React.FC<{ nav: AdminNav }> = ({ nav }) => {
         </div>
         <div className="adm-stat">
           <span className="adm-muted">Published</span>
-          <strong>
-            {postUtme.filter((q) => q.status === "published").length}
-          </strong>
+          <strong>{postUtme.filter((q) => q.status === 'published').length}</strong>
         </div>
       </div>
 
@@ -117,10 +91,10 @@ export const AdminPostUtme: React.FC<{ nav: AdminNav }> = ({ nav }) => {
               type="button"
               role="tab"
               aria-selected={type === t}
-              className={type === t ? "is-on" : ""}
+              className={type === t ? 'is-on' : ''}
               onClick={() => setType(t)}
             >
-              {t === "All" ? "All types" : t}
+              {t === 'All' ? 'All types' : t}
             </button>
           ))}
         </div>
@@ -146,7 +120,7 @@ export const AdminPostUtme: React.FC<{ nav: AdminNav }> = ({ nav }) => {
       <ul className="adm-pu">
         {list.map((i) => {
           const qs = forSchool(i.shortName);
-          const live = qs.filter((q) => q.status === "published").length;
+          const live = qs.filter((q) => q.status === 'published').length;
           const subjects = [...new Set(qs.map((q) => q.subject))].sort();
           return (
             <li key={i.id} className="adm-card adm-pu__school">
@@ -174,27 +148,19 @@ export const AdminPostUtme: React.FC<{ nav: AdminNav }> = ({ nav }) => {
                   {subjects.map((s) => {
                     const inSubject = qs.filter((q) => q.subject === s);
                     const years = [
-                      ...new Set(
-                        inSubject
-                          .map((q) => q.year)
-                          .filter((y): y is number => y !== null),
-                      ),
+                      ...new Set(inSubject.map((q) => q.year).filter((y): y is number => y !== null)),
                     ].sort((a, b) => b - a);
                     return (
                       <li key={s}>
                         <strong>{s}</strong>
-                        <span className="adm-muted">
-                          {years.length ? years.join(", ") : "No year"}
-                        </span>
+                        <span className="adm-muted">{years.length ? years.join(', ') : 'No year'}</span>
                         <b>{inSubject.length}</b>
                       </li>
                     );
                   })}
                 </ul>
               ) : (
-                <p className="adm-muted adm-pu__none">
-                  No {i.shortName} Post-UTME papers yet.
-                </p>
+                <p className="adm-muted adm-pu__none">No {i.shortName} Post-UTME papers yet.</p>
               )}
 
               {adding === i.shortName ? (
@@ -205,9 +171,7 @@ export const AdminPostUtme: React.FC<{ nav: AdminNav }> = ({ nav }) => {
                       <select
                         className="adm-input"
                         value={subject}
-                        onChange={(e) =>
-                          setSubject(e.target.value as CmsSubject)
-                        }
+                        onChange={(e) => setSubject(e.target.value as CmsSubject)}
                       >
                         {CMS_SUBJECTS.map((s) => (
                           <option key={s}>{s}</option>
@@ -218,27 +182,16 @@ export const AdminPostUtme: React.FC<{ nav: AdminNav }> = ({ nav }) => {
                       <small className="adm-muted">Year</small>
                       <select
                         className="adm-input"
-                        value={year ?? ""}
-                        onChange={(e) =>
-                          setYear(
-                            e.target.value ? Number(e.target.value) : null,
-                          )
-                        }
+                        value={year ?? ''}
+                        onChange={(e) => setYear(e.target.value ? Number(e.target.value) : null)}
                       >
                         <option value="">Choose year</option>
                         {YEARS.map((y) => {
-                          const taken =
-                            paperSize(
-                              questions,
-                              subject,
-                              "Post-UTME",
-                              y,
-                              i.shortName,
-                            ) > 0;
+                          const taken = paperSize(questions, subject, 'Post-UTME', y, i.shortName) > 0;
                           return (
                             <option key={y} value={y} disabled={taken}>
                               {y}
-                              {taken ? " — already added" : ""}
+                              {taken ? ' — already added' : ''}
                             </option>
                           );
                         })}
@@ -254,30 +207,18 @@ export const AdminPostUtme: React.FC<{ nav: AdminNav }> = ({ nav }) => {
                     >
                       Continue <ArrowRight size={16} aria-hidden />
                     </button>
-                    <button
-                      type="button"
-                      className="adm-btn"
-                      onClick={() => setAdding(null)}
-                    >
+                    <button type="button" className="adm-btn" onClick={() => setAdding(null)}>
                       <X size={16} aria-hidden /> Cancel
                     </button>
                   </div>
                 </div>
               ) : (
                 <div className="adm-pu__actions">
-                  <button
-                    type="button"
-                    className="adm-btn adm-btn--primary"
-                    onClick={() => startAdding(i.shortName)}
-                  >
+                  <button type="button" className="adm-btn adm-btn--primary" onClick={() => startAdding(i.shortName)}>
                     <ScanText size={16} aria-hidden /> Add {i.shortName} paper
                   </button>
                   {qs.length > 0 && (
-                    <button
-                      type="button"
-                      className="adm-btn"
-                      onClick={() => openBank(i.shortName)}
-                    >
+                    <button type="button" className="adm-btn" onClick={() => openBank(i.shortName)}>
                       <BookOpenCheck size={16} aria-hidden /> Edit questions
                     </button>
                   )}

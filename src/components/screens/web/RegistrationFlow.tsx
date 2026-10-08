@@ -1,10 +1,15 @@
 import React, { useCallback, useState } from 'react';
-import { examsLabel, examsOf, toggleExam } from '../../../lib/student-exams';
-import type {
-  Course,
-  Institution,
-  UserProfile,
-} from '../../../types';
+import {
+  examsLabel,
+  examsOf,
+  onboardingLabels,
+  onboardingSteps,
+  toggleExam,
+} from '../../../lib/student-exams';
+import type { OnboardingStep } from '../../../lib/student-exams';
+import { OnboardingStepsContext } from './onboarding-context';
+import { A09b_SchoolCert } from './A09b_SchoolCert';
+import type { Course, Institution, UserProfile } from '../../../types';
 import { A04_SignUp } from './A04_SignUp';
 import { A05_OTP } from './A05_OTP';
 import { A06_Login } from './A06_Login';
@@ -26,6 +31,7 @@ type FlowView = Extract<
   | 'forgot'
   | 'reset'
   | 'track'
+  | 'schoolcert'
   | 'subjects'
   | 'institution'
   | 'goals'
@@ -45,6 +51,7 @@ interface Props {
 
 const ONBOARDING_VIEWS: FlowView[] = [
   'track',
+  'schoolcert',
   'subjects',
   'institution',
   'goals',
@@ -73,6 +80,13 @@ export const RegistrationFlow: React.FC<Props> = ({
   const enterOnboarding = useCallback(() => {
     onNavigate('track');
   }, [onNavigate]);
+
+  // Steps that apply to the exams chosen; next/back follow this list.
+  const exams = examsOf(profile);
+  const steps = onboardingSteps(exams);
+  const at = steps.indexOf(view as OnboardingStep);
+  const next = () => onNavigate(steps[Math.min(at + 1, steps.length - 1)]);
+  const back = () => onNavigate(at > 0 ? steps[at - 1] : 'signup');
 
   const toggleSubject = (name: string) => {
     const has = profile.selectedSubjects.includes(name);
@@ -121,161 +135,195 @@ export const RegistrationFlow: React.FC<Props> = ({
     );
   }
 
-  switch (view) {
-    case 'signup':
-      return (
-        <A04_SignUp
-          onBack={goHome}
-          onSignInInstead={() => onNavigate('login')}
-          onSubmit={({ fullName, phoneOrEmail }) => {
-            onUpdateProfile({ fullName, phoneOrEmail });
-            setPendingContact(phoneOrEmail);
-            onNavigate('otp');
-          }}
-          isLoading={false}
-        />
-      );
+  const screen = renderView();
+  return at >= 0 ? (
+    <OnboardingStepsContext.Provider
+      value={{ labels: onboardingLabels(steps), current: at + 1 }}
+    >
+      {screen}
+    </OnboardingStepsContext.Provider>
+  ) : (
+    screen
+  );
 
-    case 'otp':
-      return (
-        <A05_OTP
-          phoneOrEmail={pendingContact || profile.phoneOrEmail}
-          onChangeNumber={() => onNavigate('signup')}
-          onVerified={() => {
-            onUpdateProfile({ phoneOrEmail: pendingContact || profile.phoneOrEmail });
-            onAccountReady();
-            enterOnboarding();
-          }}
-        />
-      );
+  function renderView() {
+    switch (view) {
+      case 'signup':
+        return (
+          <A04_SignUp
+            onBack={goHome}
+            onSignInInstead={() => onNavigate('login')}
+            onSubmit={({ fullName, phoneOrEmail }) => {
+              onUpdateProfile({ fullName, phoneOrEmail });
+              setPendingContact(phoneOrEmail);
+              onNavigate('otp');
+            }}
+            isLoading={false}
+          />
+        );
 
-    case 'login':
-      return (
-        <A06_Login
-          onBack={goHome}
-          onForgotPassword={() => onNavigate('forgot')}
-          onSignUpInstead={() => onNavigate('signup')}
-          onBiometricAuth={() => {
-            onAccountReady();
-            onFinish();
-          }}
-          onSuccess={() => {
-            onAccountReady();
-            onFinish();
-          }}
-        />
-      );
+      case 'otp':
+        return (
+          <A05_OTP
+            phoneOrEmail={pendingContact || profile.phoneOrEmail}
+            onChangeNumber={() => onNavigate('signup')}
+            onVerified={() => {
+              onUpdateProfile({
+                phoneOrEmail: pendingContact || profile.phoneOrEmail,
+              });
+              onAccountReady();
+              enterOnboarding();
+            }}
+          />
+        );
 
-    case 'forgot':
-      return (
-        <A07_ForgotPassword
-          onBack={() => onNavigate('login')}
-          onSendCode={(destination) => setPendingContact(destination)}
-          onConfirm={() => onNavigate('reset')}
-        />
-      );
+      case 'login':
+        return (
+          <A06_Login
+            onBack={goHome}
+            onForgotPassword={() => onNavigate('forgot')}
+            onSignUpInstead={() => onNavigate('signup')}
+            onBiometricAuth={() => {
+              onAccountReady();
+              onFinish();
+            }}
+            onSuccess={() => {
+              onAccountReady();
+              onFinish();
+            }}
+          />
+        );
 
-    case 'reset':
-      return (
-        <A08_ResetPassword
-          onBack={() => onNavigate('forgot')}
-          onGoToLogin={() => onNavigate('login')}
-          onSuccess={() => {
-            onNavigate('login');
-          }}
-        />
-      );
+      case 'forgot':
+        return (
+          <A07_ForgotPassword
+            onBack={() => onNavigate('login')}
+            onSendCode={(destination) => setPendingContact(destination)}
+            onConfirm={() => onNavigate('reset')}
+          />
+        );
 
-    case 'track':
-      return (
-        <A09_ExamTrack
-          selected={examsOf(profile)}
-          onToggle={(exam) => onUpdateProfile(toggleExam(examsOf(profile), exam))}
-          onBack={() => onNavigate('signup')}
-          onContinue={() => onNavigate('subjects')}
-        />
-      );
+      case 'reset':
+        return (
+          <A08_ResetPassword
+            onBack={() => onNavigate('forgot')}
+            onGoToLogin={() => onNavigate('login')}
+            onSuccess={() => {
+              onNavigate('login');
+            }}
+          />
+        );
 
-    case 'subjects':
-      return (
-        <A10_SubjectPicker
-          selectedSubjects={profile.selectedSubjects}
-          onToggleSubject={toggleSubject}
-          onBack={() => onNavigate('track')}
-          onContinue={() => onNavigate('institution')}
-        />
-      );
+      case 'track':
+        return (
+          <A09_ExamTrack
+            selected={examsOf(profile)}
+            onToggle={(exam) =>
+              onUpdateProfile(toggleExam(examsOf(profile), exam))
+            }
+            onBack={back}
+            onContinue={() => {
+              // Steps depend on the exams just chosen, so work out the next one now.
+              const after = onboardingSteps(examsOf(profile));
+              onNavigate(after[1]);
+            }}
+          />
+        );
 
-    case 'institution':
-      return (
-        <A11_InstitutionCourse
-          selectedInstitution={profile.targetInstitution}
-          selectedCourse={profile.targetCourse}
-          onSelectInstitution={(institution: Institution) =>
-            onUpdateProfile({
-              targetInstitution: institution.name,
-              targetInstitutionType: institution.type,
-            })
-          }
-          onSelectCourse={(course: Course) =>
-            onUpdateProfile({
-              targetCourse: course.name,
-              targetFaculty: course.faculty,
-            })
-          }
-          onBack={() => onNavigate('subjects')}
-          onContinue={() => onNavigate('goals')}
-        />
-      );
+      case 'schoolcert':
+        return (
+          <A09b_SchoolCert
+            exams={exams}
+            value={profile.schoolCert}
+            onChange={(schoolCert) => onUpdateProfile({ schoolCert })}
+            onBack={back}
+            onContinue={next}
+          />
+        );
 
-    case 'goals':
-      return (
-        <A12_ExamDateGoals
-          examMonth={profile.examMonth}
-          onChangeExamMonth={(examMonth) => onUpdateProfile({ examMonth })}
-          targetScore={profile.targetScore}
-          onChangeTargetScore={(targetScore) => onUpdateProfile({ targetScore })}
-          dailyCommitment={profile.dailyCommitment}
-          onChangeDailyCommitment={(dailyCommitment) =>
-            onUpdateProfile({ dailyCommitment })
-          }
-          trackLabel={examsLabel(examsOf(profile))}
-          subjectCount={profile.selectedSubjects.length}
-          onBack={() => onNavigate('institution')}
-          onContinue={() => onNavigate('permissions')}
-        />
-      );
+      case 'subjects':
+        return (
+          <A10_SubjectPicker
+            selectedSubjects={profile.selectedSubjects}
+            onToggleSubject={toggleSubject}
+            onBack={back}
+            onContinue={next}
+          />
+        );
 
-    case 'permissions':
-      return (
-        <A13_PermissionsPrimer
-          notificationsEnabled={profile.notificationsEnabled}
-          onChangeNotifications={(notificationsEnabled) =>
-            onUpdateProfile({ notificationsEnabled })
-          }
-          offlineCacheEnabled={profile.offlineCacheEnabled}
-          onChangeOfflineCache={(offlineCacheEnabled) =>
-            onUpdateProfile({ offlineCacheEnabled })
-          }
-          onBack={() => onNavigate('goals')}
-          onContinue={() => onNavigate('baseline')}
-        />
-      );
+      case 'institution':
+        return (
+          <A11_InstitutionCourse
+            selectedInstitution={profile.targetInstitution}
+            selectedCourse={profile.targetCourse}
+            onSelectInstitution={(institution: Institution) =>
+              onUpdateProfile({
+                targetInstitution: institution.name,
+                targetInstitutionType: institution.type,
+              })
+            }
+            onSelectCourse={(course: Course) =>
+              onUpdateProfile({
+                targetCourse: course.name,
+                targetFaculty: course.faculty,
+              })
+            }
+            onBack={back}
+            onContinue={next}
+          />
+        );
 
-    case 'baseline':
-      return (
-        <A14_PlacementDiagnostic
-          subjectCount={profile.selectedSubjects.length}
-          trackLabel={examsLabel(examsOf(profile))}
-          targetScore={profile.targetScore}
-          onBack={() => onNavigate('permissions')}
-          onStart={onFinish}
-          onSkip={onFinish}
-        />
-      );
+      case 'goals':
+        return (
+          <A12_ExamDateGoals
+            examMonth={profile.examMonth}
+            onChangeExamMonth={(examMonth) => onUpdateProfile({ examMonth })}
+            targetScore={profile.targetScore}
+            onChangeTargetScore={(targetScore) =>
+              onUpdateProfile({ targetScore })
+            }
+            dailyCommitment={profile.dailyCommitment}
+            onChangeDailyCommitment={(dailyCommitment) =>
+              onUpdateProfile({ dailyCommitment })
+            }
+            trackLabel={examsLabel(examsOf(profile))}
+            subjectCount={profile.selectedSubjects.length}
+            onBack={back}
+            onContinue={next}
+          />
+        );
 
-    default:
-      return null;
+      case 'permissions':
+        return (
+          <A13_PermissionsPrimer
+            notificationsEnabled={profile.notificationsEnabled}
+            onChangeNotifications={(notificationsEnabled) =>
+              onUpdateProfile({ notificationsEnabled })
+            }
+            offlineCacheEnabled={profile.offlineCacheEnabled}
+            onChangeOfflineCache={(offlineCacheEnabled) =>
+              onUpdateProfile({ offlineCacheEnabled })
+            }
+            onBack={back}
+            onContinue={next}
+          />
+        );
+
+      case 'baseline':
+        return (
+          <A14_PlacementDiagnostic
+            subjectCount={profile.selectedSubjects.length}
+            trackLabel={examsLabel(examsOf(profile))}
+            targetScore={profile.targetScore}
+            onBack={back}
+            onStart={onFinish}
+            onSkip={onFinish}
+          />
+        );
+
+      default:
+        return null;
+    }
   }
 };
 

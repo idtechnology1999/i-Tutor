@@ -27,6 +27,7 @@ export type AppView =
   | 'reset'
   // Onboarding
   | 'track'
+  | 'schoolcert'
   | 'subjects'
   | 'institution'
   | 'goals'
@@ -49,6 +50,7 @@ export const VIEW_PATHS: Record<AppView, string> = {
   forgot: '/forgot-password',
   reset: '/reset-password',
   track: '/onboarding/track',
+  schoolcert: '/onboarding/school-exams',
   subjects: '/onboarding/subjects',
   institution: '/onboarding/institution',
   goals: '/onboarding/goals',
@@ -63,6 +65,7 @@ export type AccountView =
   | 'forgot'
   | 'reset'
   | 'track'
+  | 'schoolcert'
   | 'subjects'
   | 'institution'
   | 'goals'
@@ -76,6 +79,7 @@ const ACCOUNT_VIEWS: ReadonlySet<AppView> = new Set<AccountView>([
   'forgot',
   'reset',
   'track',
+  'schoolcert',
   'subjects',
   'institution',
   'goals',
@@ -139,6 +143,7 @@ const ALIASES: Record<string, AppView> = {
   '/subject': 'subjects',
   '/institution-course': 'institution',
   '/exam-goals': 'goals',
+  '/onboarding/waec': 'schoolcert',
   '/exam-date-goals': 'goals',
   '/notifications': 'permissions',
   '/placement': 'baseline',

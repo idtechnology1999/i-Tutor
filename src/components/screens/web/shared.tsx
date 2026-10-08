@@ -1,5 +1,11 @@
 import React from 'react';
-import { CheckIcon, ShieldCheckIcon, LockIcon, CloudCheckIcon } from '../../Icons';
+import { OnboardingStepsContext } from './onboarding-context';
+import {
+  CheckIcon,
+  ShieldCheckIcon,
+  LockIcon,
+  CloudCheckIcon,
+} from '../../Icons';
 
 export interface FormFieldProps {
   id: string;
@@ -120,13 +126,17 @@ export const DefaultAside: React.FC<{
         <dt>
           <ShieldCheckIcon size={14} /> Verification
         </dt>
-        <dd>A one-time code confirms your phone or email before the account opens.</dd>
+        <dd>
+          A one-time code confirms your phone or email before the account opens.
+        </dd>
       </div>
       <div>
         <dt>
           <CloudCheckIcon size={14} /> Your data
         </dt>
-        <dd>Study records stay on your device and in your own candidate portal.</dd>
+        <dd>
+          Study records stay on your device and in your own candidate portal.
+        </dd>
       </div>
     </dl>
     {footnote ? <div className="auth__panel-footnote">{footnote}</div> : null}
@@ -157,7 +167,9 @@ export const PhotoAside: React.FC<{
           ))}
         </dl>
       ) : null}
-      <span className="auth-photo__credit">Photo: James Rhoda / Wikimedia Commons, CC BY-SA 4.0</span>
+      <span className="auth-photo__credit">
+        Photo: James Rhoda / Wikimedia Commons, CC BY-SA 4.0
+      </span>
     </figcaption>
   </figure>
 );
@@ -181,7 +193,11 @@ export const StepRail: React.FC<{
       {steps.map((label, index) => {
         const position = index + 1;
         const state =
-          position < current ? 'done' : position === current ? 'current' : 'todo';
+          position < current
+            ? 'done'
+            : position === current
+              ? 'current'
+              : 'todo';
         return (
           <li key={label} className={`step-rail__item is-${state}`}>
             <span className="step-rail__dot">
@@ -224,29 +240,34 @@ export const OnboardingShell: React.FC<OnboardingShellProps> = ({
   children,
   aside,
   steps = ONBOARDING_STEPS,
-}) => (
-  <div className="onboard">
-    <div className="onboard__frame">
-      <aside className="onboard__rail">
-        <StepRail current={step} steps={steps} total={steps.length} />
-        <div className="onboard__rail-note">
-          <p>
-            Answers here calibrate your question bank. You can change any of this
-            later in Settings.
-          </p>
+}) => {
+  const flow = React.useContext(OnboardingStepsContext);
+  const labels = flow?.labels ?? steps;
+  const current = flow?.current ?? step;
+  return (
+    <div className="onboard">
+      <div className="onboard__frame">
+        <aside className="onboard__rail">
+          <StepRail current={current} steps={labels} total={labels.length} />
+          <div className="onboard__rail-note">
+            <p>
+              Answers here calibrate your question bank. You can change any of
+              this later in Settings.
+            </p>
+          </div>
+        </aside>
+        <div className="onboard__main">
+          <header className="onboard__head">
+            <h1 className="onboard__title">{title}</h1>
+            <p className="onboard__lede">{lede}</p>
+          </header>
+          {children}
+          {aside ? <aside className="onboard__aside">{aside}</aside> : null}
         </div>
-      </aside>
-      <div className="onboard__main">
-        <header className="onboard__head">
-          <h1 className="onboard__title">{title}</h1>
-          <p className="onboard__lede">{lede}</p>
-        </header>
-        {children}
-        {aside ? <aside className="onboard__aside">{aside}</aside> : null}
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 /** Consistent footer/back row for every step in a sequence. */
 export const StepActions: React.FC<{

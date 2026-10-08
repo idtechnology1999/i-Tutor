@@ -57,7 +57,7 @@ const UTME_COURSES: Omit<CourseSeed, 'exam'>[] = [
 ];
 
 /** School-certificate classes. Most candidates sit 8–9 subjects; schools differ. */
-const SSCE_CLASSES: Array<Pick<CourseSeed, 'name' | 'subjects' | 'note'>> = [
+export const SSCE_CLASSES: Array<Pick<CourseSeed, 'name' | 'subjects' | 'note'>> = [
   {
     name: 'Science',
     subjects: ['English', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Further Mathematics', 'Agricultural Science', 'Civic Education'],

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ExamPicker } from './ExamPicker';
-import { examsOf, toggleExam } from '../../lib/student-exams';
+import { examsOf, hasSchoolCert, toggleExam } from '../../lib/student-exams';
+import { SchoolCertPicker } from './SchoolCertPicker';
 import type { UserProfile, DailyCommitment } from '../../types';
 import { JAMB_SUBJECTS, NIGERIAN_INSTITUTIONS, POPULAR_COURSES } from '../../data/nigerian-curriculum';
 import {
@@ -140,6 +141,12 @@ export const SetupWizardView: React.FC<Props> = ({ profile, onUpdateProfile, onF
                 selected={examsOf(profile)}
                 onToggle={(exam) => onUpdateProfile(toggleExam(examsOf(profile), exam))}
               />
+              {hasSchoolCert(examsOf(profile)) && (
+                <div className="setup-sc">
+                  <h3>WAEC / NECO class and subjects</h3>
+                  <SchoolCertPicker value={profile.schoolCert} onChange={(schoolCert) => onUpdateProfile({ schoolCert })} />
+                </div>
+              )}
             </div>
           )}
 

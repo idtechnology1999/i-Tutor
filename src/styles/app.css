@@ -2917,3 +2917,209 @@ body.cbt-active {
 .onb-exams__count { margin: 0; text-align: center; color: var(--ink-3); font-size: 0.875rem; }
 .onb-exams__next { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 .onb-exams__next:disabled { opacity: 0.45; cursor: default; }
+
+/* ================================================ Onboarding: class & subjects */
+
+.sc-classes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
+  gap: 12px;
+}
+.sc-class {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  padding: 16px;
+  text-align: left;
+  border: 1.5px solid var(--rule);
+  border-radius: 18px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, transform 0.35s var(--spring, ease);
+}
+.sc-class:active { transform: scale(0.98); }
+.sc-class.is-on { border-color: var(--brand); background: var(--brand-tint); }
+.sc-class__icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--mist);
+  color: var(--brand);
+}
+.sc-class.is-on .sc-class__icon { background: var(--brand); color: #fff; }
+.sc-class strong { font-size: 1.0625rem; }
+.sc-class small { color: var(--ink-3); font-size: 0.8125rem; }
+
+.sc-subjects {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+  animation: ui-fade 300ms ease both;
+}
+.sc-subjects header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.sc-subjects h2 { margin: 0; font-size: 1.0625rem; }
+.sc-subjects header span { color: var(--ok); font-weight: 600; font-variant-numeric: tabular-nums; }
+.sc-subjects header span.is-low { color: var(--warn); }
+.sc-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.sc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--rule-2);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.sc-chip.is-on { background: var(--brand); border-color: var(--brand); color: #fff; }
+.sc-chip:disabled { cursor: default; }
+.sc-chip:disabled:not(.is-on) { opacity: 0.45; }
+.sc-chip.is-on:disabled { opacity: 0.85; }
+.sc-note { margin: 0; color: var(--ink-3); font-size: 0.875rem; min-height: 1.3em; }
+
+/* ============================================================ Exam rooms */
+
+.dash__rooms {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: #e4e9e8;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.dash__rooms::-webkit-scrollbar { display: none; }
+.dash__rooms button {
+  flex: 1 0 auto;
+  min-height: 42px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--ink-2);
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.dash__rooms button.is-on {
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(11, 31, 30, 0.14), 0 1px 1px rgba(11, 31, 30, 0.06);
+}
+
+.room {
+  display: grid;
+  gap: 16px;
+  animation: ui-fade 300ms ease both;
+}
+.room__hero {
+  display: grid;
+  gap: 10px;
+  padding: 24px;
+  border-radius: 24px;
+  background: var(--brand);
+  color: #fff;
+}
+.room__eyebrow { margin: 0; font-weight: 600; color: rgba(255, 255, 255, 0.75); font-size: 0.875rem; }
+.room__hero h2 { margin: 0; color: #fff; font-size: clamp(1.5rem, 3vw, 1.875rem); letter-spacing: -0.02em; }
+.room__when {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.9375rem;
+}
+.room__stats { display: flex; flex-wrap: wrap; gap: 8px 20px; color: rgba(255, 255, 255, 0.85); }
+.room__stats b { color: #fff; font-size: 1.25rem; margin-right: 4px; font-variant-numeric: tabular-nums; }
+.room__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+.room__start,
+.room__ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 20px;
+  border-radius: 14px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.35s var(--spring, ease), opacity 0.2s;
+}
+.room__start { border: 0; background: #fff; color: var(--brand); }
+.room__ghost { border: 1px solid rgba(255, 255, 255, 0.35); background: rgba(255, 255, 255, 0.08); color: #fff; }
+.room__start:active,
+.room__ghost:active { transform: scale(0.97); }
+.room__start:disabled { opacity: 0.5; cursor: default; }
+.room__soon { margin: 0; color: rgba(255, 255, 255, 0.8); font-size: 0.875rem; }
+
+.room__subjects header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.room__subjects h3 { margin: 0; }
+.room__subjects header .ui-link { display: inline-flex; align-items: center; gap: 4px; }
+.room__subjects ul { margin: 0; padding: 0; list-style: none; }
+.room__subjects li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+}
+.room__subjects li + li { border-top: 1px solid var(--rule); }
+.room__subject { font-weight: 500; }
+.room__n { color: var(--ink-3); font-size: 0.875rem; }
+.room__subjects li button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--brand-tint);
+  color: var(--brand);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.room__subjects li button:disabled { opacity: 0.4; cursor: default; }
+
+.room--empty {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding: 24px;
+  border-radius: 24px;
+  border: 1px dashed var(--rule-2);
+  background: #fff;
+}
+.room--empty h2 { margin: 0; }
+.room--empty p { margin: 0; color: var(--ink-2); max-width: 52ch; }
+
+@media (max-width: 520px) {
+  .room__actions > * { flex: 1 1 100%; justify-content: center; }
+  .room__n { display: none; }
+}
+
+.setup-sc { display: grid; gap: 12px; margin-top: 8px; }
+.setup-sc h3 { margin: 0; font-size: 1.0625rem; }
