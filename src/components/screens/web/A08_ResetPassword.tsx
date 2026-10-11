@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { resetPassword } from '../../../services/auth';
+import { requestPasswordReset, resetPassword } from '../../../services/auth';
 import {
   EyeIcon,
   EyeOffIcon,
@@ -35,6 +35,10 @@ export const A08_ResetPassword: React.FC<Props> = ({
   onGoToLogin,
   phoneOrEmail,
 }) => {
+  // Where the code went. Asked for only if this page was opened directly.
+  const [account, setAccount] = useState(phoneOrEmail ?? '');
+  const [code, setCode] = useState('');
+  const [resent, setResent] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [touched, setTouched] = useState({ password: false, confirm: false });
@@ -61,7 +65,17 @@ export const A08_ResetPassword: React.FC<Props> = ({
       ? 'Type the password once more to confirm.'
       : '';
 
-  const isFormValid = allPassed && confirm.length > 0 && confirm === password;
+  const codeError = (touched.password || submitAttempted) && code.length !== 6 ? 'Enter the 6-digit code we sent you.' : '';
+  const isFormValid = code.length === 6 && account.trim().length > 0 && allPassed && confirm.length > 0 && confirm === password;
+
+  const resend = () => {
+    if (!account.trim()) return;
+    setResent('');
+    setServerError('');
+    requestPasswordReset(account.trim())
+      .then(() => setResent('A new code is on its way. It replaces the old one.'))
+      .catch((err: Error) => setServerError(err.message));
+  };
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -71,9 +85,7 @@ export const A08_ResetPassword: React.FC<Props> = ({
 
     setSaving(true);
     setServerError('');
-    // TODO(backend): the reset needs the code from the SMS/email (or a link
-    // token). This screen has no code field yet — see docs/BACKEND_CONTRACT.md.
-    resetPassword(phoneOrEmail ?? '', '', password)
+    resetPassword(account.trim(), code, password)
       .then(() => {
         setDone(true);
         onSuccess();
@@ -128,8 +140,12 @@ export const A08_ResetPassword: React.FC<Props> = ({
   return (
     <AuthShell
       eyebrow="Recovery"
-      title="Set a new password"
-      lede="Choose something you have not used on i-Tutor before. You will use it every time you sign in."
+      title="Enter your code"
+      lede={
+        phoneOrEmail
+          ? `We sent a 6-digit code to ${phoneOrEmail}. Enter it below with your new password.`
+          : 'Enter the 6-digit code we sent you, then choose a new password.'
+      }
       narrow
       aside={
         <div className="auth__panel">
@@ -167,6 +183,49 @@ export const A08_ResetPassword: React.FC<Props> = ({
             <span>Fix the highlighted fields and try again.</span>
           </div>
         ) : null}
+        {resent ? (
+          <div className="form-banner is-ok" role="status">
+            <CheckIcon size={16} />
+            <span>{resent}</span>
+          </div>
+        ) : null}
+
+        {!phoneOrEmail ? (
+          <FormField id="resetAccount" label="Phone number or email" error="" valid={false}>
+            <div className="control">
+              <input
+                id="resetAccount"
+                type="text"
+                inputMode="email"
+                value={account}
+                onChange={(e) => setAccount(e.target.value)}
+                placeholder="0801 234 5678 or name@email.com"
+                className="control__input"
+                autoComplete="username"
+              />
+            </div>
+          </FormField>
+        ) : null}
+
+        <FormField id="resetCode" label="6-digit code" error={codeError} valid={code.length === 6}>
+          <div className="control">
+            <input
+              id="resetCode"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="••••••"
+              className={`control__input reset-code${codeError ? ' is-invalid' : code.length === 6 ? ' is-valid' : ''}`}
+              aria-invalid={Boolean(codeError)}
+              autoFocus
+            />
+          </div>
+          <button type="button" className="link-inline reset-code__resend" onClick={resend} disabled={!account.trim()}>
+            Didn’t get it? Send a new code
+          </button>
+        </FormField>
 
         <FormField
           id="newPassword"

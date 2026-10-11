@@ -1946,3 +1946,18 @@ button {
   font-weight: 600;
   color: var(--orange-ink);
 }
+
+/* Reset-password code box: big, spaced digits so it reads like a code. */
+.control__input.reset-code {
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 0.5em;
+  padding-left: 0.5em;
+}
+
+.reset-code__resend {
+  margin-top: 8px;
+  font-size: 0.9rem;
+}

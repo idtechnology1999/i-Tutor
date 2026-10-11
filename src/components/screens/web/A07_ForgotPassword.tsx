@@ -45,8 +45,9 @@ export const A07_ForgotPassword: React.FC<Props> = ({
     requestPasswordReset(value)
       .then(() => {
         setDestination(value);
-        setPhase('sent');
+        // Straight to the screen with the code box — no extra click.
         onSendCode(value);
+        onConfirm();
       })
       .catch((err: Error) => setServerError(err.message))
       .finally(() => setSending(false));
