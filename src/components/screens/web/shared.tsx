@@ -152,9 +152,18 @@ export const PhotoAside: React.FC<{
   alt: string;
   caption: string;
   stats?: Array<{ value: string; label: string }>;
-}> = ({ src, alt, caption, stats }) => (
+  /** A small card carved into the photo's top-right corner. */
+  badge?: { label: string; value: string; note: string };
+}> = ({ src, alt, caption, stats, badge }) => (
   <figure className="auth-photo">
     <img src={src} alt={alt} width={1280} height={960} decoding="async" />
+    {badge ? (
+      <div className="lp-carve-corner auth-photo__badge" aria-hidden>
+        <span className="lp-hero__score-label">{badge.label}</span>
+        <span className="lp-hero__score-value">{badge.value}</span>
+        <span className="lp-hero__score-delta">{badge.note}</span>
+      </div>
+    ) : null}
     <figcaption className="auth-photo__caption">
       <p>{caption}</p>
       {stats ? (

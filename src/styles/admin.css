@@ -172,7 +172,9 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  animation: field-in 360ms var(--ease-ios, ease) both;
+  /* "backwards", not "both": a transform animation that stays in effect after it
+     ends traps position:fixed drawers inside the page, under the sidebar. */
+  animation: field-in 360ms var(--ease-ios, ease) backwards;
 }
 
 .adm-page--narrow {
@@ -2339,4 +2341,446 @@
   .auto__kbd { display: none; }
   .auto { top: auto; left: 8px; right: 8px; bottom: 8px; width: auto; height: min(88dvh, 760px); }
   .auto-fab { right: 16px; bottom: 16px; }
+}
+
+/* ===================================================================== Users */
+
+.adm-users__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.adm-users__stats > div {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  align-items: center;
+  padding: 18px 20px;
+  border-radius: 20px;
+  background: #f4f7f6;
+}
+
+.adm-users__stats svg {
+  grid-row: span 2;
+  color: #d4600c;
+}
+
+.adm-users__stats b {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.adm-users__stats span {
+  font-size: 0.85rem;
+  color: #5d6e6d;
+}
+
+.adm-users__search {
+  position: relative;
+  display: block;
+}
+
+.adm-users__search svg {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6a7b7a;
+  pointer-events: none;
+}
+
+.adm-users__search .adm-input {
+  width: 100%;
+  padding-left: 42px;
+}
+
+.adm-users__error {
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fdecea;
+  color: #b42318;
+  font-size: 0.9rem;
+}
+
+.adm-users__table {
+  border-radius: 20px;
+  border: 1px solid #e3e9e8;
+  overflow: hidden;
+  background: #fff;
+}
+
+.adm-users__row {
+  display: grid;
+  grid-template-columns: minmax(220px, 2.2fr) 1.2fr 1fr 0.9fr 0.9fr;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 18px;
+  border-top: 1px solid #eef2f1;
+  font-size: 0.9rem;
+}
+
+.adm-users__row--head {
+  border-top: 0;
+  background: #f7f9f8;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6a7b7a;
+}
+
+.adm-users__who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.adm-users__who > i {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fff1e4;
+  color: #9a4307;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.adm-users__who > span {
+  display: grid;
+  min-width: 0;
+}
+
+.adm-users__who strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.adm-users__who small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #6a7b7a;
+}
+
+.adm-users__ok {
+  color: #0f7b4f;
+}
+
+.adm-users__pending {
+  font-style: normal;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #fdf3e2;
+  color: #9a5a06;
+}
+
+.adm-users__exams {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.adm-users__exams em {
+  font-style: normal;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #eef2f1;
+}
+
+.adm-users__plan {
+  display: inline-grid;
+  font-weight: 600;
+}
+
+.adm-users__plan.is-premium {
+  color: #d4600c;
+}
+
+.adm-users__plan small {
+  font-weight: 400;
+  color: #6a7b7a;
+}
+
+@media (max-width: 860px) {
+  .adm-users__stats {
+    grid-template-columns: 1fr;
+  }
+
+  .adm-users__row--head {
+    display: none;
+  }
+
+  .adm-users__row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .adm-users__who {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ====================================================================== Team */
+
+.adm-team {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 14px;
+}
+
+.adm-team button {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 22px 16px;
+  border: 0;
+  border-radius: 24px;
+  background: #f4f7f6;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.adm-team button:hover {
+  background: #fff1e4;
+}
+
+.adm-team strong {
+  margin-top: 10px;
+  font-family: var(--font-display);
+}
+
+.adm-team__photo {
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  border-radius: 28px;
+  overflow: hidden;
+  background: #fff;
+  color: #9fb0ae;
+}
+
+.adm-team__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.adm-team__photo-pick {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.adm-team__photo-pick .adm-team__photo {
+  flex: none;
+  border: 2px dashed #d2dcdb;
+  background: #f7f9f8;
+  cursor: pointer;
+}
+
+.adm-team__photo-pick > div {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+}
+
+/* ============================================================= Admin sign-in */
+
+.adm-auth__forgot {
+  align-self: flex-end;
+  margin-top: -6px;
+  font-size: 0.875rem;
+}
+
+.adm-auth__back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.adm-auth__note {
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #e7f5ee;
+  color: #0f5c3c;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.adm-side__me {
+  display: grid;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #fff1e4;
+  line-height: 1.3;
+}
+
+.adm-side__me strong {
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adm-side__me small {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #9a4307;
+}
+
+/* ================================================================== Admins */
+
+.adm-card__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.adm-invite__row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr auto;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.adm-admins {
+  display: grid;
+  gap: 10px;
+}
+
+.adm-admins li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1.6fr) auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 20px;
+  background: #f4f7f6;
+}
+
+.adm-admins li > i {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: #fff;
+  color: #9a4307;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.adm-admins__who {
+  display: grid;
+  min-width: 0;
+}
+
+.adm-admins__who strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.adm-admins__who small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #6a7b7a;
+}
+
+.adm-admins__you {
+  font-style: normal;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #0e3b3a;
+  color: #fff;
+}
+
+.adm-admins__role {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.adm-admins__role.is-superadmin {
+  background: #d4600c;
+  color: #fff;
+}
+
+.adm-admins__status small {
+  color: #6a7b7a;
+}
+
+.adm-admins__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* Confirm dialog (centred, smaller than a drawer). */
+.adm-dialog {
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.adm-dialog__panel {
+  display: grid;
+  gap: 14px;
+  width: min(440px, 100%);
+  padding: 22px 24px 24px;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 30px 70px -30px rgba(6, 22, 21, 0.5);
+  animation: ui-pop 320ms var(--spring, ease) both;
+}
+
+.adm-dialog__panel .adm-drawer__head {
+  padding: 0;
+  border: 0;
+}
+
+.adm-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+@media (max-width: 860px) {
+  .adm-invite__row {
+    grid-template-columns: 1fr;
+  }
+
+  .adm-admins li {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .adm-admins__role,
+  .adm-admins__status,
+  .adm-admins__actions {
+    grid-column: 2;
+    justify-self: start;
+  }
 }

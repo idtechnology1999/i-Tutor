@@ -105,6 +105,7 @@ export const A04_SignUp: React.FC<Props> = ({
           src="/images/students-at-terminals.jpg"
           alt="Secondary-school students in white uniforms working at computers in a CBT lab"
           caption="Practise on a screen that feels like the real CBT hall — then learn from every question you miss."
+          badge={{ label: 'Free to start', value: '₦0', note: 'No card needed' }}
           stats={[
             { value: '2,400+', label: 'verified past questions' },
             { value: '4', label: 'UTME subjects live' },

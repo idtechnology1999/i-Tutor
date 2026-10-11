@@ -35,7 +35,7 @@ export const AdminAuto: React.FC<Props> = ({ open, onClose, nav }) => {
     {
       id: 0,
       who: 'auto',
-      text: 'Hi, I’m i-Auto. I know how this admin panel works. Tell me what to do — publish news, email students, upload a paper — and I’ll show you the plan before anything changes.',
+      text: 'Hi, I’m i-Auto. I know how this admin panel works. Tell me what to do — publish news, email students, upload a paper, write practice questions, check what needs review — and I’ll show you the plan before anything changes.',
       plan: { reply: '', suggestions: STARTERS },
     },
   ]);
@@ -76,7 +76,9 @@ export const AdminAuto: React.FC<Props> = ({ open, onClose, nav }) => {
     const youId = idRef.current++;
     setTurns((prev) => [...prev, { id: youId, who: 'you', text: m }]);
     setThinking(true);
-    planAuto(m, { questions, news })
+    // Earlier turns let follow-ups like "now do 2018" make sense.
+    const history = turns.map((t) => ({ role: t.who === 'you' ? ('admin' as const) : ('auto' as const), text: t.text }));
+    planAuto(m, { questions, news }, history)
       .then((plan) => {
         const id = idRef.current++;
         setTurns((prev) => [

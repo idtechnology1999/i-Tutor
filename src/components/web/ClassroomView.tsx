@@ -20,6 +20,8 @@ import type { UserProfile } from '../../types';
 import type { TutorPersona } from '../../data/tutors';
 import { SYLLABUS, syllabusSubject } from '../../data/syllabus';
 import { getLesson } from '../../services/classroom';
+import { askTutor } from '../../services/tutor';
+import { isLive } from '../../services/api';
 import type { BoardLine, Lesson } from '../../data/syllabus';
 import { FREE_DAILY, readUsed, writeUsed } from '../../lib/tutor-quota';
 
@@ -28,6 +30,8 @@ import { FREE_DAILY, readUsed, writeUsed } from '../../lib/tutor-quota';
    like a person with a marker; a chat beside it. The teacher knows the
    student's subjects and their syllabus topics. Commands work typed or tapped:
    "start", "teach me <topic>", "next", "repeat", "clear the board", "test me".
+   Anything else is a question for the teacher, answered by the AI with the
+   lesson on the board as context.
    -------------------------------------------------------------------------- */
 
 interface Props {
@@ -53,6 +57,12 @@ interface Pen {
 const EMPTY_PEN: Pen = { written: [], pending: [], chars: 0 };
 const CHARS_PER_TICK = 2;
 const TICK_MS = 34;
+
+/** Chat text with **bold** shown as bold (the tutor's only formatting). */
+const rich = (text: string) =>
+  text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
+    part.startsWith('**') && part.endsWith('**') ? <strong key={i}>{part.slice(2, -2)}</strong> : part,
+  );
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -85,6 +95,8 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
     },
   ]);
   const [listening, setListening] = useState(false);
+  /** Waiting for the AI: a lesson being prepared, or an answer to a question. */
+  const [busy, setBusy] = useState<'' | 'lesson' | 'answer'>('');
   const recRef = useRef<Recogniser | null>(null);
   const heardRef = useRef('');
   const hasMic = recogniserCtor() !== null;
@@ -92,6 +104,7 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
   const chatRef = useRef<HTMLDivElement>(null);
 
   const writing = pen.pending.length > 0;
+  const waiting = writing || busy !== '';
 
   // The pen writes a couple of letters at a time until the queue is empty.
   useEffect(() => {
@@ -205,7 +218,9 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
       writeUsed(used + 1);
     }
     setSubject(subj);
-    setTopic(top);
+    if ((SYLLABUS[subj] ?? []).includes(top)) setTopic(top);
+    setBusy('lesson');
+    setChat((prev) => [...prev, { who: 'teacher', text: `Give me a moment — I’m preparing your lesson on ${top}…` }]);
     getLesson(subj, top, tutor?.id)
       .then((l) => {
         setLesson(l);
@@ -214,7 +229,27 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
         setPen(EMPTY_PEN);
         teachStep(l, 0);
       })
-      .catch((err: Error) => say(`I couldn’t prepare that lesson just now. ${err.message}`));
+      .catch((err: Error) => say(`I couldn’t prepare that lesson just now. ${err.message}`))
+      .finally(() => setBusy(''));
+  };
+
+  /** A real question: the AI answers it, knowing what's on the board. */
+  const answer = (question: string) => {
+    const board = [...pen.written, ...pen.pending].map((l) => l.text).join('\n');
+    const context =
+      `I'm in my classroom ${lesson ? `learning "${lesson.topic}" (${lesson.subject})` : `studying ${subject}`}.` +
+      (board ? `\nOn the board right now:\n${board}` : '') +
+      `\n\nMy question: ${question}`;
+    // The last few messages, so "and why?" makes sense. The welcome line is skipped.
+    const history = chat
+      .slice(1)
+      .slice(-8)
+      .map((c) => ({ role: c.who === 'you' ? ('student' as const) : ('tutor' as const), text: c.text }));
+    setBusy('answer');
+    askTutor(context, history, tutor?.id)
+      .then((reply) => say(reply))
+      .catch((err: Error) => say(`Sorry, I couldn’t answer that just now. ${err.message}`))
+      .finally(() => setBusy(''));
   };
 
   const next = () => {
@@ -258,13 +293,15 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
 
   const handle = (raw: string) => {
     const msg = raw.trim();
-    if (!msg) return;
+    if (!msg || busy) return;
     setChat((prev) => [...prev, { who: 'you', text: msg }]);
     setText('');
     const t = msg.toLowerCase();
 
-    if (quiz && /^[a-d]\b/.test(t) && lesson) {
-      const pick = t[0].toUpperCase();
+    // "B", "b.", "(c)", "option d", "it's a" — but not a sentence that starts with "a".
+    const choice = t.match(/^(?:(?:option|answer|it'?s|it is)\s+)?\(?([a-d])\)?[.!]?$/);
+    if (quiz && choice && lesson) {
+      const pick = choice[1].toUpperCase();
       setQuiz(false);
       say(
         pick === lesson.check.answer
@@ -282,16 +319,22 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
       return startLesson(subject, nextTopic);
     }
     if (/\b(next|continue|go on|carry on)\b/.test(t)) return next();
-    const teach = t.match(/\b(?:teach me|explain|start|begin|lesson on|teach)\b\s*(?:about|on)?\s*(.*)$/);
+    const teach = t.match(/^(?:please\s+)?(?:teach me|start|begin|lesson on|teach)\b\s*(?:about|on)?\s*(.*)$/);
     if (teach) {
       const want = teach[1].replace(/[.?!]+$/, '').trim();
       if (!want) return startLesson(subject, topic);
       const hit = findTopic(want);
       if (hit) return startLesson(hit.subj, hit.top);
+      // The AI can teach any topic; it picks the closest syllabus topic if needed.
+      if (isLive) return startLesson(subject, want.charAt(0).toUpperCase() + want.slice(1));
       return say(`“${want}” isn’t in your syllabus list yet. Try one of: ${SYLLABUS[subject].slice(0, 4).join(', ')}.`);
     }
-    const hit = findTopic(t);
+    // A short message naming a topic ("indices") starts that lesson; a
+    // sentence or a question goes to the teacher.
+    const short = t.split(/\s+/).length <= 4 && !t.includes('?');
+    const hit = short ? findTopic(t) : null;
     if (hit) return startLesson(hit.subj, hit.top);
+    if (isLive) return answer(msg);
     say(
       lesson
         ? 'Good question. Say “next” to continue, “repeat” to see it again, or “test me” for a quick question.'
@@ -335,7 +378,9 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
       <div className="cls">
         <section className="cls__boardwrap" aria-label="Whiteboard">
           <div className="cls__board" ref={boardRef}>
-            {!pen.written.length && !current && <p className="cls__empty">The board is clear.</p>}
+            {!pen.written.length && !current && (
+              <p className="cls__empty">{busy === 'lesson' ? 'Preparing your lesson…' : 'The board is clear.'}</p>
+            )}
             {pen.written.map((l, i) => (
               <p key={i} className={`bl bl--${l.kind}`}>
                 {l.text}
@@ -354,17 +399,17 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
             <i />
           </div>
           <div className="cls__tools">
-            <button type="button" className="cls__tool cls__tool--main" onClick={next} disabled={writing}>
+            <button type="button" className="cls__tool cls__tool--main" onClick={next} disabled={waiting}>
               {lesson ? <SkipForward size={18} aria-hidden /> : <Play size={18} aria-hidden />}
               {lesson ? (step < lesson.steps.length - 1 ? 'Next' : 'Test me') : 'Start lesson'}
             </button>
-            <button type="button" className="cls__tool" onClick={repeat} disabled={writing || !lesson}>
+            <button type="button" className="cls__tool" onClick={repeat} disabled={waiting || !lesson}>
               <RotateCcw size={18} aria-hidden /> Repeat
             </button>
-            <button type="button" className="cls__tool" onClick={clearBoard} disabled={writing}>
+            <button type="button" className="cls__tool" onClick={clearBoard} disabled={waiting}>
               <Eraser size={18} aria-hidden /> Clear board
             </button>
-            <button type="button" className="cls__tool" onClick={testMe} disabled={writing || !lesson}>
+            <button type="button" className="cls__tool" onClick={testMe} disabled={waiting || !lesson}>
               <ListChecks size={18} aria-hidden /> Test me
             </button>
             {isPremium && (
@@ -399,7 +444,7 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
           <div className="cls__log" ref={chatRef} aria-live="polite">
             {chat.map((c, i) => (
               <div key={i} className={`cls__msg cls__msg--${c.who}`}>
-                <p>{c.text}</p>
+                <p>{rich(c.text)}</p>
                 {c.upgrade && (
                   <button type="button" className="ui-btn ui-btn--primary" onClick={onUpgrade}>
                     Upgrade
@@ -407,10 +452,18 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
                 )}
               </div>
             ))}
+            {busy === 'answer' && (
+              <div className="cls__msg cls__msg--teacher" role="status">
+                <p>{teacher} is thinking…</p>
+              </div>
+            )}
           </div>
           <div className="cls__chips">
-            {['Start', 'Next', 'Repeat', 'Clear the board', 'Test me'].map((c) => (
-              <button key={c} type="button" onClick={() => handle(c)} disabled={writing}>
+            {(lesson
+              ? ['Next', 'Repeat', 'Test me', ...(isLive ? ['Explain it another way'] : []), 'Clear the board']
+              : ['Start']
+            ).map((c) => (
+              <button key={c} type="button" onClick={() => handle(c)} disabled={waiting}>
                 {c}
               </button>
             ))}
@@ -436,10 +489,12 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
             <input
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder={listening ? 'Listening…' : 'Say or type “teach me indices”…'}
+              placeholder={
+                listening ? 'Listening…' : lesson && isLive ? 'Ask a question about the lesson…' : 'Say or type “teach me indices”…'
+              }
               aria-label={`Message ${teacher}`}
             />
-            <button type="submit" disabled={!text.trim()} aria-label="Send">
+            <button type="submit" disabled={!text.trim() || busy !== ''} aria-label="Send">
               <SendHorizontal size={18} aria-hidden />
             </button>
           </form>

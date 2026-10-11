@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
   Building2,
@@ -16,10 +16,11 @@ import {
   ChartNoAxesColumnIncreasing,
 } from 'lucide-react';
 import type { UserProfile } from '../../types';
-import { payForPlan } from '../../services/payments';
+import { payForPlan, verifyPayment } from '../../services/payments';
 import type { PlanId } from '../../services/payments';
 import { isLive } from '../../services/api';
 import { TutorPicker } from './TutorPicker';
+import { PageBanner } from './PageBanner';
 import { tutorById } from '../../data/tutors';
 
 interface Props {
@@ -154,6 +155,8 @@ export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor
     // Demo: simulated gateway. Live: Paystack checkout, then the server confirms.
     payForPlan(plan, method)
       .then(({ reference: ref }) => {
+        // Live: the browser is on its way to Paystack; the return is handled below.
+        if (isLive) return;
         setReference(ref);
         onActivated();
         setStep('done');
@@ -163,6 +166,46 @@ export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor
         setStep('pay');
       });
   };
+
+  // Back from Paystack (/upgrade?reference=…): ask the server whether it was paid.
+  useEffect(() => {
+    if (!isLive) return;
+    const ref = new URLSearchParams(window.location.search).get('reference');
+    if (!ref) return;
+    window.history.replaceState({}, '', window.location.pathname);
+    setReference(ref);
+    setStep('processing');
+
+    let cancelled = false;
+    const check = async (tries: number): Promise<void> => {
+      const result = await verifyPayment(ref);
+      if (cancelled) return;
+      if (result.status === 'success') {
+        setPlan(result.plan);
+        onActivated();
+        setStep('done');
+      } else if (result.status === 'pending' && tries > 1) {
+        await new Promise((r) => window.setTimeout(r, 3000));
+        return check(tries - 1);
+      } else {
+        setPayError(
+          result.status === 'failed'
+            ? 'The payment didn’t go through. No money was taken — please try again.'
+            : `We haven’t received the payment yet. If you were charged, contact support with reference ${ref}.`,
+        );
+        setStep('pay');
+      }
+    };
+    check(5).catch((err: Error) => {
+      if (cancelled) return;
+      setPayError(err.message);
+      setStep('pay');
+    });
+    return () => {
+      cancelled = true;
+    };
+    // Runs once, on the page Paystack returns to.
+  }, []);
 
   const onPayCard = (event: React.FormEvent) => {
     event.preventDefault();
@@ -242,6 +285,19 @@ export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor
 
   return (
     <div className="pay">
+      {step === 'plan' && (
+        <PageBanner
+          image="/images/teacher-guiding.jpg"
+          imageAlt="A teacher guiding a student through a problem"
+          eyebrow="i-Tutor Premium"
+          title={
+            <>
+              Unlock your <span>AI tutor</span>
+            </>
+          }
+          lead="Unlimited questions, step-by-step help on every past question, and voice lessons — from ₦2,500 a month."
+        />
+      )}
       <div className="pay__steps" aria-label="Progress">
         <span className={step === 'plan' ? 'is-on' : 'is-done'}>
           <i>{step === 'plan' ? 1 : <Check size={12} aria-hidden />}</i> Choose plan
@@ -259,7 +315,7 @@ export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor
       {step === 'plan' && (
         <div className="pay__grid">
           <section className="pay__card">
-            <h1>Unlock the AI tutor</h1>
+            <h2>Choose your plan</h2>
             <p className="pay__lead">
               Free accounts get 5 tutor questions a day. Premium gives you unlimited help.
             </p>

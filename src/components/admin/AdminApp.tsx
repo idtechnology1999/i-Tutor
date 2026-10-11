@@ -3,18 +3,18 @@ import {
   ArrowUpRight,
   BookOpenCheck,
   GraduationCap,
-  KeyRound,
   Landmark,
   LayoutDashboard,
-  LoaderCircle,
   LogOut,
   Newspaper,
   ScanText,
+  ShieldCheck,
   Settings,
+  UsersRound,
+  UserRoundCog,
   Workflow,
 } from 'lucide-react';
 import { BrandMark } from '../web/BrandMark';
-import { adminKey, checkAdmin } from '../../lib/question-import';
 import { useCms } from '../../lib/cms';
 import type { CmsSubject, ExamType } from '../../lib/cms';
 import { AdminOverview } from './AdminOverview';
@@ -25,8 +25,15 @@ import { AdminSettings } from './AdminSettings';
 import { AdminCourses } from './AdminCourses';
 import { AdminPostUtme } from './AdminPostUtme';
 import { AdminAuto } from './AdminAuto';
+import { AdminUsers } from './AdminUsers';
+import { AdminTeam } from './AdminTeam';
+import { AdminAdmins } from './AdminAdmins';
+import { AdminAuth, AdminChangePassword } from './AdminAuth';
+import { adminLogout, currentAdminAccount } from '../../services/admin-auth';
+import type { AdminAccount } from '../../services/admin-auth';
+import { isLive } from '../../services/api';
 
-export type Section = 'overview' | 'questions' | 'import' | 'postutme' | 'courses' | 'news' | 'settings';
+export type Section = 'overview' | 'questions' | 'import' | 'postutme' | 'courses' | 'news' | 'users' | 'team' | 'admins' | 'settings';
 export type QuestionFilter = 'all' | 'published' | 'draft' | 'review';
 
 /** Which part of the bank is open: a subject (or All) and a year (or all years). */
@@ -44,6 +51,8 @@ export interface ImportPreset {
   school: string;
   subject: CmsSubject;
   year: number | null;
+  /** Pre-filled request for the AI, e.g. "Set 40 questions on animal production". */
+  request?: string;
 }
 
 export interface AdminNav {
@@ -58,6 +67,9 @@ const NAV: Array<{ id: Section; label: string; icon: typeof LayoutDashboard }> =
   { id: 'postutme', label: 'Post-UTME', icon: Landmark },
   { id: 'courses', label: 'Courses', icon: GraduationCap },
   { id: 'news', label: 'News', icon: Newspaper },
+  { id: 'users', label: 'Users', icon: UsersRound },
+  { id: 'team', label: 'Team', icon: UserRoundCog },
+  { id: 'admins', label: 'Admins', icon: ShieldCheck },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
@@ -69,6 +81,9 @@ const SECTION_PATH: Record<Section, string> = {
   postutme: '/admin/post-utme',
   courses: '/admin/courses',
   news: '/admin/news',
+  users: '/admin/users',
+  team: '/admin/team',
+  admins: '/admin/admins',
   settings: '/admin/settings',
 };
 
@@ -79,64 +94,6 @@ const sectionForPath = (path: string): Section => {
 };
 const MODE_KEY = 'itutor-admin-mode';
 
-/* --------------------------------------------------------------- Sign-in */
-
-const SignIn: React.FC<{ onIn: (mode: 'live' | 'demo') => void; onExit: () => void }> = ({ onIn, onExit }) => {
-  const [key, setKey] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-
-  const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!key.trim()) {
-      setError('Enter your admin key.');
-      return;
-    }
-    setBusy(true);
-    setError('');
-    const result = await checkAdmin(key.trim());
-    setBusy(false);
-    if (result.status === 'wrong') {
-      setError('That admin key is not right.');
-      return;
-    }
-    adminKey.set(key.trim());
-    onIn(result.status === 'ok' ? 'live' : 'demo');
-  };
-
-  return (
-    <div className="adm-signin">
-      <form className="adm-signin__card" onSubmit={submit} noValidate>
-        <BrandMark />
-        <h1>Admin</h1>
-        <p>Manage past questions, news and site content.</p>
-        <label className="adm-field">
-          <span>Admin key</span>
-          <div className="adm-input adm-input--icon">
-            <KeyRound size={18} aria-hidden />
-            <input
-              type="password"
-              value={key}
-              onChange={(e) => setKey(e.target.value)}
-              placeholder="Enter your admin key"
-              autoComplete="current-password"
-              autoFocus
-            />
-          </div>
-        </label>
-        {error && <p className="adm-error">{error}</p>}
-        <button type="submit" className="adm-btn adm-btn--primary adm-btn--block" disabled={busy}>
-          {busy ? <LoaderCircle size={18} className="adm-spin" aria-hidden /> : null}
-          {busy ? 'Checking…' : 'Sign in'}
-        </button>
-        <button type="button" className="adm-link" onClick={onExit}>
-          Back to the website
-        </button>
-      </form>
-    </div>
-  );
-};
-
 /* ----------------------------------------------------------------- Shell */
 
 export const AdminApp: React.FC<{
@@ -144,13 +101,20 @@ export const AdminApp: React.FC<{
   navigate: (to: string) => void;
   onExit: () => void;
 }> = ({ path, navigate, onExit }) => {
-  const [mode, setMode] = useState<'live' | 'demo' | null>(() => {
+  // Live: the signed-in admin (undefined while checking). Demo: no backend.
+  const [account, setAccount] = useState<AdminAccount | null | undefined>(isLive ? undefined : null);
+  const [demo, setDemo] = useState(() => {
     try {
-      return (window.sessionStorage.getItem(MODE_KEY) as 'live' | 'demo' | null) ?? null;
+      return !isLive && window.sessionStorage.getItem(MODE_KEY) === 'demo';
     } catch {
-      return null;
+      return false;
     }
   });
+  const mode: 'live' | 'demo' = demo ? 'demo' : 'live';
+
+  useEffect(() => {
+    if (isLive) void currentAdminAccount().then(setAccount);
+  }, []);
   // The address is the source of truth: /admin/settings shows Settings, and
   // back/forward move between sections.
   const section = sectionForPath(path);
@@ -196,26 +160,33 @@ export const AdminApp: React.FC<{
     notify: (text) => setToast((prev) => ({ id: (prev?.id ?? 0) + 1, text })),
   };
 
-  const signIn = (m: 'live' | 'demo') => {
+  const enterDemo = () => {
     try {
-      window.sessionStorage.setItem(MODE_KEY, m);
+      window.sessionStorage.setItem(MODE_KEY, 'demo');
     } catch {
       /* ignore */
     }
-    setMode(m);
+    setDemo(true);
   };
 
   const signOut = () => {
-    adminKey.clear();
+    if (isLive) void adminLogout().catch(() => undefined);
     try {
       window.sessionStorage.removeItem(MODE_KEY);
     } catch {
       /* ignore */
     }
-    setMode(null);
+    setDemo(false);
+    setAccount(null);
   };
 
-  if (!mode) return <SignIn onIn={signIn} onExit={onExit} />;
+  if (isLive && account === undefined) return <div className="adm-signin" aria-busy="true" />;
+  if (!demo && !account) return <AdminAuth onSignedIn={setAccount} onDemo={enterDemo} onExit={onExit} />;
+  if (account?.mustChangePassword) return <AdminChangePassword admin={account} onDone={setAccount} onSignOut={signOut} />;
+
+  // Only the super admin sees (and may open) Admins.
+  const isSuper = account?.role === 'superadmin';
+  const navItems = NAV.filter((n) => n.id !== 'admins' || isSuper);
 
   return (
     <div className="adm">
@@ -230,7 +201,7 @@ export const AdminApp: React.FC<{
           <kbd>Ctrl K</kbd>
         </button>
         <nav className="adm-side__nav" aria-label="Admin">
-          {NAV.map(({ id, label, icon: Icon }) => (
+          {navItems.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               type="button"
@@ -245,6 +216,12 @@ export const AdminApp: React.FC<{
           ))}
         </nav>
         <div className="adm-side__foot">
+          {account && (
+            <span className="adm-side__me">
+              <strong>{account.name || account.email}</strong>
+              <small>{account.role === 'superadmin' ? 'Super admin' : 'Admin'}</small>
+            </span>
+          )}
           <span className={`adm-mode is-${mode}`}>{mode === 'live' ? 'AI connected' : 'Demo mode'}</span>
           <button type="button" className="adm-side__item" onClick={onExit}>
             <ArrowUpRight size={18} aria-hidden />
@@ -272,6 +249,9 @@ export const AdminApp: React.FC<{
         {section === 'postutme' && <AdminPostUtme nav={nav} />}
         {section === 'courses' && <AdminCourses nav={nav} />}
         {section === 'news' && <AdminNews nav={nav} />}
+        {section === 'users' && <AdminUsers nav={nav} mode={mode} />}
+        {section === 'team' && <AdminTeam nav={nav} />}
+        {section === 'admins' && account && isSuper && <AdminAdmins nav={nav} me={account} />}
         {section === 'settings' && <AdminSettings nav={nav} mode={mode} />}
       </main>
 

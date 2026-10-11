@@ -19,6 +19,7 @@ import type { ExamType } from '../../lib/cms';
 import type { StudentExam } from '../../types';
 import { SCHOOL_CERT_EXAMS, examsOf } from '../../lib/student-exams';
 import { ExamRoom } from './ExamRoom';
+import { PageBanner } from './PageBanner';
 import type { TutorPersona } from '../../data/tutors';
 
 /** Short tab names for each exam room. */
@@ -110,15 +111,27 @@ export const DashboardView: React.FC<Props> = ({
   return (
     <div className="ui-page dash">
       {/* ------------------------------------------------------------ Hello */}
-      <header className="dash__hello">
-        <div>
-          <p className="dash__eyebrow">{greeting()},</p>
-          <h1>{firstName}</h1>
-        </div>
-        <span className="dash__streak" title="Days in a row you have practised">
-          <Flame size={16} aria-hidden /> 4-day streak
-        </span>
-      </header>
+      <PageBanner
+        image="/images/student-cbt-focus.jpg"
+        imageAlt="A student practising at a computer in a CBT lab"
+        focus="60% 12%"
+        eyebrow={
+          <>
+            <Flame size={15} aria-hidden /> 4-day streak
+          </>
+        }
+        title={
+          <>
+            {greeting()}, <span>{firstName}</span>
+          </>
+        }
+        lead={`Your target is ${profile.targetScore}. One practice a day keeps you on track.`}
+        aside={
+          <button type="button" className="lp-btn lp-btn--primary" onClick={() => onLaunchCBT()}>
+            Start a practice exam
+          </button>
+        }
+      />
 
       {/* ------------------------------------------------ Personal classroom */}
       <button type="button" className="dash__class" onClick={onOpenClassroom}>

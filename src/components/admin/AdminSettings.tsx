@@ -1,9 +1,55 @@
 import React, { useRef, useState } from 'react';
 import { Download, LoaderCircle, RotateCcw, Upload } from 'lucide-react';
 import { cms } from '../../lib/cms';
-import { adminKey, checkAdmin } from '../../lib/question-import';
+import { checkAdmin } from '../../lib/question-import';
+import { adminChangePassword } from '../../services/admin-auth';
 import type { AdminNav } from './AdminApp';
 import { PageHead } from './AdminApp';
+
+/** Any admin can change their own password here (forgotten ones: the sign-in screen). */
+const PasswordCard: React.FC<{ nav: AdminNav }> = ({ nav }) => {
+  const [current, setCurrent] = useState('');
+  const [next, setNext] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const save = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (next.length < 8) return setError('Use at least 8 characters for the new password.');
+    if (next !== confirm) return setError('The two new passwords don’t match.');
+    setBusy(true);
+    setError('');
+    adminChangePassword(current, next)
+      .then(() => {
+        setCurrent('');
+        setNext('');
+        setConfirm('');
+        nav.notify('Password changed. Other devices have been signed out.');
+      })
+      .catch((err: Error) => setError(err.message))
+      .finally(() => setBusy(false));
+  };
+
+  return (
+    <form className="adm-card" onSubmit={save}>
+      <h2 className="adm-card__title">Your password</h2>
+      <p className="adm-muted">Changing it signs you out on every other device.</p>
+      <div className="adm-grid-2">
+        <input className="adm-input" type="password" value={current} onChange={(e) => setCurrent(e.target.value)} placeholder="Current password" autoComplete="current-password" aria-label="Current password" />
+        <span />
+        <input className="adm-input" type="password" value={next} onChange={(e) => setNext(e.target.value)} placeholder="New password (8+ characters)" autoComplete="new-password" aria-label="New password" />
+        <input className="adm-input" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Repeat new password" autoComplete="new-password" aria-label="Repeat new password" />
+      </div>
+      {error && <p className="adm-error">{error}</p>}
+      <div className="adm-row-actions">
+        <button type="submit" className="adm-btn adm-btn--primary" disabled={busy || !current || !next}>
+          {busy ? 'Saving…' : 'Change password'}
+        </button>
+      </div>
+    </form>
+  );
+};
 
 export const AdminSettings: React.FC<{ nav: AdminNav; mode: 'live' | 'demo' }> = ({ nav, mode }) => {
   const [testing, setTesting] = useState(false);
@@ -14,7 +60,7 @@ export const AdminSettings: React.FC<{ nav: AdminNav; mode: 'live' | 'demo' }> =
 
   const test = async () => {
     setTesting(true);
-    const r = await checkAdmin(adminKey.get());
+    const r = await checkAdmin();
     setTesting(false);
     setStatus(
       r.status === 'ok'
@@ -22,7 +68,7 @@ export const AdminSettings: React.FC<{ nav: AdminNav; mode: 'live' | 'demo' }> =
           ? 'Connected. The AI is ready.'
           : 'Connected, but the AI key isn’t set on the server yet.'
         : r.status === 'wrong'
-          ? 'The server rejected your admin key.'
+          ? 'Your admin session has ended. Sign in again.'
           : r.status === 'unconfigured'
             ? 'The server is reachable but not set up yet.'
             : 'No AI backend found. Imports use the built-in reader.',
@@ -52,6 +98,8 @@ export const AdminSettings: React.FC<{ nav: AdminNav; mode: 'live' | 'demo' }> =
   return (
     <div className="adm-page adm-page--narrow">
       <PageHead title="Settings" />
+
+      {mode === 'live' && <PasswordCard nav={nav} />}
 
       <section className="adm-card">
         <h2 className="adm-card__title">AI connection</h2>

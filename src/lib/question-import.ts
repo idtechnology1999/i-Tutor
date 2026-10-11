@@ -4,14 +4,14 @@
    BACKEND CONTRACT (to be implemented by the backend; not in this repo):
 
      POST /api/parse-questions
-       headers: { "content-type": "application/json", "x-admin-key": <key> }
+       headers: { "content-type": "application/json" }   (admin session cookie)
        body:    { subject, examType, year: number|null, source,
                   text: string,                       // pasted paper
                   file?: { name, mediaType, data } }  // base64 PDF/JPG/PNG/WebP
        200 ->   { questions: ParsedQuestion[], warnings: string[] }
        4xx/5xx -> { error: string }
 
-     GET /api/admin-check   (header x-admin-key)
+     GET /api/admin-check   (admin session cookie)
        200 -> { ok: true, ai: boolean }   401 -> wrong key
 
    Until that exists, `organiseWithAI` falls back to `basicParse`, a pattern
@@ -39,6 +39,8 @@ export interface ImportResult {
   questions: ParsedQuestion[];
   warnings: string[];
   engine: 'ai' | 'basic';
+  /** True when the AI wrote new questions on request rather than reading a paper. */
+  generated?: boolean;
   /** Why the AI wasn't used, when engine is 'basic'. */
   fallbackReason?: string;
 }
@@ -52,32 +54,6 @@ export interface ImportRequest {
   file?: File | null;
 }
 
-const ADMIN_KEY_STORE = 'itutor-admin-key';
-
-export const adminKey = {
-  get: () => {
-    try {
-      return window.sessionStorage.getItem(ADMIN_KEY_STORE) ?? '';
-    } catch {
-      return '';
-    }
-  },
-  set: (key: string) => {
-    try {
-      window.sessionStorage.setItem(ADMIN_KEY_STORE, key);
-    } catch {
-      /* session storage blocked */
-    }
-  },
-  clear: () => {
-    try {
-      window.sessionStorage.removeItem(ADMIN_KEY_STORE);
-    } catch {
-      /* ignore */
-    }
-  },
-};
-
 const toBase64 = (file: File) =>
   new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -86,11 +62,11 @@ const toBase64 = (file: File) =>
     reader.readAsDataURL(file);
   });
 
-/** Checks the admin key against the server. `offline` means no server here. */
-export async function checkAdmin(key: string): Promise<{ status: 'ok' | 'wrong' | 'offline' | 'unconfigured'; ai?: boolean }> {
+/** Checks the server for the signed-in admin. `offline` means no server here. */
+export async function checkAdmin(): Promise<{ status: 'ok' | 'wrong' | 'offline' | 'unconfigured'; ai?: boolean }> {
   if (!isLive) return { status: 'offline' };
   try {
-    const res = await fetch(`${API_BASE}/api/admin-check`, { headers: { 'x-admin-key': key } });
+    const res = await fetch(`${API_BASE}/api/admin-check`, { credentials: 'include' });
     const type = res.headers.get('content-type') ?? '';
     if (!type.includes('application/json')) return { status: 'offline' };
     const data = (await res.json()) as { ok: boolean; ai?: boolean };
@@ -112,7 +88,8 @@ export async function organiseWithAI(req: ImportRequest): Promise<ImportResult> 
     if (!isLive) throw new Error('offline');
     const res = await fetch(`${API_BASE}/api/parse-questions`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-admin-key': adminKey.get() },
+      credentials: 'include',
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         subject: req.subject,
         examType: req.examType,
@@ -124,7 +101,7 @@ export async function organiseWithAI(req: ImportRequest): Promise<ImportResult> 
     });
     const type = res.headers.get('content-type') ?? '';
     if (!type.includes('application/json')) throw new Error('offline');
-    const data = (await res.json()) as { questions?: ParsedQuestion[]; warnings?: string[]; error?: string };
+    const data = (await res.json()) as { questions?: ParsedQuestion[]; warnings?: string[]; generated?: boolean; error?: string };
     if (!res.ok) {
       // Real AI errors (bad key, refusal, too long) are shown, not hidden.
       if (res.status === 503 && req.text.trim()) {
@@ -132,7 +109,7 @@ export async function organiseWithAI(req: ImportRequest): Promise<ImportResult> 
       }
       throw new Error(data.error ?? `AI import failed (${res.status}).`);
     }
-    return { questions: data.questions ?? [], warnings: data.warnings ?? [], engine: 'ai' };
+    return { questions: data.questions ?? [], warnings: data.warnings ?? [], generated: data.generated ?? false, engine: 'ai' };
   } catch (error) {
     if ((error as Error).message !== 'offline' && !(error instanceof TypeError)) throw error;
     if (!req.text.trim()) {

@@ -2319,6 +2319,14 @@ body.cbt-active {
   animation: ui-fade 300ms ease both;
 }
 
+/* In the exam the student reads the question while asking for a hint, so
+   the page behind the tutor stays clear. Tapping it still closes the tutor. */
+.is-cbt .tutor-backdrop {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 .tutor {
   position: fixed;
   z-index: 90;

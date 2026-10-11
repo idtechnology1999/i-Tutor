@@ -23,7 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 
-# Environment files (keys live on the backend; only .env.example is shared)
+# Environment files (keys live on the backend). The per-mode files below hold
+# only public values (API address, Paystack public key), so they are committed.
 .env
 .env.*
 !.env.example
+!.env.development
+!.env.production
+!.env.live

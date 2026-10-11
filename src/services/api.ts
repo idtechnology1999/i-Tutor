@@ -16,6 +16,12 @@ export const API_BASE = (import.meta.env.VITE_API_URL ?? '').trim().replace(/\/+
 /** True when a backend address is configured; false means demo mode. */
 export const isLive = API_BASE !== '';
 
+// While developing, say which backend this tab is using (npm run dev = local,
+// npm run dev:live = the live server). Never shown in the built site.
+if (import.meta.env.DEV) {
+  console.info(`[i-Tutor] ${isLive ? `API: ${API_BASE}` : 'Demo mode (no backend)'} · mode: ${import.meta.env.MODE}`);
+}
+
 /** A failed request, with the server's message when it sent one. */
 export class ApiError extends Error {
   status: number;

@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { usePointerTilt, useScrollProgress } from '../../lib/ui';
+import React, { useEffect, useRef, useState } from 'react';
+import { useScrollProgress } from '../../lib/ui';
 import {
   ArrowRight,
   BadgeCheck,
@@ -9,20 +9,23 @@ import {
   ChartNoAxesColumnIncreasing,
   Check,
   CircleHelp,
-  Clock3,
   Flag,
   GraduationCap,
   Landmark,
   Lightbulb,
   MessageSquareText,
   PenLine,
-  ShieldCheck,
   Target,
   UserRoundPlus,
   WifiOff,
 } from 'lucide-react';
 import { BrandMark } from './BrandMark';
 import { CbtPreview, TutorPreview } from './ProductPreviews';
+import { ServiceSection } from './ServiceSection';
+import { publicTeam } from '../../services/team';
+import type { TeamMember } from '../../services/admin';
+import { NIGERIAN_INSTITUTIONS } from '../../data/nigerian-curriculum';
+import { SSCE_CLASSES } from '../../data/courses';
 import { NewsSection } from './NewsSection';
 
 interface HomePageViewProps {
@@ -42,18 +45,57 @@ const PHOTO = {
   terminals: '/images/students-at-terminals.jpg',
 };
 
-const SAMPLE = {
-  meta: 'Physics · UTME 2019 · Q14',
-  stem: 'A car accelerates uniformly from rest and covers 100 m in 10 s. What is its acceleration?',
-  options: ['1.0 m/s²', '2.0 m/s²', '5.0 m/s²', '10.0 m/s²'],
-  answer: 1,
-  nudge: {
+/* "Try it now": one question per stream, so Arts and Commercial students see
+   their own subjects too. Only the Physics one is from a real paper; the rest
+   are written by i-Tutor and labelled that way. */
+const SAMPLES = [
+  {
+    tab: 'Physics',
+    stream: 'Science',
+    verified: true,
+    meta: 'Physics · UTME 2019 · Q14',
+    stem: 'A car accelerates uniformly from rest and covers 100 m in 10 s. What is its acceleration?',
+    options: ['1.0 m/s²', '2.0 m/s²', '5.0 m/s²', '10.0 m/s²'],
+    answer: 1,
     wrong:
       'Not quite. Which equation links distance, time and acceleration when the car starts from rest? Try writing s = ut + ½at² with u = 0.',
     right:
       'Correct. With u = 0, s = ½at², so 100 = ½ × a × 10², which gives a = 2 m/s². You worked it out — that is the point.',
   },
-};
+  {
+    tab: 'English',
+    stream: 'All students',
+    verified: false,
+    meta: 'English · Lexis and structure',
+    stem: 'Choose the option nearest in meaning to the word in capitals: The chairman’s reply was TERSE.',
+    options: ['long and detailed', 'brief and abrupt', 'polite and warm', 'loud and angry'],
+    answer: 1,
+    wrong: 'Not quite. Picture a terse text message — does it use many words or very few? Now look at the options again.',
+    right: 'Correct. Terse means using very few words, often in a way that sounds abrupt. Watch for it in comprehension passages too.',
+  },
+  {
+    tab: 'Economics',
+    stream: 'Commercial',
+    verified: false,
+    meta: 'Economics · Demand and supply',
+    stem: 'When the price of a good rises and, other things being equal, the quantity demanded falls, this illustrates the',
+    options: ['law of supply', 'law of demand', 'law of diminishing returns', 'equilibrium price'],
+    answer: 1,
+    wrong: 'Not quite. The question is about buyers reacting to a price change. Which law describes what buyers do?',
+    right: 'Correct. The law of demand: as price rises, quantity demanded falls, ceteris paribus (other things being equal).',
+  },
+  {
+    tab: 'Government',
+    stream: 'Arts',
+    verified: false,
+    meta: 'Government · Political theories',
+    stem: 'The doctrine of separation of powers is most closely associated with',
+    options: ['John Locke', 'Baron de Montesquieu', 'A. V. Dicey', 'Jean-Jacques Rousseau'],
+    answer: 1,
+    wrong: 'Not quite. Think of the French writer of “The Spirit of the Laws” (1748). Dicey is the name to remember for the rule of law.',
+    right: 'Correct. Montesquieu set out separation of powers in “The Spirit of the Laws” (1748): legislature, executive and judiciary kept apart.',
+  },
+] as const;
 
 const SUBJECTS = [
   'Use of English',
@@ -75,7 +117,7 @@ const STEPS = [
   {
     icon: Target,
     title: 'Set your exam goal',
-    body: 'UTME, Post-UTME or both. Pick your four subjects and target course.',
+    body: 'JAMB, WAEC, NECO, GCE or Post-UTME — pick your exams, subjects and target course.',
   },
   {
     icon: PenLine,
@@ -94,7 +136,7 @@ const TRUST = [
     tone: 'green',
     icon: BadgeCheck,
     label: 'Verified Past Question',
-    body: 'Transcribed from an official JAMB or institutional paper and checked by two subject teachers before it goes live.',
+    body: 'Transcribed from an official JAMB, WAEC, NECO or institutional paper and checked by two subject teachers before it goes live.',
   },
   {
     tone: 'blue',
@@ -144,7 +186,7 @@ const FAQS = [
   },
   {
     q: 'Where do the past questions come from?',
-    a: 'From official JAMB and institutional papers. Each one is transcribed, then checked by two independent subject teachers. You can see the year and source on every question.',
+    a: 'From official JAMB, WAEC, NECO and institutional papers. Each one is transcribed, then checked by two independent subject teachers. You can see the year and source on every question.',
   },
   {
     q: 'Which subjects are available?',
@@ -185,26 +227,54 @@ const FOOTER_COLUMNS: Array<{
 ];
 
 const SampleQuestion: React.FC<{ onOpenTutor: () => void }> = ({ onOpenTutor }) => {
+  const [which, setWhich] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
-  const isRight = picked === SAMPLE.answer;
+  const sample = SAMPLES[which];
+  const isRight = picked === sample.answer;
 
   return (
     <div
       className={`lp-sample${picked === null ? '' : isRight ? ' is-solved' : ' is-missed'}`}
       aria-live="polite"
     >
-      <div className="lp-sample__bar">
-        <span className="lp-badge lp-badge--green">
-          <BadgeCheck size={14} aria-hidden />
-          Verified Past Question
-        </span>
-        <span className="lp-sample__meta">{SAMPLE.meta}</span>
+      <div className="lp-sample__tabs" role="tablist" aria-label="Choose a subject">
+        {SAMPLES.map((q, i) => (
+          <button
+            key={q.tab}
+            type="button"
+            role="tab"
+            aria-selected={i === which}
+            className={i === which ? 'is-on' : ''}
+            onClick={() => {
+              setWhich(i);
+              setPicked(null);
+            }}
+          >
+            {q.tab}
+            <small>{q.stream}</small>
+          </button>
+        ))}
       </div>
 
-      <p className="lp-sample__stem">{SAMPLE.stem}</p>
+      <div className="lp-sample__bar">
+        {sample.verified ? (
+          <span className="lp-badge lp-badge--green">
+            <BadgeCheck size={14} aria-hidden />
+            Verified Past Question
+          </span>
+        ) : (
+          <span className="lp-badge lp-badge--amber">
+            <PenLine size={14} aria-hidden />
+            i-Tutor Practice Question
+          </span>
+        )}
+        <span className="lp-sample__meta">{sample.meta}</span>
+      </div>
+
+      <p className="lp-sample__stem">{sample.stem}</p>
 
       <div className="lp-sample__options" role="radiogroup" aria-label="Answer options">
-        {SAMPLE.options.map((option, index) => {
+        {sample.options.map((option, index) => {
           const letter = String.fromCharCode(65 + index);
           const state =
             picked === null
@@ -231,11 +301,11 @@ const SampleQuestion: React.FC<{ onOpenTutor: () => void }> = ({ onOpenTutor }) 
       </div>
 
       {picked !== null && (
-        <div key={picked} className={`lp-sample__nudge ${isRight ? 'is-right' : ''}`}>
+        <div key={`${which}-${picked}`} className={`lp-sample__nudge ${isRight ? 'is-right' : ''}`}>
           <MessageSquareText size={18} aria-hidden />
           <div>
             <strong>{isRight ? 'Nice work' : 'Tutor hint'}</strong>
-            <p>{isRight ? SAMPLE.nudge.right : SAMPLE.nudge.wrong}</p>
+            <p>{isRight ? sample.right : sample.wrong}</p>
             {!isRight && (
               <div className="lp-sample__nudge-actions">
                 <button type="button" onClick={() => setPicked(null)}>
@@ -253,6 +323,55 @@ const SampleQuestion: React.FC<{ onOpenTutor: () => void }> = ({ onOpenTutor }) 
   );
 };
 
+/* "Meet the team": shown only once the admin has added someone. */
+const TeamSection: React.FC = () => {
+  const [team, setTeam] = useState<TeamMember[]>([]);
+
+  useEffect(() => {
+    publicTeam()
+      .then(setTeam)
+      .catch(() => setTeam([]));
+  }, []);
+
+  if (!team.length) return null;
+
+  return (
+    <section className="lp-section" id="team">
+      <div className="lp-wrap lp-panel lp-panel--mist">
+        <span className="lp-deco lp-deco--steps-b" aria-hidden />
+        <div className="lp-carve-head">
+          <p className="lp-kicker">Meet the team</p>
+          <h2 className="lp-h2">
+            The people behind <span>i-Tutor.</span>
+          </h2>
+        </div>
+        <ul className="lp-team">
+          {team.map((m) => (
+            <li key={m.id}>
+              <span className="lp-team__photo">
+                {m.image ? (
+                  <img src={m.image} alt={m.fullName} loading="lazy" />
+                ) : (
+                  <b aria-hidden>
+                    {m.fullName
+                      .split(' ')
+                      .map((w) => w.charAt(0))
+                      .slice(0, 2)
+                      .join('')
+                      .toUpperCase()}
+                  </b>
+                )}
+              </span>
+              <strong>{m.fullName}</strong>
+              <small>{m.role}</small>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+};
+
 export const HomePageView: React.FC<HomePageViewProps> = ({
   onLaunchCBT,
   onOpenSyllabus,
@@ -261,10 +380,7 @@ export const HomePageView: React.FC<HomePageViewProps> = ({
   onUpgrade,
 }) => {
   const [openFaq, setOpenFaq] = useState(0);
-  const heroVisualRef = useRef<HTMLDivElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
-  usePointerTilt(heroVisualRef, 7);
-  useScrollProgress(heroVisualRef);
   useScrollProgress(ctaRef);
 
   const runAction = (action: 'syllabus' | 'cbt' | 'tutor' | 'dashboard') => {
@@ -283,25 +399,61 @@ export const HomePageView: React.FC<HomePageViewProps> = ({
   return (
     <div className="lp">
       {/* ---------------------------------------------------------------- Hero */}
-      <section className="lp-hero">
-        <div className="lp-wrap lp-hero__grid">
-          <div className="lp-hero__copy">
-            <p className="lp-eyebrow" data-reveal>
-              <span className="lp-eyebrow__dot" aria-hidden />
-              UTME &amp; Post-UTME · 2026/27 cycle
-            </p>
+      {/* A wide photo with the headline on a white panel cut into its
+          bottom-left corner; a stat and the main action sit bottom-right. */}
+      <section className="lp-hero lp-hero--banner">
+        <div className="lp-banner">
+          <div className="lp-banner__media" data-reveal="scale">
+            <img
+              src={PHOTO.hero}
+              alt="A secondary-school student working at a computer in a school CBT lab"
+              width={1280}
+              height={960}
+              fetchPriority="high"
+              decoding="async"
+            />
+
+            {/* A white block carved into the photo's top-right corner. */}
+            <div className="lp-carve-corner" aria-hidden>
+              <span className="lp-hero__score-label">Mock score</span>
+              <span className="lp-hero__score-value">
+                268<small>/400</small>
+              </span>
+              <span className="lp-hero__score-delta">+34 since last week</span>
+            </div>
+
+            <div className="lp-banner__join">
+              <span className="lp-banner__pill">2,400+ verified past questions</span>
+              <div className="lp-banner__actions">
+                <a className="lp-btn lp-banner__glass" href="#sample">
+                  Try a question first
+                </a>
+                <button type="button" className="lp-btn lp-btn--primary" onClick={onLaunchCBT}>
+                  Start a free mock
+                  <ArrowRight size={18} aria-hidden />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="lp-banner__panel">
+            {/* A step rising from the panel, so its top edge is a stair. */}
+            <div className="lp-carve-step">
+              <span className="lp-carve-step__tag">
+                <span className="lp-eyebrow__dot" aria-hidden />
+                JAMB UTME · 2026/27 cycle
+              </span>
+            </div>
             <h1 className="lp-hero__title" data-reveal data-reveal-delay={60}>
               Practise the real CBT.
               <br />
               <span>Understand every answer.</span>
             </h1>
             <p className="lp-hero__lead" data-reveal data-reveal-delay={120}>
-              Verified JAMB past questions, timed mock exams that look like the
-              hall, and a tutor that walks you to the answer instead of handing
-              it over.
+              Verified JAMB past questions, timed mock exams like the hall, and a tutor that walks you to the answer.
             </p>
-
-            <div className="lp-hero__actions" data-reveal data-reveal-delay={180}>
+            {/* On phones the buttons can't sit on the photo, so they come here. */}
+            <div className="lp-hero__actions lp-banner__mobile-cta">
               <button type="button" className="lp-btn lp-btn--primary" onClick={onLaunchCBT}>
                 Start a free mock
                 <ArrowRight size={18} aria-hidden />
@@ -309,66 +461,6 @@ export const HomePageView: React.FC<HomePageViewProps> = ({
               <a className="lp-btn lp-btn--quiet" href="#sample">
                 Try a question first
               </a>
-            </div>
-
-            <ul className="lp-hero__points" data-reveal data-reveal-delay={240}>
-              <li>
-                <Check size={16} aria-hidden /> No card needed
-              </li>
-              <li>
-                <WifiOff size={16} aria-hidden /> Works offline
-              </li>
-              <li>
-                <ShieldCheck size={16} aria-hidden /> Two-teacher verified
-              </li>
-            </ul>
-          </div>
-
-          <div
-            className="lp-hero__visual"
-            ref={heroVisualRef}
-            data-reveal="scale"
-            data-reveal-delay={80}
-          >
-            <figure className="lp-hero__photo">
-              <img
-                src={PHOTO.hero}
-                alt="A secondary-school student working at a computer in a school CBT lab"
-                width={1280}
-                height={960}
-                fetchPriority="high"
-                decoding="async"
-              />
-            </figure>
-
-            {/* A slice of the real exam UI, not a decorative card. */}
-            <div className="lp-hero__exam" aria-hidden>
-              <div className="lp-hero__exam-top">
-                <span>Mathematics · Q17 of 40</span>
-                <span className="lp-timer">
-                  <Clock3 size={14} />
-                  00:41:12
-                </span>
-              </div>
-              <div className="lp-hero__exam-grid">
-                {Array.from({ length: 20 }, (_, i) => {
-                  const state =
-                    i === 7 || i === 15 ? 'is-flag' : i === 16 ? 'is-current' : i < 16 ? 'is-done' : '';
-                  return (
-                    <i key={i} className={state}>
-                      {i + 1}
-                    </i>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="lp-hero__score" aria-hidden>
-              <span className="lp-hero__score-label">Mock score</span>
-              <span className="lp-hero__score-value">
-                268<small>/400</small>
-              </span>
-              <span className="lp-hero__score-delta">+34 since last week</span>
             </div>
           </div>
         </div>
@@ -398,20 +490,250 @@ export const HomePageView: React.FC<HomePageViewProps> = ({
         </div>
       </section>
 
+      {/* ------------------------------------------------------- Showcase */}
+      {/* A wide photo carved by stepped white blocks: the heading steps down
+          from the top-left, and the benefits sit in a block at bottom-right. */}
+      <section className="lp-showcase-carve" aria-labelledby="showcase-title">
+        <div className="lp-carve-photo">
+          <img
+            src="/images/students-laptops.jpg"
+            alt="Four young students with laptops, smiling and taking a selfie on red-and-white steps"
+            width={1600}
+            height={1200}
+            loading="lazy"
+            decoding="async"
+          />
+
+          <div className="lp-carve-tl">
+            <p className="lp-kicker">Why students choose i-Tutor</p>
+            <h2 className="lp-h2" id="showcase-title">
+              Study smarter. <span>Score higher.</span>
+            </h2>
+            <div className="lp-carve-tl lp-carve-tl--step">
+              <p className="lp-carve-text">
+                Practice that feels like the real hall, and a tutor that’s there at midnight before your exam.
+              </p>
+            </div>
+          </div>
+
+          <div className="lp-carve-br">
+            <ul className="lp-carve-chips">
+              <li>
+                <ChartNoAxesColumnIncreasing size={16} aria-hidden /> Real CBT practice
+              </li>
+              <li>
+                <MessageSquareText size={16} aria-hidden /> AI tutor, any time
+              </li>
+              <li>
+                <WifiOff size={16} aria-hidden /> Works offline
+              </li>
+            </ul>
+            <button type="button" className="lp-btn lp-btn--primary" onClick={onLaunchCBT}>
+              Start free
+              <ArrowRight size={18} aria-hidden />
+            </button>
+          </div>
+        </div>
+        <p className="lp-photo-credit">Photo: Iwaria Inc. on Unsplash</p>
+      </section>
+
+      {/* ------------------------------------------------ Services, one each */}
+      <ServiceSection
+        id="post-utme"
+        kicker="Post-UTME"
+        title={
+          <>
+            Your school’s screening, <span>sorted.</span>
+          </>
+        }
+        lead="Every university sets its own screening test. Tell us your school and we’ll show you its past questions and timed practice."
+        points={['Your school’s own past questions', 'Timed practice before screening day', 'The AI tutor explains every answer']}
+        panel="orange"
+        deco="steps-b"
+        cta="Choose your school"
+        onCta={onGoToDashboard}
+      >
+        <div className="lp-svc-card">
+          <p className="lp-svc-card__title">Pick your school</p>
+          <ul className="lp-svc-schools">
+            {NIGERIAN_INSTITUTIONS.slice(0, 5).map((u) => (
+              <li key={u.id}>
+                <b>{u.shortName}</b>
+                <span>
+                  {u.name}
+                  <small>{u.location}</small>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="lp-svc-card__more">+ {NIGERIAN_INSTITUTIONS.length - 5} more universities</p>
+        </div>
+      </ServiceSection>
+
+      <ServiceSection
+        id="waec"
+        kicker="WAEC (WASSCE)"
+        title={
+          <>
+            WAEC, one subject <span>at a time.</span>
+          </>
+        }
+        lead="Your final secondary school exam. Choose your class and the subjects you’ll sit, and practise them all in one place."
+        when="School candidates: May/June · Private candidates: Nov/Dec"
+        points={['Practice for every subject you’ll sit', 'WAEC past questions with explanations', 'Ask the AI tutor about any question']}
+        panel="ink"
+        deco="steps-c"
+        flip
+        cta="Start WAEC practice"
+        onCta={onGoToDashboard}
+      >
+        <div className="lp-svc-classes">
+          {SSCE_CLASSES.map((c) => (
+            <div key={c.name} className="lp-svc-class">
+              <p className="lp-svc-class__name">{c.name}</p>
+              <ul>
+                {c.subjects
+                  .filter((sub) => sub !== 'English' && sub !== 'Mathematics' && sub !== 'Civic Education')
+                  .slice(0, 4)
+                  .map((sub) => (
+                    <li key={sub}>{sub}</li>
+                  ))}
+              </ul>
+            </div>
+          ))}
+          <p className="lp-svc-classes__note">English and Mathematics for every class</p>
+        </div>
+      </ServiceSection>
+
+      <ServiceSection
+        id="neco"
+        kicker="NECO (SSCE)"
+        title={
+          <>
+            NECO practice, <span>ready when you are.</span>
+          </>
+        }
+        lead="The national senior school certificate exam. Set your class and subjects once, and your NECO practice room is ready."
+        when="School candidates: June/July · Private candidates: Nov/Dec"
+        points={['A practice room for your class', 'Past questions by subject and year', 'Hints first, then worked answers']}
+        panel="mist"
+        deco="steps-a"
+        cta="Start NECO practice"
+        onCta={onGoToDashboard}
+      >
+        <div className="lp-svc-card lp-svc-room">
+          <p className="lp-svc-card__title">Your NECO room</p>
+          <div className="lp-svc-room__tabs" aria-hidden>
+            <span className="is-on">Science</span>
+            <span>Arts</span>
+            <span>Commercial</span>
+          </div>
+          <div className="lp-svc-room__windows">
+            <div>
+              <small>School candidates</small>
+              <b>June / July</b>
+            </div>
+            <div>
+              <small>Private candidates</small>
+              <b>Nov / Dec</b>
+            </div>
+          </div>
+          <span className="lp-svc-room__start" aria-hidden>
+            Start NECO practice
+          </span>
+        </div>
+      </ServiceSection>
+
+      <ServiceSection
+        id="gce"
+        kicker="GCE"
+        title={
+          <>
+            Resitting? <span>Make it count.</span>
+          </>
+        }
+        lead="WAEC or NECO for private candidates, usually to improve a result. Focus on the subjects you need and practise until you’re ready."
+        when="WAEC GCE and NECO GCE, usually Nov/Dec"
+        points={['Practise only the subjects you’re resitting', 'See your weak topics after each session', 'A tutor that never makes you feel slow']}
+        panel="orange-solid"
+        deco="steps-b"
+        flip
+        cta="Plan my GCE"
+        onCta={onGoToDashboard}
+      >
+        <ol className="lp-svc-steps">
+          <li>
+            <b>1</b>
+            <span>
+              Pick the subjects to improve
+              <small>Only the ones you need</small>
+            </span>
+          </li>
+          <li>
+            <b>2</b>
+            <span>
+              Practise past questions
+              <small>Timed, like the real paper</small>
+            </span>
+          </li>
+          <li>
+            <b>3</b>
+            <span>
+              Fix what you got wrong
+              <small>The tutor walks you through it</small>
+            </span>
+          </li>
+        </ol>
+      </ServiceSection>
+
+      <ServiceSection
+        id="nabteb"
+        kicker="NABTEB"
+        title={
+          <>
+            For <span>technical and business</span> students.
+          </>
+        }
+        lead="National Business and Technical Examinations Board certificate exams. Practise your subjects and get help from the AI tutor."
+        when="May/June and Nov/Dec series"
+        points={['Practice built around your subjects', 'Past questions as they are added', 'Study offline once downloaded']}
+        panel="orange"
+        deco="steps-c"
+        cta="Start NABTEB practice"
+        onCta={onGoToDashboard}
+      >
+        <div className="lp-svc-series">
+          <div className="lp-svc-series__item">
+            <b>May / June</b>
+            <span>series</span>
+          </div>
+          <div className="lp-svc-series__item lp-svc-series__item--alt">
+            <b>Nov / Dec</b>
+            <span>series</span>
+          </div>
+          <div className="lp-svc-series__wide">
+            <BookOpenCheck size={20} aria-hidden /> Business and technical subjects, practised your way
+          </div>
+        </div>
+      </ServiceSection>
+
       {/* ------------------------------------------------------ Sample question */}
       <section className="lp-section" id="sample">
-        <div className="lp-wrap lp-split">
+        <div className="lp-wrap lp-panel lp-panel--mist lp-split">
+          <span className="lp-deco lp-deco--steps-b" aria-hidden />
           <div className="lp-split__copy">
-            <p className="lp-kicker" data-reveal>
-              Try it now
-            </p>
-            <h2 className="lp-h2" data-reveal data-reveal-delay={60}>
-              Get it wrong here.
-              <br />
-              Not in the hall.
-            </h2>
+            <div className="lp-carve-head">
+              <p className="lp-kicker" data-reveal>
+                Try it now
+              </p>
+              <h2 className="lp-h2" data-reveal data-reveal-delay={60}>
+                Get it wrong here.
+                <br />
+                Not in the hall.
+              </h2>
+            </div>
             <p className="lp-body" data-reveal data-reveal-delay={120}>
-              This is a real 2019 UTME Physics question. Pick an answer. If you
+              Science, Arts or Commercial &mdash; pick your subject and an answer. If you
               miss it, i-Tutor doesn&rsquo;t just show the key &mdash; it asks
               you the question that gets you unstuck.
             </p>
@@ -570,14 +892,17 @@ export const HomePageView: React.FC<HomePageViewProps> = ({
 
       {/* -------------------------------------------------------- How it works */}
       <section className="lp-section" id="how">
-        <div className="lp-wrap">
+        <div className="lp-wrap lp-panel lp-panel--orange-solid">
+          <span className="lp-deco lp-deco--steps-a" aria-hidden />
           <header className="lp-head">
-            <p className="lp-kicker" data-reveal>
-              How it works
-            </p>
-            <h2 className="lp-h2" data-reveal data-reveal-delay={60}>
-              From sign-up to your first mock in under five minutes.
-            </h2>
+            <div className="lp-carve-head">
+              <p className="lp-kicker" data-reveal>
+                How it works
+              </p>
+              <h2 className="lp-h2" data-reveal data-reveal-delay={60}>
+                From sign-up to your first mock in under five minutes.
+              </h2>
+            </div>
           </header>
           <ol className="lp-steps">
             {STEPS.map((step, index) => {
@@ -597,15 +922,18 @@ export const HomePageView: React.FC<HomePageViewProps> = ({
 
       {/* --------------------------------------------------------------- Trust */}
       <section className="lp-section lp-section--ink" id="trust">
-        <div className="lp-wrap">
+        <div className="lp-wrap lp-panel lp-panel--ink">
+          <span className="lp-deco lp-deco--steps-c" aria-hidden />
           <header className="lp-head lp-head--split">
             <div>
-              <p className="lp-kicker" data-reveal>
-                Content you can trust
-              </p>
-              <h2 className="lp-h2" data-reveal data-reveal-delay={60}>
-                Every question tells you where it came from.
-              </h2>
+              <div className="lp-carve-head">
+                <p className="lp-kicker" data-reveal>
+                  Content you can trust
+                </p>
+                <h2 className="lp-h2" data-reveal data-reveal-delay={60}>
+                  Every question tells you where it came from.
+                </h2>
+              </div>
             </div>
             <p className="lp-body" data-reveal data-reveal-delay={120}>
               Exam season is full of rumours and fake &ldquo;expo&rdquo;. On
@@ -632,14 +960,17 @@ export const HomePageView: React.FC<HomePageViewProps> = ({
 
       {/* ----------------------------------------------------------- Admissions */}
       <section className="lp-section" id="admissions">
-        <div className="lp-wrap lp-split lp-split--wide">
+        <div className="lp-wrap lp-panel lp-panel--mist lp-split lp-split--wide">
+          <span className="lp-deco lp-deco--steps-b" aria-hidden />
           <div className="lp-split__copy">
-            <p className="lp-kicker" data-reveal>
-              Admissions
-            </p>
-            <h2 className="lp-h2" data-reveal data-reveal-delay={60}>
-              Know the score you&rsquo;re aiming for.
-            </h2>
+            <div className="lp-carve-head">
+              <p className="lp-kicker" data-reveal>
+                Admissions
+              </p>
+              <h2 className="lp-h2" data-reveal data-reveal-delay={60}>
+                Know the score you&rsquo;re aiming for.
+              </h2>
+            </div>
             <p className="lp-body" data-reveal data-reveal-delay={120}>
               Departmental cut-offs from the last admission cycle. Set your
               target course and i-Tutor tracks how close your mock scores are.
@@ -738,16 +1069,21 @@ export const HomePageView: React.FC<HomePageViewProps> = ({
         </div>
       </section>
 
+      <TeamSection />
+
       {/* ----------------------------------------------------------------- FAQ */}
       <section className="lp-section" id="faq">
-        <div className="lp-wrap lp-faq">
+        <div className="lp-wrap lp-panel lp-panel--orange lp-faq">
+          <span className="lp-deco lp-deco--steps-c" aria-hidden />
           <header>
-            <p className="lp-kicker" data-reveal>
-              Questions
-            </p>
-            <h2 className="lp-h2" data-reveal data-reveal-delay={60}>
-              Things students ask us.
-            </h2>
+            <div className="lp-carve-head">
+              <p className="lp-kicker" data-reveal>
+                Questions
+              </p>
+              <h2 className="lp-h2" data-reveal data-reveal-delay={60}>
+                Things students ask us.
+              </h2>
+            </div>
             <p className="lp-body" data-reveal data-reveal-delay={120}>
               Still unsure? Open the tutor and ask &mdash; it can answer
               questions about i-Tutor too.
@@ -820,8 +1156,8 @@ export const HomePageView: React.FC<HomePageViewProps> = ({
             <div className="lp-footer__brand">
               <BrandMark />
               <p>
-                Exam practice and tutoring for Nigerian UTME and Post-UTME
-                candidates. Built in Lagos.
+                Exam practice and tutoring for JAMB, WAEC, NECO, GCE, NABTEB
+                and Post-UTME candidates. Built in Lagos.
               </p>
               <ul className="lp-footer__subjects">
                 {SUBJECTS.map((s) => (

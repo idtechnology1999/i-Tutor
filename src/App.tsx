@@ -19,6 +19,8 @@ import { ClassroomView } from './components/web/ClassroomView';
 import type { ExamType } from './lib/cms';
 import { tutorById } from './data/tutors';
 import { loadProfile, saveProfile } from './services/profile';
+import { isLive } from './services/api';
+import { examsOf } from './lib/student-exams';
 import { logOut } from './services/auth';
 import { FREE_DAILY, readUsed, writeUsed } from './lib/tutor-quota';
 import type { SolveRequest } from './data/tutors';
@@ -26,7 +28,10 @@ import type { SolveRequest } from './data/tutors';
 const PLAN_KEY = 'itutor-plan';
 const TUTOR_KEY = 'itutor-tutor';
 
+/* Demo mode only: with a backend, the plan comes from the server alone, so a
+   "premium" left in this browser can never unlock another account. */
 const storedPlan = (): UserProfile['plan'] => {
+  if (isLive) return 'free';
   try {
     return window.localStorage.getItem(PLAN_KEY) === 'premium' ? 'premium' : 'free';
   } catch {
@@ -63,7 +68,7 @@ const DEFAULT_PROFILE: UserProfile = {
 };
 
 const TITLES: Record<AppView, string> = {
-  home: 'i-Tutor — UTME & Post-UTME practice that teaches',
+  home: 'i-Tutor — JAMB, WAEC, NECO & Post-UTME practice that teaches',
   cbt: 'Practice exam — i-Tutor',
   syllabus: 'Past questions — i-Tutor',
   dashboard: 'Home — i-Tutor',
@@ -180,16 +185,32 @@ export function App() {
   };
 
   // With a backend, the signed-in student (incl. their real plan) comes from the server.
-  useEffect(() => {
+  const refreshProfile = () =>
     loadProfile().then((me) => {
       if (me) {
         setProfile(me);
         setHasAccount(true);
       }
     });
+
+  useEffect(() => {
+    if (isLive) {
+      // Clear any plan an older version saved in this browser.
+      try {
+        window.localStorage.removeItem(PLAN_KEY);
+      } catch {
+        /* storage blocked */
+      }
+    }
+    void refreshProfile();
   }, []);
 
   const activatePremium = () => {
+    if (isLive) {
+      // The server has confirmed the payment; read the plan back from it.
+      void refreshProfile();
+      return;
+    }
     handleUpdateProfile({ plan: 'premium' });
     try {
       window.localStorage.setItem(PLAN_KEY, 'premium');
@@ -270,6 +291,7 @@ export function App() {
             onOpenTutor={openTutor}
             initialExam={pq.exam}
             initialSchool={pq.school}
+            exams={examsOf(profile)}
           />
         )}
 
@@ -314,6 +336,8 @@ export function App() {
                 /* signed out locally either way */
               });
               setHasAccount(false);
+              // Forget this student so the next person on this device starts clean.
+              setProfile({ ...DEFAULT_PROFILE, plan: storedPlan() });
               goTo('home');
             }}
           />
@@ -326,7 +350,11 @@ export function App() {
             hasAccount={hasAccount}
             onNavigate={goTo}
             onUpdateProfile={handleUpdateProfile}
-            onAccountReady={() => setHasAccount(true)}
+            onAccountReady={() => {
+              setHasAccount(true);
+              // Signed in: load the real account (and its real plan) from the server.
+              void refreshProfile();
+            }}
             onFinish={() => goTo('dashboard')}
           />
         )}
@@ -348,7 +376,7 @@ export function App() {
         <footer className="app-footer">
           <div className="container app-footer__inner">
             <span>
-              <strong>i-Tutor</strong> · UTME &amp; Post-UTME practice
+              <strong>i-Tutor</strong> · JAMB, WAEC, NECO &amp; Post-UTME practice
             </span>
             <span>© 2026 i-Tutor · Not affiliated with JAMB</span>
           </div>

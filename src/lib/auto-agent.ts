@@ -11,7 +11,7 @@ import type { BankScope, ImportPreset, QuestionFilter, Section } from '../compon
    admin presses Run.
 
    Backend contract (not built — UI only):
-     POST /api/admin/auto            header x-admin-key
+     POST /api/admin/auto            admin session cookie
        body  { message: string, context: AutoContext, history: {role, text}[] }
        reply { reply: string, actions: AutoAction[] }
    The server gives the model ADMIN_KNOWLEDGE below as its instructions, so it
@@ -95,6 +95,7 @@ export const STARTERS = [
   'Publish the latest news',
   'Email all students about JAMB registration',
   'Upload English 2025 past questions',
+  'Write 30 WAEC Biology questions on respiration',
   'Show questions that need review',
   'How many Physics questions do we have?',
   'Publish all Chemistry drafts',

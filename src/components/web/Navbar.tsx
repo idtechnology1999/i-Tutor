@@ -3,6 +3,7 @@ import {
   BookOpenCheck,
   ChevronRight,
   ClipboardList,
+  GraduationCap,
   House,
   Landmark,
   LockOpen,
@@ -27,11 +28,14 @@ interface Props {
 
 /* Signed-in destinations. Same four everywhere: top bar on desktop, tab bar
    on phones. Plain words, one icon each. */
-const APP_TABS: { label: string; short: string; view: AppView; icon: typeof House }[] = [
+/* `phone: false` keeps a tab off the phone tab bar, which only fits six
+   items; Post-UTME stays one tap away on the dashboard. */
+const APP_TABS: { label: string; short: string; view: AppView; icon: typeof House; phone?: boolean }[] = [
   { label: 'Home', short: 'Home', view: 'dashboard', icon: House },
   { label: 'Practice exam', short: 'Practice', view: 'cbt', icon: ClipboardList },
   { label: 'Past questions', short: 'Questions', view: 'syllabus', icon: BookOpenCheck },
-  { label: 'Post-UTME', short: 'Post-UTME', view: 'postutme', icon: Landmark },
+  { label: 'Classroom', short: 'Class', view: 'classroom', icon: GraduationCap },
+  { label: 'Post-UTME', short: 'Post-UTME', view: 'postutme', icon: Landmark, phone: false },
 ];
 
 /* Visitor links on the landing page. */
@@ -172,7 +176,7 @@ export const Navbar: React.FC<Props> = ({
 
         {/* Phone tab bar */}
         <nav className="tabbar" aria-label="Main">
-          {APP_TABS.map(({ view, short, icon: Icon }) => (
+          {APP_TABS.filter((t) => t.phone !== false).map(({ view, short, icon: Icon }) => (
             <RouteLink key={view} view={view} active={activeView === view} className="tabbar__item">
               <Icon size={22} aria-hidden />
               <span>{short}</span>
@@ -213,7 +217,7 @@ export const Navbar: React.FC<Props> = ({
 
   return (
     <>
-      <header className={`site-nav${atTop ? ' is-top' : ''}`}>
+      <header className={`site-nav site-nav--visitor${atTop ? ' is-top' : ''}`}>
         <div className="site-nav__inner">
           <button
             type="button"

@@ -24,6 +24,8 @@ import type { CmsCourse } from '../../lib/cms';
 import { COURSE_EXAMS, FACULTIES } from '../../data/courses';
 import type { CourseExam } from '../../data/courses';
 import type { UserProfile } from '../../types';
+import { examsOf } from '../../lib/student-exams';
+import { PageBanner } from './PageBanner';
 
 interface Props {
   profile: UserProfile;
@@ -59,7 +61,11 @@ const facultyOrder = (f: string) => {
 /** Student page: faculty → course → a JAMB practice exam from its four subjects. */
 export const CourseView: React.FC<Props> = ({ profile, onStart, onUpdateProfile }) => {
   const { courses: allCourses, questions, facultySets } = useCms();
-  const [exam, setExam] = useState<CourseExam>('UTME');
+  // Only the exams the student registered for (Post-UTME-only students practise the JAMB combination).
+  const mineExams = examsOf(profile);
+  const examTabs = COURSE_EXAMS.filter((e) => mineExams.includes(e));
+  const tabs: CourseExam[] = examTabs.length ? examTabs : ['UTME'];
+  const [exam, setExam] = useState<CourseExam>(tabs[0]);
   const isUtme = exam === 'UTME';
   const courses = allCourses.filter((c) => (c.exam ?? 'UTME') === exam);
   const mine = isUtme ? (courses.find((c) => normal(c.name) === normal(profile.targetCourse)) ?? null) : null;
@@ -117,17 +123,25 @@ export const CourseView: React.FC<Props> = ({ profile, onStart, onUpdateProfile 
 
   return (
     <div className="ui-page course">
-      <header className="pq__head">
-        <h1>Practise for your course</h1>
-        <p>
-          {isUtme
+      <PageBanner
+        image="/images/tutor-session.jpg"
+        imageAlt="A tutor helping students with their work"
+        eyebrow={profile.targetCourse || undefined}
+        title={
+          <>
+            Practise for <span>your course</span>
+          </>
+        }
+        lead={
+          isUtme
             ? 'Choose your faculty, then your course. We’ll build a JAMB practice exam from the four subjects it needs.'
-            : `Choose your class. We’ll build a ${examName} practice exam from its subjects.`}
-        </p>
-      </header>
+            : `Choose your class. We’ll build a ${examName} practice exam from its subjects.`
+        }
+      />
 
+      {tabs.length > 1 && (
       <div className="pq__exams" role="tablist" aria-label="Exam">
-        {COURSE_EXAMS.map((t) => (
+        {tabs.map((t) => (
           <button
             key={t}
             type="button"
@@ -141,6 +155,7 @@ export const CourseView: React.FC<Props> = ({ profile, onStart, onUpdateProfile 
           </button>
         ))}
       </div>
+      )}
 
       <label className="pq__search">
         <Search size={18} aria-hidden />

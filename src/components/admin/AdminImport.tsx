@@ -64,7 +64,7 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
   // Coming from a subject/year in the bank: details are already known.
   const [showDetails, setShowDetails] = useState(!preset);
   const [source, setSource] = useState('');
-  const [text, setText] = useState('');
+  const [text, setText] = useState(preset?.request ?? '');
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState('');
@@ -175,7 +175,7 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
     correctAnswer: it.correctAnswer,
     explanation: it.explanation,
     answerSource: it.answerSource,
-    source: source || `${examName}${it.year ? ` ${it.year}` : ''} ${subject}`,
+    source: source || (result?.generated ? `AI-written ${examName}-style ${subject}` : `${examName}${it.year ? ` ${it.year}` : ''} ${subject}`),
     status: publish ? 'published' : 'draft',
     needsReview: !publish && (it.needsReview || it.answerSource === 'ai' || publishProblems(it).length > 0),
     reviewNote: it.reviewNote,
@@ -282,7 +282,7 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
     return (
       <div className="adm-page">
         <PageHead
-          title={`We found ${items.length} question${items.length === 1 ? '' : 's'}`}
+          title={`${result?.generated ? 'The AI wrote' : 'We found'} ${items.length} question${items.length === 1 ? '' : 's'}`}
           sub={`${subject} · ${examType}${year ? ` ${year}` : ''} — check them, untick any you don’t want, then save.`}
           actions={
             <button type="button" className="adm-btn" onClick={() => setStage('setup')}>

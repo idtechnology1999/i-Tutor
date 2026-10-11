@@ -3,6 +3,7 @@ import { BookOpenCheck, Landmark, MapPin, Pencil, Play } from 'lucide-react';
 import { useCms } from '../../lib/cms';
 import { NIGERIAN_INSTITUTIONS } from '../../data/nigerian-curriculum';
 import type { UserProfile } from '../../types';
+import { PageBanner } from './PageBanner';
 
 interface Props {
   profile: UserProfile;
@@ -42,13 +43,21 @@ export const PostUtmeView: React.FC<Props> = ({ profile, onStart, onBrowse, onCh
 
   return (
     <div className="ui-page pu">
-      <header className="pu__head">
-        <p>Your Post-UTME</p>
-        <h1>{school.name}</h1>
-        <span className="pu__where">
-          <MapPin size={14} aria-hidden /> {school.location} · {school.type} · {school.shortName}
-        </span>
-      </header>
+      <PageBanner
+        image="/images/cbt-lab-rows.jpg"
+        imageAlt="Rows of computers in a CBT lab"
+        eyebrow={
+          <>
+            <MapPin size={14} aria-hidden /> {school.location} · {school.type}
+          </>
+        }
+        title={
+          <>
+            {school.name} <span>Post-UTME</span>
+          </>
+        }
+        lead={`Past questions and timed practice for ${school.shortName}’s screening test.`}
+      />
 
       <section className="pu__card">
         {qs.length ? (

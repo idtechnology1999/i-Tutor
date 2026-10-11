@@ -91,6 +91,7 @@ export const A06_Login: React.FC<Props> = ({
           src="/images/student-cbt-focus.jpg"
           alt="A student concentrating at a computer in a school CBT lab"
           caption="Your progress follows you — phone, laptop or the cyber-café computer."
+          badge={{ label: 'Mock score', value: '268/400', note: '+34 since last week' }}
         />
       }
       footer={

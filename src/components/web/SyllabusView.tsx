@@ -3,12 +3,15 @@ import { BadgeCheck, Check, MessageSquareText, RotateCcw, Search, X } from 'luci
 import { EXAM_FULL_NAME, EXAM_LABEL, EXAM_TYPES, SCHOOLS, needsSchool, useCms } from '../../lib/cms';
 import type { ExamType } from '../../lib/cms';
 import type { SolveRequest } from '../../data/tutors';
+import { PageBanner } from './PageBanner';
 
 interface Props {
   onOpenTutor?: () => void;
   /** Open on this exam (and Post-UTME school), e.g. from the Post-UTME page. */
   initialExam?: ExamType;
   initialSchool?: string;
+  /** The exams the student registered for; only these get a tab. */
+  exams?: ExamType[];
   /** "Solve with my tutor" (Premium) on a question. */
   onSolve?: (req: SolveRequest) => void;
   solveLabel?: string;
@@ -19,8 +22,12 @@ interface Props {
 // Always offered, even before questions exist, so the layout stays familiar.
 const CORE_SUBJECTS = ['English', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Economics'];
 
-export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initialSchool, onSolve, solveLabel, askLabel }) => {
-  const [exam, setExam] = useState<ExamType>(initialExam ?? 'UTME');
+export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initialSchool, exams, onSolve, solveLabel, askLabel }) => {
+  // Only the student's own exams (in the usual order); everything if none chosen yet.
+  const examTabs = exams?.length ? EXAM_TYPES.filter((t) => exams.includes(t)) : EXAM_TYPES;
+  const [exam, setExam] = useState<ExamType>(
+    initialExam && examTabs.includes(initialExam) ? initialExam : (examTabs[0] ?? 'UTME'),
+  );
   const [school, setSchool] = useState(initialSchool ?? '');
   const { questions: allQs } = useCms();
   const [selectedSubject, setSelectedSubject] = useState<string>(() => {
@@ -49,13 +56,20 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initia
 
   return (
     <div className="ui-page pq">
-      <header className="pq__head">
-        <h1>Past questions</h1>
-        <p>Choose the exam and subject, pick an answer, and we’ll show you if it’s right — and why.</p>
-      </header>
+      <PageBanner
+        image="/images/students-at-terminals.jpg"
+        imageAlt="Students at computer terminals in a CBT centre"
+        eyebrow={`${published.length.toLocaleString()} published questions`}
+        title={
+          <>
+            Past questions, <span>explained.</span>
+          </>
+        }
+        lead="Choose the exam and subject, pick an answer, and we’ll show you if it’s right — and why."
+      />
 
       <div className="pq__exams" role="tablist" aria-label="Exam">
-        {EXAM_TYPES.map((t) => (
+        {examTabs.map((t) => (
           <button
             key={t}
             type="button"
