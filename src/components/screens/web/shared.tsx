@@ -127,7 +127,7 @@ export const DefaultAside: React.FC<{
           <ShieldCheckIcon size={14} /> Verification
         </dt>
         <dd>
-          A one-time code confirms your phone or email before the account opens.
+          A one-time code confirms your email before the account opens.
         </dd>
       </div>
       <div>

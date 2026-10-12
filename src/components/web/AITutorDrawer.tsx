@@ -91,12 +91,12 @@ const GUIDE: Array<{ test: RegExp; text: string; links: NavLink[] }> = [
   },
   {
     test: /\b(sign ?up|register|create (an )?account|join)\b/,
-    text: 'Creating an account is free and takes about a minute. You’ll get a code to confirm your phone or email.',
+    text: 'Creating an account is free and takes about a minute. You’ll get a code to confirm your email.',
     links: [PAGES.signup, PAGES.login],
   },
   {
     test: /\b(log ?in|sign ?in|password)\b/,
-    text: 'Use Log in with the phone number or email you registered with. If you forgot your password, there’s a link on that page to reset it.',
+    text: 'Use Log in with the email you registered with. If you forgot your password, there’s a link on that page to reset it.',
     links: [PAGES.login],
   },
   {

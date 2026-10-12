@@ -1,59 +1,9 @@
-/**
- * Nigerian Phone Number Normalization Utility
- * Supports prefixes: 080..., 070..., 090..., 081..., +234..., 234...
- */
-export function normalizeNigerianPhone(input: string): {
-  isValid: boolean;
-  formatted: string;
-  e164: string;
-  errorMessage?: string;
-} {
-  // Strip whitespace, dashes, and parentheses
-  const cleaned = input.replace(/[\s\-()]/g, '');
-
-  if (!cleaned) {
-    return { isValid: false, formatted: '', e164: '', errorMessage: 'Phone number is required' };
-  }
-
-  // Check if it's an email instead
-  if (cleaned.includes('@')) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const isValidEmail = emailRegex.test(cleaned);
-    return {
-      isValid: isValidEmail,
-      formatted: cleaned,
-      e164: cleaned,
-      errorMessage: isValidEmail ? undefined : 'Please enter a valid email address',
-    };
-  }
-
-  let normalized = cleaned;
-
-  // Handle +234 or 234 prefix
-  if (normalized.startsWith('+234')) {
-    normalized = normalized.slice(4);
-  } else if (normalized.startsWith('234')) {
-    normalized = normalized.slice(3);
-  } else if (normalized.startsWith('0')) {
-    normalized = normalized.slice(1);
-  }
-
-  // Valid Nigerian phone numbers have 10 digits after prefix removal (e.g. 8031234567)
-  // Valid prefixes in Nigeria: 70, 80, 81, 90, 91
-  const validNigerianPrefixes = /^(70|80|81|90|91)\d{8}$/;
-
-  if (validNigerianPrefixes.test(normalized)) {
-    const formatted = `0${normalized.slice(0, 3)} ${normalized.slice(3, 6)} ${normalized.slice(6)}`;
-    const e164 = `+234${normalized}`;
-    return { isValid: true, formatted, e164 };
-  }
-
-  return {
-    isValid: false,
-    formatted: input,
-    e164: '',
-    errorMessage: 'Please enter a valid Nigerian mobile number (e.g. 0801 234 5678)',
-  };
+/** Accounts are email only. Trims and lower-cases the address. */
+export function validateEmail(input: string): { isValid: boolean; formatted: string; errorMessage?: string } {
+  const formatted = input.trim().toLowerCase();
+  if (!formatted) return { isValid: false, formatted, errorMessage: 'Email address is required' };
+  const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formatted);
+  return { isValid, formatted, errorMessage: isValid ? undefined : 'Please enter a valid email address' };
 }
 
 /**

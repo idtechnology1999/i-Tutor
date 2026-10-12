@@ -39,7 +39,6 @@ export const A05_OTP: React.FC<Props> = ({
   const [submitting, setSubmitting] = useState(false);
   const inputs = useRef<Array<HTMLInputElement | null>>([]);
 
-  const isEmail = phoneOrEmail.includes('@');
   const code = digits.join('');
   const isComplete = code.length === CODE_LENGTH;
 
@@ -123,20 +122,16 @@ export const A05_OTP: React.FC<Props> = ({
   return (
     <AuthShell
       eyebrow="Verification"
-      title={`Enter the ${isEmail ? 'email' : 'SMS'} code`}
+      title="Enter the email code"
       lede={`We sent a ${CODE_LENGTH}-digit code to ${maskDestination(phoneOrEmail)}. It expires in 10 minutes.`}
       narrow
       aside={
         <div className="auth__panel">
           <h2 className="auth__panel-title">Not receiving it?</h2>
           <ul className="auth__tips">
-            <li>Check that {isEmail ? 'the email' : 'the number'} above is correct.</li>
-            <li>
-              {isEmail
-                ? 'Look in spam or promotions for a message from i-Tutor.'
-                : 'Confirm the phone has signal and that SMS is not blocked.'}
-            </li>
-            <li>Corporate or school networks sometimes delay SMS by a minute.</li>
+            <li>Check that the email above is correct.</li>
+            <li>Look in spam or promotions for a message from i-Tutor.</li>
+            <li>Corporate or school networks sometimes delay email by a minute.</li>
           </ul>
           <TrustList
             items={[
@@ -213,9 +208,7 @@ export const A05_OTP: React.FC<Props> = ({
         </div>
 
         <p className="auth__switch">
-          {isEmail
-            ? 'Check your inbox and promotions folder for the message.'
-            : 'The code arrives as an SMS from i-Tutor within a minute.'}
+          Check your inbox and promotions folder for the message.
         </p>
       </div>
     </AuthShell>

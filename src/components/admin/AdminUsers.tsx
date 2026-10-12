@@ -135,7 +135,7 @@ export const AdminUsers: React.FC<{ nav: AdminNav; mode: 'live' | 'demo' }> = ({
               className="adm-input"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by name, phone or email"
+              placeholder="Search by name or email"
               aria-label="Search users"
             />
           </label>
@@ -145,7 +145,7 @@ export const AdminUsers: React.FC<{ nav: AdminNav; mode: 'live' | 'demo' }> = ({
           {data && data.users.length === 0 ? (
             <div className="adm-empty">
               <h3>{query ? 'No one matches that search' : 'No users yet'}</h3>
-              <p>{query ? 'Try part of a name, phone number or email.' : 'Students appear here as soon as they register.'}</p>
+              <p>{query ? 'Try part of a name or email.' : 'Students appear here as soon as they register.'}</p>
             </div>
           ) : (
             <div className="adm-users__table" role="table" aria-label="Users">

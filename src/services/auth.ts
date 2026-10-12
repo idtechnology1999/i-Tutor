@@ -10,7 +10,7 @@ export interface SignUpInput {
   password: string;
 }
 
-/** Creates the account and sends a 6-digit code by SMS or email. */
+/** Creates the account and emails a 6-digit code. */
 export async function signUp(input: SignUpInput) {
   if (!isLive) return demoDelay(400);
   await api('/api/auth/signup', { method: 'POST', body: input });

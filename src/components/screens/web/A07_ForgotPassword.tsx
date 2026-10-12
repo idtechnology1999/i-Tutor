@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { requestPasswordReset } from '../../../services/auth';
 import { CheckIcon, SendIcon, AlertCircleIcon, ShieldCheckIcon } from '../../Icons';
-import { normalizeNigerianPhone } from '../../../utils/phone';
+import { validateEmail } from '../../../utils/phone';
 import { AuthShell, FormField, TrustList } from './shared';
 
 interface Props {
@@ -25,13 +25,11 @@ export const A07_ForgotPassword: React.FC<Props> = ({
   const [destination, setDestination] = useState('');
   const [serverError, setServerError] = useState('');
 
-  const validation = normalizeNigerianPhone(identifier);
+  const validation = validateEmail(identifier);
   const error =
     touched && !validation.isValid
-      ? 'Enter the phone number or email on your account.'
+      ? 'Enter the email address on your account.'
       : '';
-
-  const isEmail = identifier.includes('@');
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -39,7 +37,7 @@ export const A07_ForgotPassword: React.FC<Props> = ({
     setTouched(true);
     if (!validation.isValid || sending) return;
 
-    const value = validation.formatted || identifier.trim();
+    const value = validation.formatted;
     setSending(true);
     setServerError('');
     requestPasswordReset(value)
@@ -94,9 +92,7 @@ export const A07_ForgotPassword: React.FC<Props> = ({
             <ShieldCheckIcon size={26} />
           </span>
           <p className="confirm__text">
-            {isEmail
-              ? 'If that address is registered, a 6-digit reset code is in your inbox.'
-              : 'If that number is registered, a 6-digit reset code is on its way by SMS.'}
+            If that address is registered, a 6-digit reset code is in your inbox.
           </p>
           <button
             type="button"
@@ -114,7 +110,7 @@ export const A07_ForgotPassword: React.FC<Props> = ({
     <AuthShell
       eyebrow="Recovery"
       title="Reset your password"
-      lede="Tell us the phone number or email on the account and we will send a reset code."
+      lede="Tell us the email address on the account and we will send a reset code."
       narrow
       aside={
         <div className="auth__panel">
@@ -148,25 +144,25 @@ export const A07_ForgotPassword: React.FC<Props> = ({
         {submitAttempted && !validation.isValid ? (
           <div className="form-banner is-error" role="alert">
             <AlertCircleIcon size={16} />
-            <span>Enter a valid Nigerian phone number or an email address.</span>
+            <span>Enter a valid email address.</span>
           </div>
         ) : null}
 
         <FormField
           id="recoveryIdentifier"
-          label="Phone number or email"
+          label="Email address"
           error={error}
           valid={touched && validation.isValid}
         >
           <div className="control">
             <input
               id="recoveryIdentifier"
-              type="text"
+              type="email"
               inputMode="email"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               onBlur={() => setTouched(true)}
-              placeholder="0801 234 5678 or name@email.com"
+              placeholder="name@email.com"
               className={`control__input${error ? ' is-invalid' : touched && validation.isValid ? ' is-valid' : ''}`}
               autoComplete="username"
               aria-invalid={Boolean(error)}

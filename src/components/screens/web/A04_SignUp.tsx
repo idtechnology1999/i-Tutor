@@ -5,10 +5,10 @@ import {
   Check as CheckIcon,
   CircleAlert as AlertCircleIcon,
   UserRound as UserIcon,
-  AtSign as SmartphoneIcon,
+  AtSign as MailIcon,
 } from 'lucide-react';
 import {
-  normalizeNigerianPhone,
+  validateEmail,
   calculatePasswordStrength,
 } from '../../../utils/phone';
 import { AuthShell, FormField, PhotoAside } from './shared';
@@ -22,8 +22,6 @@ interface Props {
   /** Message from the server when sign-up fails. */
   serverError?: string;
 }
-
-type Channel = 'sms' | 'email';
 
 export const A04_SignUp: React.FC<Props> = ({
   onBack,
@@ -51,13 +49,12 @@ export const A04_SignUp: React.FC<Props> = ({
   const [shakeCount, setShakeCount] = useState(0);
 
   const isNameValid = fullName.trim().split(/\s+/).filter(Boolean).length >= 2;
-  const phoneValidation = normalizeNigerianPhone(phoneOrEmail);
+  const phoneValidation = validateEmail(phoneOrEmail);
   const strength = useMemo(
     () => calculatePasswordStrength(password),
     [password],
   );
   const isPasswordValid = password.length >= 8 && strength.checks.hasNumberOrSymbol;
-  const isEmailChannel = phoneOrEmail.includes('@');
 
   const nameError =
     fullNameTouched && !isNameValid
@@ -87,12 +84,10 @@ export const A04_SignUp: React.FC<Props> = ({
     if (!isFormValid || isLoading) return;
     onSubmit({
       fullName: fullName.trim(),
-      phoneOrEmail: phoneValidation.formatted || phoneOrEmail,
+      phoneOrEmail: phoneValidation.formatted,
       password,
     });
   };
-
-  const channel: Channel = isEmailChannel ? 'email' : 'sms';
 
   return (
     <AuthShell
@@ -172,23 +167,23 @@ export const A04_SignUp: React.FC<Props> = ({
 
         <FormField
           id="phoneOrEmail"
-          label="Phone number or email"
-          hint={isEmailChannel ? 'Code will be emailed' : 'Code will be sent by SMS'}
+          label="Email address"
+          hint="Code will be emailed"
           error={contactError}
           valid={phoneTouched && phoneValidation.isValid}
         >
           <div className="control">
-            <SmartphoneIcon size={17} className="control__icon" />
+            <MailIcon size={17} className="control__icon" />
             <input
               id="phoneOrEmail"
-              type="text"
-              inputMode="tel"
+              type="email"
+              inputMode="email"
               value={phoneOrEmail}
               onChange={(e) => setPhoneOrEmail(e.target.value)}
               onBlur={() => setPhoneTouched(true)}
-              placeholder="0801 234 5678 or name@email.com"
+              placeholder="name@email.com"
               className={`control__input${contactError ? ' is-invalid' : phoneTouched && phoneValidation.isValid ? ' is-valid' : ''}`}
-              autoComplete="tel"
+              autoComplete="email"
               aria-invalid={Boolean(contactError)}
               aria-describedby={contactError ? 'phoneOrEmail-error' : undefined}
             />
@@ -198,9 +193,7 @@ export const A04_SignUp: React.FC<Props> = ({
           </div>
           {phoneTouched && phoneValidation.isValid ? (
             <p className="control__note">
-              {isEmailChannel
-                ? `We will email a 6-digit code to ${phoneOrEmail.trim()}.`
-                : `We will text a 6-digit code to ${phoneValidation.formatted}.`}
+              We will email a 6-digit code to {phoneValidation.formatted}.
             </p>
           ) : null}
         </FormField>
@@ -313,8 +306,7 @@ export const A04_SignUp: React.FC<Props> = ({
         </button>
 
         <p className="auth__switch">
-          {channel === 'sms' ? 'SMS' : 'Email'} verification follows on the next
-          screen.
+          Email verification follows on the next screen.
         </p>
       </form>
     </AuthShell>

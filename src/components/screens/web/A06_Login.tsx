@@ -10,7 +10,7 @@ import {
   FingerprintIcon,
   LockIcon,
 } from '../../Icons';
-import { normalizeNigerianPhone } from '../../../utils/phone';
+import { validateEmail } from '../../../utils/phone';
 import { AuthShell, FormField, PhotoAside } from './shared';
 
 interface Props {
@@ -40,10 +40,10 @@ export const A06_Login: React.FC<Props> = ({
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState('');
 
-  const validation = normalizeNigerianPhone(identifier);
+  const validation = validateEmail(identifier);
   const identifierError =
     identifierTouched && !validation.isValid
-      ? 'Enter the phone number or email you registered with.'
+      ? 'Enter the email address you registered with.'
       : '';
 
   const passwordError =
@@ -62,7 +62,7 @@ export const A06_Login: React.FC<Props> = ({
     setSubmitting(true);
     setServerError('');
     // Demo mode lets any valid-looking login in; the backend checks the password.
-    logIn(validation.formatted || identifier.trim(), password)
+    logIn(validation.formatted, password)
       .then(() => onSuccess())
       .catch((err: ApiError) => {
         if (err.status === 401) failAttempt();
@@ -142,19 +142,19 @@ export const A06_Login: React.FC<Props> = ({
 
         <FormField
           id="identifier"
-          label="Phone number or email"
+          label="Email address"
           error={identifierError}
           valid={identifierTouched && validation.isValid}
         >
           <div className="control">
             <input
               id="identifier"
-              type="text"
+              type="email"
               inputMode="email"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               onBlur={() => setIdentifierTouched(true)}
-              placeholder="0801 234 5678 or name@email.com"
+              placeholder="name@email.com"
               className={`control__input${identifierError ? ' is-invalid' : identifierTouched && validation.isValid ? ' is-valid' : ''}`}
               autoComplete="username"
               aria-invalid={Boolean(identifierError)}

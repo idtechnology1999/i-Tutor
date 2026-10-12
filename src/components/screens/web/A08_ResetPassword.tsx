@@ -157,7 +157,7 @@ export const A08_ResetPassword: React.FC<Props> = ({
           </p>
           <TrustList
             items={[
-              'Never reuse your email or phone password',
+              'Never reuse your email password',
               'We store a salted hash, not the password',
               'You can change it again at any time',
             ]}
@@ -191,15 +191,15 @@ export const A08_ResetPassword: React.FC<Props> = ({
         ) : null}
 
         {!phoneOrEmail ? (
-          <FormField id="resetAccount" label="Phone number or email" error="" valid={false}>
+          <FormField id="resetAccount" label="Email address" error="" valid={false}>
             <div className="control">
               <input
                 id="resetAccount"
-                type="text"
+                type="email"
                 inputMode="email"
                 value={account}
                 onChange={(e) => setAccount(e.target.value)}
-                placeholder="0801 234 5678 or name@email.com"
+                placeholder="name@email.com"
                 className="control__input"
                 autoComplete="username"
               />
