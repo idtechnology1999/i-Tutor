@@ -69,6 +69,10 @@ export async function listUsers(q = ''): Promise<UserList> {
   return api<UserList>(`/api/admin/users${q ? `?q=${encodeURIComponent(q)}` : ''}`);
 }
 
+/** Deletes a student's account. The server checks the admin's password. */
+export const deleteUser = (id: string, password: string) =>
+  api(`/api/admin/users/${id}`, { method: 'DELETE', body: { password } });
+
 /* ------------------------------------------------------------------- Team */
 
 export interface TeamMember {
