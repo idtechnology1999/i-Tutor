@@ -3,7 +3,8 @@ import { ExamPicker } from './ExamPicker';
 import { examsOf, hasSchoolCert, toggleExam } from '../../lib/student-exams';
 import { SchoolCertPicker } from './SchoolCertPicker';
 import type { UserProfile, DailyCommitment } from '../../types';
-import { ENGLISH, JAMB_SUBJECTS, NIGERIAN_INSTITUTIONS, POPULAR_COURSES, toggleJambSubject } from '../../data/nigerian-curriculum';
+import { CutoffCard } from '../screens/web/A11_InstitutionCourse';
+import { ENGLISH, JAMB_SUBJECTS, ALL_COURSES, findInstitution, matchesSearch, searchInstitutions, toggleJambSubject } from '../../data/nigerian-curriculum';
 import {
   OwlBookLogo,
   CheckIcon,
@@ -40,19 +41,11 @@ export const SetupWizardView: React.FC<Props> = ({ profile, onUpdateProfile, onF
   const handleToggleSubject = (name: string) =>
     onUpdateProfile({ selectedSubjects: toggleJambSubject(profile.selectedSubjects, name) });
 
-  const filteredInstitutions = NIGERIAN_INSTITUTIONS.filter((inst) => {
-    const matchFilter = instFilter === 'All' || inst.type === instFilter;
-    const matchSearch =
-      inst.name.toLowerCase().includes(instSearch.toLowerCase()) ||
-      inst.shortName.toLowerCase().includes(instSearch.toLowerCase()) ||
-      inst.location.toLowerCase().includes(instSearch.toLowerCase());
-    return matchFilter && matchSearch;
+  const filteredInstitutions = searchInstitutions(instSearch).filter((inst) => {
+    return instFilter === 'All' || inst.type === instFilter;
   });
 
-  const filteredCourses = POPULAR_COURSES.filter((c) =>
-    c.name.toLowerCase().includes(courseSearch.toLowerCase()) ||
-    c.faculty.toLowerCase().includes(courseSearch.toLowerCase())
-  );
+  const filteredCourses = ALL_COURSES.filter((c) => matchesSearch(`${c.name} ${c.faculty}`, courseSearch));
 
   return (
     <div className="wizard-page">
@@ -265,13 +258,13 @@ export const SetupWizardView: React.FC<Props> = ({ profile, onUpdateProfile, onF
                   Target Institution & Course of Study
                 </h2>
                 <p style={{ color: 'var(--slate-600)', fontSize: '14px', marginTop: '4px' }}>
-                  Used to benchmark competitive admission quota and departmental cut-off marks.
+                  Pick your school and course, and we’ll check the latest cut-off marks and the subjects they ask for.
                 </p>
               </div>
 
               {/* Institution Selection */}
               <div>
-                <label className="web-label">Select University or Polytechnic</label>
+                <label className="web-label">Select your university, polytechnic or college of education</label>
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
                   {(['All', 'Federal', 'State', 'Private'] as const).map((filter) => (
                     <button
@@ -304,14 +297,14 @@ export const SetupWizardView: React.FC<Props> = ({ profile, onUpdateProfile, onF
                 />
 
                 <div style={{ maxHeight: '140px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px', border: '1px solid var(--slate-200)', borderRadius: 'var(--radius-md)', padding: '6px' }}>
-                  {filteredInstitutions.map((inst) => {
-                    const isSelected = profile.targetInstitution.includes(inst.shortName);
+                  {filteredInstitutions.slice(0, 60).map((inst) => {
+                    const isSelected = findInstitution(profile.targetInstitution)?.id === inst.id;
                     return (
                       <div
                         key={inst.id}
                         onClick={() =>
                           onUpdateProfile({
-                            targetInstitution: `${inst.name} (${inst.shortName})`,
+                            targetInstitution: inst.name,
                             targetInstitutionType: inst.type,
                           })
                         }
@@ -329,7 +322,7 @@ export const SetupWizardView: React.FC<Props> = ({ profile, onUpdateProfile, onF
                         <span style={{ fontWeight: isSelected ? 700 : 500, color: isSelected ? 'var(--teal-900)' : 'var(--slate-800)' }}>
                           {inst.name} ({inst.shortName}) · {inst.location}
                         </span>
-                        <span style={{ fontSize: '11px', color: 'var(--slate-500)' }}>{inst.type}</span>
+                        <span style={{ fontSize: '11px', color: 'var(--slate-500)' }}>{inst.type} {inst.kind.toLowerCase()}</span>
                       </div>
                     );
                   })}
@@ -372,14 +365,24 @@ export const SetupWizardView: React.FC<Props> = ({ profile, onUpdateProfile, onF
                         }}
                       >
                         <span style={{ fontWeight: isSelected ? 700 : 500, color: isSelected ? 'var(--teal-900)' : 'var(--slate-800)' }}>
-                          {c.name} · {c.faculty}
+                          {c.name}
                         </span>
-                        <span style={{ fontSize: '11px', color: 'var(--amber-600)', fontWeight: 700 }}>Cut-off: {c.benchmarkScore}+</span>
+                        <span style={{ fontSize: '11px', color: 'var(--slate-500)' }}>{c.faculty}</span>
                       </div>
                     );
                   })}
                 </div>
               </div>
+
+              {profile.targetInstitution && profile.targetCourse ? (
+                <CutoffCard
+                  school={findInstitution(profile.targetInstitution)?.name ?? profile.targetInstitution}
+                  kind={findInstitution(profile.targetInstitution)?.kind ?? 'University'}
+                  course={profile.targetCourse}
+                  selectedSubjects={profile.selectedSubjects}
+                  onUseSubjects={(subjects) => onUpdateProfile({ selectedSubjects: subjects })}
+                />
+              ) : null}
             </div>
           )}
 

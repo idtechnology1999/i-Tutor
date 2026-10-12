@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import type { DiagnosticQuestion, UserProfile } from '../../types';
 import { useCms } from '../../lib/cms';
-import { NIGERIAN_INSTITUTIONS } from '../../data/nigerian-curriculum';
+import { findInstitution } from '../../data/nigerian-curriculum';
 import type { ExamType } from '../../lib/cms';
 import type { StudentExam } from '../../types';
 import { SCHOOL_CERT_EXAMS, examsOf } from '../../lib/student-exams';
@@ -94,9 +94,7 @@ export const DashboardView: React.FC<Props> = ({
   const current = exams.includes(room) ? room : (exams[0] ?? 'UTME');
   const { questions } = useCms();
   // The school picked at registration sets the student's Post-UTME.
-  const school = NIGERIAN_INSTITUTIONS.find(
-    (i) => profile.targetInstitution.includes(i.shortName) || profile.targetInstitution.includes(i.name),
-  );
+  const school = findInstitution(profile.targetInstitution);
   const schoolQs = school
     ? questions.filter((q) => q.status === 'published' && q.examType === 'Post-UTME' && q.school === school.shortName)
     : [];

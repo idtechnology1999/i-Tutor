@@ -73,16 +73,17 @@ export interface DiagnosticQuestion {
 export interface Institution {
   id: string;
   name: string;
+  /** Unique; the school's id for Post-UTME questions. */
   shortName: string;
   type: 'Federal' | 'State' | 'Private';
+  kind: 'University' | 'Polytechnic' | 'College of Education';
   location: string;
-  minCutOff: number;
+  /** Nicknames students search with, e.g. "YABATECH". */
+  aka?: string;
 }
 
 export interface Course {
   id: string;
   name: string;
   faculty: string;
-  benchmarkScore: number;
-  requiredSubjects: string[];
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import { BookOpenCheck, Landmark, MapPin, Pencil, Play } from 'lucide-react';
 import { useCms } from '../../lib/cms';
-import { NIGERIAN_INSTITUTIONS } from '../../data/nigerian-curriculum';
+import { findInstitution } from '../../data/nigerian-curriculum';
 import type { UserProfile } from '../../types';
 import { PageBanner } from './PageBanner';
 
@@ -16,9 +16,7 @@ interface Props {
 /** Post-UTME for the one school the student chose at registration. */
 export const PostUtmeView: React.FC<Props> = ({ profile, onStart, onBrowse, onChangeSchool }) => {
   const { questions } = useCms();
-  const school = NIGERIAN_INSTITUTIONS.find(
-    (i) => profile.targetInstitution.includes(i.shortName) || profile.targetInstitution.includes(i.name),
-  );
+  const school = findInstitution(profile.targetInstitution);
 
   if (!school) {
     return (

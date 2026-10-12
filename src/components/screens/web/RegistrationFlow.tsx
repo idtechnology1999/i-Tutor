@@ -10,7 +10,7 @@ import {
 import type { OnboardingStep } from '../../../lib/student-exams';
 import { OnboardingStepsContext } from './onboarding-context';
 import { A09b_SchoolCert } from './A09b_SchoolCert';
-import type { Course, Institution, UserProfile } from '../../../types';
+import type { Institution, UserProfile } from '../../../types';
 import { A04_SignUp } from './A04_SignUp';
 import { A05_OTP } from './A05_OTP';
 import { A06_Login } from './A06_Login';
@@ -255,18 +255,14 @@ export const RegistrationFlow: React.FC<Props> = ({
           <A11_InstitutionCourse
             selectedInstitution={profile.targetInstitution}
             selectedCourse={profile.targetCourse}
-            onSelectInstitution={(institution: Institution) =>
-              onUpdateProfile({
-                targetInstitution: institution.name,
-                targetInstitutionType: institution.type,
-              })
+            selectedSubjects={profile.selectedSubjects}
+            onSelectInstitution={(name: string, type?: Institution['type']) =>
+              onUpdateProfile({ targetInstitution: name, ...(type ? { targetInstitutionType: type } : {}) })
             }
-            onSelectCourse={(course: Course) =>
-              onUpdateProfile({
-                targetCourse: course.name,
-                targetFaculty: course.faculty,
-              })
+            onSelectCourse={(name: string, faculty: string) =>
+              onUpdateProfile({ targetCourse: name, targetFaculty: faculty })
             }
+            onUseSubjects={(subjects: string[]) => onUpdateProfile({ selectedSubjects: subjects })}
             onBack={back}
             onContinue={next}
           />

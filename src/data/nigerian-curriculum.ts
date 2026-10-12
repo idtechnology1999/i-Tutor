@@ -1,4 +1,5 @@
-import type { DiagnosticQuestion, Institution, Course } from '../types';
+import type { DiagnosticQuestion, Institution } from '../types';
+import { NIGERIAN_INSTITUTIONS } from './institutions';
 
 export interface SubjectItem {
   id: string;
@@ -36,6 +37,30 @@ export const JAMB_SUBJECTS: SubjectItem[] = [
   { id: 'civic', name: 'Civic Education', note: 'Social sciences and the arts.', category: 'arts' },
 ];
 
+const SUBJECT_ALIASES: Record<string, string> = {
+  english: ENGLISH,
+  'use of english': ENGLISH,
+  'literature in english': 'Literature',
+  'financial accounting': 'Accounting',
+  'principles of accounts': 'Accounting',
+  'christian religious studies': 'CRS',
+  'christian religious knowledge': 'CRS',
+  'islamic religious studies': 'IRS',
+  'islamic studies': 'IRS',
+  maths: 'Mathematics',
+  'general mathematics': 'Mathematics',
+  'agriculture': 'Agricultural Science',
+  'further maths': 'Further Mathematics',
+};
+
+/** A subject name as written elsewhere ("Literature in English") → the name students pick, or null if it isn't offered. */
+export function toJambSubject(name: string): string | null {
+  const n = name.trim().toLowerCase();
+  const alias = SUBJECT_ALIASES[n];
+  if (alias) return alias;
+  return JAMB_SUBJECTS.find((s) => s.name.toLowerCase() === n || s.label?.toLowerCase() === n)?.name ?? null;
+}
+
 /** Adds or removes a chosen subject. English always stays first; at most 3 others. */
 export function toggleJambSubject(selected: string[], name: string): string[] {
   const others = selected.filter((s) => s !== ENGLISH);
@@ -45,33 +70,44 @@ export function toggleJambSubject(selected: string[], name: string): string[] {
   return [ENGLISH, ...others, name];
 }
 
-export const NIGERIAN_INSTITUTIONS: Institution[] = [
-  { id: 'unilag', name: 'University of Lagos', shortName: 'UNILAG', type: 'Federal', location: 'Akoka, Lagos', minCutOff: 200 },
-  { id: 'ui', name: 'University of Ibadan', shortName: 'UI', type: 'Federal', location: 'Ibadan, Oyo', minCutOff: 200 },
-  { id: 'oau', name: 'Obafemi Awolowo University', shortName: 'OAU', type: 'Federal', location: 'Ile-Ife, Osun', minCutOff: 200 },
-  { id: 'abu', name: 'Ahmadu Bello University', shortName: 'ABU', type: 'Federal', location: 'Zaria, Kaduna', minCutOff: 180 },
-  { id: 'unn', name: 'University of Nigeria', shortName: 'UNN', type: 'Federal', location: 'Nsukka, Enugu', minCutOff: 180 },
-  { id: 'uniben', name: 'University of Benin', shortName: 'UNIBEN', type: 'Federal', location: 'Benin City, Edo', minCutOff: 200 },
-  { id: 'lasu', name: 'Lagos State University', shortName: 'LASU', type: 'State', location: 'Ojo, Lagos', minCutOff: 195 },
-  { id: 'covenant', name: 'Covenant University', shortName: 'CU', type: 'Private', location: 'Ota, Ogun', minCutOff: 180 },
-  { id: 'futa', name: 'Fed. Univ. of Tech. Akure', shortName: 'FUTA', type: 'Federal', location: 'Akure, Ondo', minCutOff: 180 },
-  { id: 'rsu', name: 'Rivers State University', shortName: 'RSU', type: 'State', location: 'Port Harcourt, Rivers', minCutOff: 160 },
-  { id: 'bowen', name: 'Bowen University', shortName: 'BOWEN', type: 'Private', location: 'Iwo, Osun', minCutOff: 170 },
-  { id: 'unilorin', name: 'University of Ilorin', shortName: 'UNILORIN', type: 'Federal', location: 'Ilorin, Kwara', minCutOff: 180 }
-];
+export { NIGERIAN_INSTITUTIONS } from './institutions';
+export { ALL_COURSES } from './course-list';
 
-export const POPULAR_COURSES: Course[] = [
-  { id: 'med', name: 'Medicine & Surgery', faculty: 'College of Medicine', benchmarkScore: 285, requiredSubjects: ['English', 'Biology', 'Chemistry', 'Physics'] },
-  { id: 'cs', name: 'Computer Science', faculty: 'Faculty of Science', benchmarkScore: 260, requiredSubjects: ['English', 'Mathematics', 'Physics', 'Chemistry'] },
-  { id: 'law', name: 'Law (Civil / Common Law)', faculty: 'Faculty of Law', benchmarkScore: 270, requiredSubjects: ['English', 'Literature', 'Government', 'CRS/IRS'] },
-  { id: 'mech', name: 'Mechanical Engineering', faculty: 'Faculty of Engineering', benchmarkScore: 255, requiredSubjects: ['English', 'Mathematics', 'Physics', 'Chemistry'] },
-  { id: 'pharm', name: 'Pharmacy', faculty: 'Faculty of Pharmacy', benchmarkScore: 275, requiredSubjects: ['English', 'Biology', 'Chemistry', 'Physics'] },
-  { id: 'acct_c', name: 'Accounting', faculty: 'Faculty of Management Sciences', benchmarkScore: 245, requiredSubjects: ['English', 'Mathematics', 'Economics', 'Government'] },
-  { id: 'nurs', name: 'Nursing Science', faculty: 'College of Medicine', benchmarkScore: 265, requiredSubjects: ['English', 'Biology', 'Chemistry', 'Physics'] },
-  { id: 'econ_c', name: 'Economics', faculty: 'Faculty of Social Sciences', benchmarkScore: 240, requiredSubjects: ['English', 'Mathematics', 'Economics', 'Government'] },
-  { id: 'elect', name: 'Electrical / Electronics Eng.', faculty: 'Faculty of Engineering', benchmarkScore: 250, requiredSubjects: ['English', 'Mathematics', 'Physics', 'Chemistry'] },
-  { id: 'masscomm', name: 'Mass Communication', faculty: 'Faculty of Arts', benchmarkScore: 245, requiredSubjects: ['English', 'Literature', 'Government', 'Economics'] }
-];
+const searchWords = (s: string) => s.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+
+/** True when every typed word starts a word in `text`: "auchi" finds Auchi, not Bauchi. */
+export function matchesSearch(text: string, query: string) {
+  const have = searchWords(text);
+  return searchWords(query).every((q) => have.some((w) => w.startsWith(q)));
+}
+
+/** Schools matching what the student typed, best first: short names and nicknames, then names that start with it. */
+export function searchInstitutions(query: string, kind: Institution['kind'] | 'All' = 'All'): Institution[] {
+  const pool = kind === 'All' ? NIGERIAN_INSTITUTIONS : NIGERIAN_INSTITUTIONS.filter((i) => i.kind === kind);
+  const q = query.trim().toLowerCase();
+  if (!q) return pool;
+  const rank = (i: Institution) => {
+    const codes = searchWords(`${i.shortName} ${i.aka ?? ''}`);
+    if (codes.includes(q.replace(/[^a-z0-9]+/g, ''))) return 0;
+    return i.name.toLowerCase().startsWith(q) ? 1 : 2;
+  };
+  return pool
+    .filter((i) => matchesSearch(`${i.name} ${i.shortName} ${i.aka ?? ''} ${i.location}`, q))
+    .map((i, at) => ({ i, at, r: rank(i) }))
+    .sort((a, b) => a.r - b.r || a.at - b.at)
+    .map((x) => x.i);
+}
+
+/** The student's saved target school. Older profiles saved "Name (SHORT)",
+    so both forms match; never a loose substring, which would mix up schools. */
+export function findInstitution(target: string): Institution | undefined {
+  const t = target.trim().toLowerCase();
+  if (!t) return undefined;
+  return NIGERIAN_INSTITUTIONS.find((i) => {
+    const name = i.name.toLowerCase();
+    return t === name || t === i.shortName.toLowerCase() || t === `${name} (${i.shortName.toLowerCase()})`;
+  });
+}
 
 export const DIAGNOSTIC_QUESTIONS: DiagnosticQuestion[] = [
   {
