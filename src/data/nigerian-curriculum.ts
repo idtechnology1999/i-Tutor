@@ -2,28 +2,48 @@ import type { DiagnosticQuestion, Institution, Course } from '../types';
 
 export interface SubjectItem {
   id: string;
+  /** Stored in the profile; matches the question bank's subject name (English is "English Language"). */
   name: string;
+  /** What students see, when it differs from `name`. */
+  label?: string;
+  note: string;
   isCompulsory?: boolean;
-  isComingSoon?: boolean;
   category: 'core' | 'arts' | 'commercial';
 }
 
+/* Every JAMB candidate sits 4 subjects: English (compulsory) plus 3 they
+   choose. All subjects can be chosen, whether or not past questions have been
+   uploaded yet; the AI tutor and classroom cover any subject. */
+export const ENGLISH = 'English Language';
+export const JAMB_CHOICES = 3;
+
 export const JAMB_SUBJECTS: SubjectItem[] = [
-  { id: 'eng', name: 'English Language', isCompulsory: true, category: 'core' },
-  { id: 'math', name: 'Mathematics', category: 'core' },
-  { id: 'phy', name: 'Physics', category: 'core' },
-  { id: 'chem', name: 'Chemistry', category: 'core' },
-  { id: 'bio', name: 'Biology', category: 'core' },
-  { id: 'econ', name: 'Economics', category: 'commercial' },
-  { id: 'lit', name: 'Literature in English', category: 'arts' },
-  { id: 'govt', name: 'Government', category: 'arts' },
-  { id: 'geo', name: 'Geography', category: 'core' },
-  { id: 'agric', name: 'Agricultural Science', category: 'core' },
-  { id: 'crs', name: 'Christian Religious Studies', category: 'arts' },
-  { id: 'irs', name: 'Islamic Religious Studies', category: 'arts' },
-  { id: 'comm', name: 'Commerce', isComingSoon: true, category: 'commercial' },
-  { id: 'acct', name: 'Financial Accounting', isComingSoon: true, category: 'commercial' },
+  { id: 'eng', name: ENGLISH, note: 'Compulsory for every UTME candidate. Already included.', isCompulsory: true, category: 'core' },
+  { id: 'math', name: 'Mathematics', note: 'Science, engineering and commercial courses.', category: 'core' },
+  { id: 'phy', name: 'Physics', note: 'Engineering and most science courses.', category: 'core' },
+  { id: 'chem', name: 'Chemistry', note: 'Medicine, pharmacy and engineering.', category: 'core' },
+  { id: 'bio', name: 'Biology', note: 'Medicine, nursing and life sciences.', category: 'core' },
+  { id: 'furmath', name: 'Further Mathematics', note: 'Some engineering and maths courses.', category: 'core' },
+  { id: 'agric', name: 'Agricultural Science', note: 'Agriculture, food and animal science.', category: 'core' },
+  { id: 'geo', name: 'Geography', note: 'Geography, urban planning, some sciences.', category: 'core' },
+  { id: 'econ', name: 'Economics', note: 'Economics, business and social sciences.', category: 'commercial' },
+  { id: 'comm', name: 'Commerce', note: 'Business administration and marketing.', category: 'commercial' },
+  { id: 'acct', name: 'Accounting', label: 'Financial Accounting', note: 'Accounting, banking and finance.', category: 'commercial' },
+  { id: 'govt', name: 'Government', note: 'Law, political science and public admin.', category: 'arts' },
+  { id: 'lit', name: 'Literature', label: 'Literature in English', note: 'Law, English, theatre and mass comm.', category: 'arts' },
+  { id: 'crs', name: 'CRS', label: 'Christian Religious Studies', note: 'Law, religion and the arts.', category: 'arts' },
+  { id: 'irs', name: 'IRS', label: 'Islamic Religious Studies', note: 'Law, Islamic studies and the arts.', category: 'arts' },
+  { id: 'civic', name: 'Civic Education', note: 'Social sciences and the arts.', category: 'arts' },
 ];
+
+/** Adds or removes a chosen subject. English always stays first; at most 3 others. */
+export function toggleJambSubject(selected: string[], name: string): string[] {
+  const others = selected.filter((s) => s !== ENGLISH);
+  if (name === ENGLISH) return [ENGLISH, ...others];
+  if (others.includes(name)) return [ENGLISH, ...others.filter((s) => s !== name)];
+  if (others.length >= JAMB_CHOICES) return [ENGLISH, ...others];
+  return [ENGLISH, ...others, name];
+}
 
 export const NIGERIAN_INSTITUTIONS: Institution[] = [
   { id: 'unilag', name: 'University of Lagos', shortName: 'UNILAG', type: 'Federal', location: 'Akoka, Lagos', minCutOff: 200 },

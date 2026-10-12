@@ -23,6 +23,7 @@ import { A12_ExamDateGoals } from './A12_ExamDateGoals';
 import { A13_PermissionsPrimer } from './A13_PermissionsPrimer';
 import { A14_PlacementDiagnostic } from './A14_PlacementDiagnostic';
 import type { AppView } from '../../../lib/router';
+import { toggleJambSubject } from '../../../data/nigerian-curriculum';
 
 type FlowView = Extract<
   AppView,
@@ -91,22 +92,8 @@ export const RegistrationFlow: React.FC<Props> = ({
   const next = () => onNavigate(steps[Math.min(at + 1, steps.length - 1)]);
   const back = () => onNavigate(at > 0 ? steps[at - 1] : 'signup');
 
-  const toggleSubject = (name: string) => {
-    const has = profile.selectedSubjects.includes(name);
-    if (has) {
-      if (name === 'English Language') return;
-      onUpdateProfile({
-        selectedSubjects: profile.selectedSubjects.filter(
-          (subject: string) => subject !== name,
-        ),
-      });
-      return;
-    }
-    if (profile.selectedSubjects.length >= 4) return;
-    onUpdateProfile({
-      selectedSubjects: [...profile.selectedSubjects, name],
-    });
-  };
+  const toggleSubject = (name: string) =>
+    onUpdateProfile({ selectedSubjects: toggleJambSubject(profile.selectedSubjects, name) });
 
   // Someone can land directly on /onboarding/goals without an account. The
   // onboarding steps all write to a candidate record, so gate them.

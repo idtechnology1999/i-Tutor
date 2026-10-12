@@ -83,7 +83,7 @@ export const A07_ForgotPassword: React.FC<Props> = ({
               setSubmitAttempted(false);
             }}
           >
-            Use a different number or email
+            Use a different email
           </button>
         }
       >

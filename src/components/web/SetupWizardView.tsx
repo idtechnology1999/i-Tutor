@@ -3,7 +3,7 @@ import { ExamPicker } from './ExamPicker';
 import { examsOf, hasSchoolCert, toggleExam } from '../../lib/student-exams';
 import { SchoolCertPicker } from './SchoolCertPicker';
 import type { UserProfile, DailyCommitment } from '../../types';
-import { JAMB_SUBJECTS, NIGERIAN_INSTITUTIONS, POPULAR_COURSES } from '../../data/nigerian-curriculum';
+import { ENGLISH, JAMB_SUBJECTS, NIGERIAN_INSTITUTIONS, POPULAR_COURSES, toggleJambSubject } from '../../data/nigerian-curriculum';
 import {
   OwlBookLogo,
   CheckIcon,
@@ -34,14 +34,11 @@ export const SetupWizardView: React.FC<Props> = ({ profile, onUpdateProfile, onF
     { number: 5, title: 'Study Setup', desc: 'Reminders & offline cache' },
   ];
 
-  const handleToggleSubject = (name: string) => {
-    const exists = profile.selectedSubjects.includes(name);
-    if (exists) {
-      onUpdateProfile({ selectedSubjects: profile.selectedSubjects.filter((s) => s !== name) });
-    } else if (profile.selectedSubjects.length < 4) {
-      onUpdateProfile({ selectedSubjects: [...profile.selectedSubjects, name] });
-    }
-  };
+  // English is always counted, even before it is saved in the profile.
+  const subjectCount = 1 + profile.selectedSubjects.filter((s) => s !== ENGLISH).length;
+
+  const handleToggleSubject = (name: string) =>
+    onUpdateProfile({ selectedSubjects: toggleJambSubject(profile.selectedSubjects, name) });
 
   const filteredInstitutions = NIGERIAN_INSTITUTIONS.filter((inst) => {
     const matchFilter = instFilter === 'All' || inst.type === instFilter;
@@ -161,14 +158,14 @@ export const SetupWizardView: React.FC<Props> = ({ profile, onUpdateProfile, onF
                   <span
                     className="pill-badge"
                     style={{
-                      background: profile.selectedSubjects.length === 4 ? 'var(--emerald-50)' : 'var(--amber-50)',
-                      color: profile.selectedSubjects.length === 4 ? 'var(--emerald-600)' : 'var(--amber-600)',
-                      border: profile.selectedSubjects.length === 4 ? '1px solid var(--emerald-100)' : '1px solid var(--amber-100)',
+                      background: subjectCount === 4 ? 'var(--emerald-50)' : 'var(--amber-50)',
+                      color: subjectCount === 4 ? 'var(--emerald-600)' : 'var(--amber-600)',
+                      border: subjectCount === 4 ? '1px solid var(--emerald-100)' : '1px solid var(--amber-100)',
                       fontSize: '12px',
                       fontWeight: 700,
                     }}
                   >
-                    {profile.selectedSubjects.length} of 4 Subjects Selected
+                    {subjectCount} of 4 Subjects Selected
                   </span>
                 </div>
                 <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 700, color: 'var(--slate-900)' }}>
@@ -201,15 +198,14 @@ export const SetupWizardView: React.FC<Props> = ({ profile, onUpdateProfile, onF
               {/* 2-Column Subject Selection Grid */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', maxHeight: '340px', overflowY: 'auto' }}>
                 {JAMB_SUBJECTS.map((subj) => {
-                  const isSelected = profile.selectedSubjects.includes(subj.name);
-                  const isLocked = subj.isCompulsory;
-                  const isComingSoon = subj.isComingSoon;
+                  const isLocked = !!subj.isCompulsory;
+                  const isSelected = isLocked || profile.selectedSubjects.includes(subj.name);
 
                   return (
                     <div
                       key={subj.id}
                       onClick={() => {
-                        if (isLocked || isComingSoon) return;
+                        if (isLocked) return;
                         handleToggleSubject(subj.name);
                       }}
                       style={{
@@ -217,8 +213,7 @@ export const SetupWizardView: React.FC<Props> = ({ profile, onUpdateProfile, onF
                         borderRadius: 'var(--radius-md)',
                         border: isSelected ? '2px solid var(--teal-900)' : '1px solid var(--slate-200)',
                         backgroundColor: isSelected ? 'var(--teal-50)' : isLocked ? 'var(--slate-50)' : 'var(--white)',
-                        cursor: isComingSoon ? 'not-allowed' : isLocked ? 'default' : 'pointer',
-                        opacity: isComingSoon ? 0.6 : 1,
+                        cursor: isLocked ? 'default' : 'pointer',
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
@@ -227,11 +222,8 @@ export const SetupWizardView: React.FC<Props> = ({ profile, onUpdateProfile, onF
                     >
                       <div>
                         <span style={{ fontSize: '14px', fontWeight: isSelected ? 700 : 500, color: isSelected ? 'var(--teal-900)' : 'var(--slate-800)' }}>
-                          {subj.name}
+                          {subj.label ?? subj.name}
                         </span>
-                        {isComingSoon && (
-                          <div style={{ fontSize: '11px', color: 'var(--slate-500)', marginTop: '2px' }}>Coming soon</div>
-                        )}
                         {isLocked && (
                           <div style={{ fontSize: '11px', color: 'var(--slate-500)', marginTop: '2px' }}>Compulsory</div>
                         )}
@@ -239,7 +231,7 @@ export const SetupWizardView: React.FC<Props> = ({ profile, onUpdateProfile, onF
 
                       {isLocked ? (
                         <LockIcon size={16} color="var(--slate-400)" />
-                      ) : isComingSoon ? null : (
+                      ) : (
                         <div
                           style={{
                             width: '20px',

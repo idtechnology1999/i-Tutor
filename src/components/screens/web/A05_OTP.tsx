@@ -143,7 +143,7 @@ export const A05_OTP: React.FC<Props> = ({
       }
       footer={
         <button type="button" className="link-inline" onClick={onChangeNumber}>
-          Wrong number? Change it
+          Wrong email? Change it
         </button>
       }
     >
