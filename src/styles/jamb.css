@@ -16,7 +16,7 @@
 
 .jamb__top {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
   align-items: center;
   gap: 20px;
   padding: 12px 24px;
@@ -98,6 +98,30 @@
 
 .jamb__time.is-low small {
   color: #fff;
+}
+
+.jamb__submit {
+  min-height: 48px;
+  padding: 10px 22px;
+  border: 2px solid #fff;
+  border-radius: 8px;
+  background: transparent;
+  font: inherit;
+  font-weight: 800;
+  color: #fff;
+  cursor: pointer;
+}
+
+.jamb__submit:hover {
+  background: #fff;
+  color: var(--teal-900);
+}
+
+.jamb__end {
+  margin: 0;
+  align-self: center;
+  font-size: 0.875rem;
+  color: var(--slate-600);
 }
 
 /* Subject buttons ----------------------------------------------------------- */
@@ -292,12 +316,6 @@
   cursor: default;
 }
 
-.jamb__btn--submit {
-  margin-left: auto;
-  background: var(--teal-900);
-  color: var(--white);
-}
-
 .jamb__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
@@ -390,14 +408,19 @@
 
 @media (max-width: 720px) {
   .jamb__top {
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 10px 14px;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 10px 12px;
     padding: 10px 16px;
   }
 
   .jamb__candidate {
     grid-column: 1 / -1;
     grid-row: 2;
+  }
+
+  .jamb__submit {
+    min-height: 44px;
+    padding: 8px 14px;
   }
 
   .jamb__subjects {
@@ -420,10 +443,6 @@
     flex: 1 1 auto;
     justify-content: center;
     padding: 10px 14px;
-  }
-
-  .jamb__btn--submit {
-    margin-left: 0;
   }
 
   .jamb__keys {

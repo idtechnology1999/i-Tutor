@@ -399,6 +399,10 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
           <small>Time left</small>
           <strong>{clock(timeLeft)}</strong>
         </div>
+        {/* Up here, away from Previous / Next, so it can't be tapped by mistake. */}
+        <button type="button" className="jamb__submit" onClick={() => setConfirm('submit')}>
+          Submit
+        </button>
       </header>
 
       <nav className="jamb__subjects" aria-label="Subjects">
@@ -481,10 +485,9 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
             <button type="button" className="jamb__btn" onClick={() => switchSubject(nextSubject)}>
               {nextSubject} <ChevronRight size={18} aria-hidden />
             </button>
-          ) : null}
-          <button type="button" className="jamb__btn jamb__btn--submit" onClick={() => setConfirm('submit')}>
-            Submit
-          </button>
+          ) : (
+            <p className="jamb__end">That’s the last question. When you’re ready, press Submit at the top.</p>
+          )}
         </div>
 
         <div className="jamb__grid" role="group" aria-label={`${subject} questions`}>
