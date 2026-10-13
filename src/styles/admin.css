@@ -1083,6 +1083,48 @@
   color: #fff;
 }
 
+.adm-option__tag {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--ok);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.adm-correct__picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.adm-correct__picks button {
+  width: 48px;
+  height: 44px;
+  border: 1px solid var(--rule-2);
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  font-weight: 800;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.adm-correct__picks button:hover {
+  border-color: var(--ok);
+}
+
+.adm-correct__picks button.is-on {
+  background: var(--ok);
+  border-color: var(--ok);
+  color: #fff;
+}
+
+.adm-correct.is-missing .adm-correct__picks button {
+  border-color: var(--bad);
+}
+
 .adm-option__input {
   flex: 1;
   min-width: 0;
@@ -2343,6 +2385,23 @@
   cursor: pointer;
 }
 .auto__input button:disabled { opacity: 0.4; cursor: default; }
+.auto__input .auto__mic {
+  background: var(--mist);
+  color: var(--brand);
+  border: 1px solid var(--rule);
+}
+.auto__input .auto__mic.is-on {
+  background: var(--bad);
+  border-color: var(--bad);
+  color: #fff;
+  animation: auto-listen 1.4s ease-in-out infinite;
+}
+@keyframes auto-listen {
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--bad) 22%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auto__input .auto__mic.is-on { animation: none; }
+}
 
 @media (max-width: 860px) {
   .auto__kbd { display: none; }

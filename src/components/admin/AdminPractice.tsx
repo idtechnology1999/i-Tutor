@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { LoaderCircle, Plus, Search, Sparkles, Trash2 } from 'lucide-react';
-import { CMS_SUBJECTS, PRACTICE, cms, questionKey, useCms } from '../../lib/cms';
+import { CMS_SUBJECTS, PRACTICE, cms, useCms } from '../../lib/cms';
 import type { CmsQuestion, CmsSubject, QuestionDraft } from '../../lib/cms';
 import { jambTopics } from '../../data/jamb-syllabus';
-import { organiseWithAI } from '../../lib/question-import';
+import { writePracticeQuestions } from '../../lib/practice-writer';
 import { publishProblems } from '../../lib/question-rules';
 import { QuestionEditor } from './QuestionEditor';
 import type { AdminNav } from './AdminApp';
@@ -15,7 +15,7 @@ import { PageHead, StatusChip } from './AdminApp';
 
 const ALL = '__all';
 const OTHER = '__other';
-const COUNTS = [5, 10, 20, 40];
+const COUNTS = [10, 20, 50, 100];
 
 const blank = (subject: CmsSubject, topic: string): QuestionDraft => ({
   subject,
@@ -44,6 +44,7 @@ export const AdminPractice: React.FC<{ nav: AdminNav }> = ({ nav }) => {
   const [aiNote, setAiNote] = useState('');
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState('');
+  const [aiProgress, setAiProgress] = useState('');
 
   const practice = useMemo(() => questions.filter((q) => q.examType === PRACTICE), [questions]);
   const inSubject = practice.filter((q) => q.subject === subject);
@@ -99,45 +100,20 @@ export const AdminPractice: React.FC<{ nav: AdminNav }> = ({ nav }) => {
     if (!realTopic) return;
     setAiBusy(true);
     setAiError('');
-    try {
-      const res = await organiseWithAI({
-        subject,
-        examType: 'UTME',
-        year: null,
-        source: '',
-        text:
-          `Set ${aiCount} JAMB UTME practice questions on the ${subject} syllabus topic "${realTopic}". ` +
-          'Match JAMB’s style and difficulty, cover different parts of the topic, and give four options A–D with one correct answer.' +
-          (aiNote.trim() ? ` Also: ${aiNote.trim()}` : ''),
-        file: null,
-      });
-      if (res.engine !== 'ai') throw new Error(res.fallbackReason ?? 'The AI isn’t connected, so it can’t write questions.');
-      const seen = new Set(inSubject.map((q) => questionKey(q.question)));
-      const drafts: QuestionDraft[] = res.questions
-        .filter((q) => {
-          const k = questionKey(q.question);
-          if (!k || seen.has(k)) return false;
-          seen.add(k);
-          return true;
-        })
-        .map((q) => ({
-          ...blank(subject, realTopic),
-          question: q.question.trim(),
-          options: q.options.filter((o) => o.text.trim()),
-          correctAnswer: q.correctAnswer,
-          explanation: q.explanation,
-          answerSource: 'ai',
-          source: 'AI-written practice question',
-          needsReview: true,
-          reviewNote: q.reviewNote || 'AI-written — check the answer, then publish.',
-        }));
-      cms.addQuestions(drafts, `AI wrote ${drafts.length} ${subject} practice questions on ${realTopic}.`);
-      nav.notify(`${drafts.length} questions added as drafts. Open each one, check the answer, then publish.`);
+    const result = await writePracticeQuestions({
+      subject,
+      topics: [realTopic],
+      count: aiCount,
+      note: aiNote,
+      existing: practice,
+      onProgress: (done, of) => setAiProgress(`${done} of ${of} written…`),
+    });
+    setAiBusy(false);
+    setAiProgress('');
+    if (result.error) setAiError(`Stopped after ${result.written}: ${result.error}`);
+    else {
+      nav.notify(`${result.written} questions added as drafts. Open each one, check the answer, then publish.`);
       setAiNote('');
-    } catch (e) {
-      setAiError((e as Error).message);
-    } finally {
-      setAiBusy(false);
     }
   };
 
@@ -221,7 +197,7 @@ export const AdminPractice: React.FC<{ nav: AdminNav }> = ({ nav }) => {
                 />
                 <button type="button" className="adm-btn adm-btn--primary" onClick={() => void writeWithAI()} disabled={aiBusy}>
                   {aiBusy ? <LoaderCircle size={18} className="adm-spin" aria-hidden /> : <Sparkles size={18} aria-hidden />}
-                  {aiBusy ? 'Writing…' : `Write ${aiCount}`}
+                  {aiBusy ? aiProgress || 'Writing…' : `Write ${aiCount}`}
                 </button>
               </div>
               <p className="adm-muted">They arrive as drafts. Check each answer, then publish — students only see published questions.</p>

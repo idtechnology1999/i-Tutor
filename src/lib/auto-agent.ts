@@ -71,7 +71,9 @@ export type AutoAction =
       audience: Audience;
       subject: string;
       body: string;
-    };
+    }
+  /** Write practice questions with AI: on the named syllabus topics, or the whole syllabus when topics is empty. */
+  | { kind: 'practice'; label: string; subject: CmsSubject; topics: string[]; count: number };
 
 export type Audience =
   'All students' | 'Premium students' | 'Free students' | 'Students who haven’t practised this week';
@@ -95,7 +97,8 @@ export const STARTERS = [
   'Publish the latest news',
   'Email all students about JAMB registration',
   'Upload English 2025 past questions',
-  'Write 30 WAEC Biology questions on respiration',
+  'Set 50 Mathematics questions on quadratic equations',
+  'Set 100 Physics questions based on the syllabus',
   'Show questions that need review',
   'How many Physics questions do we have?',
   'Publish all Chemistry drafts',

@@ -167,7 +167,7 @@ export const QuestionEditor: React.FC<Props> = ({ initial, isNew, onClose, onSav
           </label>
 
           <fieldset className="adm-field">
-            <span>Options · tap the circle for the right answer</span>
+            <span>Options</span>
             <div className="adm-options">
               {q.options.map((o, i) => (
                 <div key={o.label} className={`adm-option${q.correctAnswer === o.label ? ' is-correct' : ''}`}>
@@ -181,6 +181,7 @@ export const QuestionEditor: React.FC<Props> = ({ initial, isNew, onClose, onSav
                     {o.label}
                   </button>
                   <input className="adm-option__input" value={o.text} onChange={(e) => setOption(i, e.target.value)} placeholder={`Option ${o.label}`} />
+                  {q.correctAnswer === o.label && <span className="adm-option__tag">Correct answer</span>}
                   {q.options.length > 2 && (
                     <button type="button" className="adm-icon-btn" onClick={() => removeOption(i)} aria-label={`Remove option ${o.label}`}>
                       <X size={16} aria-hidden />
@@ -195,6 +196,29 @@ export const QuestionEditor: React.FC<Props> = ({ initial, isNew, onClose, onSav
               </button>
             )}
           </fieldset>
+
+          <div className={`adm-field adm-correct${tried && !q.correctAnswer ? ' is-missing' : ''}`}>
+            <span id="adm-correct-label">Correct answer</span>
+            <div className="adm-correct__picks" role="radiogroup" aria-labelledby="adm-correct-label">
+              {q.options.map((o) => (
+                <button
+                  key={o.label}
+                  type="button"
+                  role="radio"
+                  aria-checked={q.correctAnswer === o.label}
+                  className={q.correctAnswer === o.label ? 'is-on' : ''}
+                  onClick={() => pickAnswer(o.label)}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+            <small className="adm-muted">
+              {q.correctAnswer
+                ? `${q.correctAnswer}${q.options.find((o) => o.label === q.correctAnswer)?.text ? ` — ${q.options.find((o) => o.label === q.correctAnswer)?.text}` : ''}`
+                : 'Choose which option is right. You can also tap the letter beside an option.'}
+            </small>
+          </div>
 
           <label className="adm-field">
             <span>Explanation (shown after the student answers)</span>

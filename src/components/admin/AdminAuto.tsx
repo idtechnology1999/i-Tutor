@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowRight, Check, CircleDashed, LoaderCircle, SendHorizontal, Workflow, X } from 'lucide-react';
-import { cms, useCms } from '../../lib/cms';
+import { ArrowRight, Check, CircleDashed, LoaderCircle, Mic, SendHorizontal, Square, Volume2, VolumeX, Workflow, X } from 'lucide-react';
+import { PRACTICE, cms, useCms } from '../../lib/cms';
+import { canSpeak, recogniserCtor, speakText } from '../../lib/speech';
+import type { Recogniser } from '../../lib/speech';
+import { writePracticeQuestions } from '../../lib/practice-writer';
 import { AUDIENCES, STARTERS } from '../../lib/auto-agent';
 import { planAuto, sendStudentEmail } from '../../services/admin';
 import { isLive } from '../../services/api';
@@ -17,8 +20,13 @@ interface Turn {
   run?: RunState;
   /** Steps ticked so far while running. */
   ticked?: number;
+  /** Live progress of a long run, e.g. "40 of 100 written…". */
+  progress?: string;
   result?: string;
 }
+
+// Spoken (or typed) go-aheads that run the plan on screen instead of asking the AI again.
+const GO_AHEAD = /^(yes|yeah|yep|ok(ay)?|run( it)?|go( ahead)?|do it|start|proceed|sure)\b[\s.!]*$/i;
 
 /** Actions that only move around the panel run straight away when tapped. */
 const isNavigation = (a: AutoAction) => a.kind === 'open' || a.kind === 'import';
@@ -35,12 +43,21 @@ export const AdminAuto: React.FC<Props> = ({ open, onClose, nav }) => {
     {
       id: 0,
       who: 'auto',
-      text: 'Hi, I’m i-Auto. I know how this admin panel works. Tell me what to do — publish news, email students, upload a paper, write practice questions, check what needs review — and I’ll show you the plan before anything changes.',
+      text: 'Hi, I’m i-Auto. Type or tap the mic and tell me what to do — “set 50 questions on quadratic equations”, “set 100 Physics questions based on the syllabus”, publish news, email students, check what needs review. I’ll show you the plan before anything changes; say “yes” or press Run to go.',
       plan: { reply: '', suggestions: STARTERS },
     },
   ]);
   const [text, setText] = useState('');
   const [thinking, setThinking] = useState(false);
+  // Voice: listening to the admin, and reading replies aloud (switched on by the first spoken request).
+  const [listening, setListening] = useState(false);
+  const [speakOn, setSpeakOn] = useState(false);
+  const recRef = useRef<Recogniser | null>(null);
+  const speakOnRef = useRef(false);
+  speakOnRef.current = speakOn;
+  const say = (line: string) => {
+    if (speakOnRef.current) speakText(line);
+  };
   const logRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const idRef = useRef(1);
@@ -55,6 +72,16 @@ export const AdminAuto: React.FC<Props> = ({ open, onClose, nav }) => {
   useEffect(() => {
     if (open) window.setTimeout(() => inputRef.current?.focus(), 250);
   }, [open]);
+
+  // Closing the panel stops the mic and the voice.
+  useEffect(() => {
+    if (open) return;
+    recRef.current?.abort();
+    if (canSpeak()) window.speechSynthesis.cancel();
+  }, [open]);
+
+  // The latest ask/run, for the speech recogniser's callbacks.
+  const askRef = useRef<(m: string) => void>(() => undefined);
 
   if (!open) return null;
 
@@ -75,6 +102,12 @@ export const AdminAuto: React.FC<Props> = ({ open, onClose, nav }) => {
     setText('');
     const youId = idRef.current++;
     setTurns((prev) => [...prev, { id: youId, who: 'you', text: m }]);
+    // "Yes" / "run it" with a plan waiting: run it.
+    const waiting = [...turns].reverse().find((t) => t.run === 'ready');
+    if (waiting && GO_AHEAD.test(m)) {
+      run(waiting);
+      return;
+    }
     setThinking(true);
     // Earlier turns let follow-ups like "now do 2018" make sense.
     const history = turns.map((t) => ({ role: t.who === 'you' ? ('admin' as const) : ('auto' as const), text: t.text }));
@@ -91,10 +124,12 @@ export const AdminAuto: React.FC<Props> = ({ open, onClose, nav }) => {
             run: plan.action ? 'ready' : undefined,
           },
         ]);
+        say(plan.action && !isNavigation(plan.action) ? `${plan.reply} Say yes to go ahead.` : plan.reply);
       })
       .catch((err: Error) => {
         const id = idRef.current++;
         setTurns((prev) => [...prev, { id, who: 'auto', text: `Sorry — ${err.message}` }]);
+        say(`Sorry — ${err.message}`);
       })
       .finally(() => setThinking(false));
   };
@@ -102,8 +137,23 @@ export const AdminAuto: React.FC<Props> = ({ open, onClose, nav }) => {
   const narrow = () => window.matchMedia('(max-width: 860px)').matches;
 
   /** Do the action for real. Returns what to say afterwards. */
-  const perform = (a: AutoAction): string | Promise<string> => {
+  const perform = (a: AutoAction, id: number): string | Promise<string> => {
     switch (a.kind) {
+      case 'practice': {
+        const where = a.topics.length ? a.topics.join(', ') : 'the whole syllabus';
+        return writePracticeQuestions({
+          subject: a.subject,
+          topics: a.topics,
+          count: a.count,
+          existing: questions.filter((q) => q.examType === PRACTICE),
+          onProgress: (done, of) => patch(id, { progress: `${done} of ${of} written…` }),
+        }).then((r) => {
+          patch(id, { progress: undefined });
+          if (r.error) return `Stopped after ${r.written}: ${r.error} The ${r.written} already written are saved as drafts.`;
+          nav.notify(`${r.written} ${a.subject} practice questions added as drafts.`);
+          return `Done — ${r.written} ${a.subject} questions on ${where} are in Practice questions as drafts. Check each answer, then publish.`;
+        });
+      }
       case 'open':
         nav.go(a.section, { filter: a.filter, scope: a.scope });
         if (narrow()) onClose();
@@ -151,9 +201,56 @@ export const AdminAuto: React.FC<Props> = ({ open, onClose, nav }) => {
 
   const finish = (id: number, action: AutoAction) =>
     Promise.resolve()
-      .then(() => perform(action))
-      .then((result) => patch(id, { run: 'done', result }))
-      .catch((err: Error) => patch(id, { run: 'done', result: `That didn’t work: ${err.message}` }));
+      .then(() => perform(action, id))
+      .then((result) => {
+        patch(id, { run: 'done', result });
+        say(result);
+      })
+      .catch((err: Error) => {
+        patch(id, { run: 'done', result: `That didn’t work: ${err.message}` });
+        say(`That didn’t work: ${err.message}`);
+      });
+
+  // Tap the mic and speak; the words appear in the box and send when you stop.
+  const toggleListen = () => {
+    if (listening) {
+      recRef.current?.stop();
+      return;
+    }
+    const Ctor = recogniserCtor();
+    if (!Ctor) {
+      nav.notify('Voice needs Chrome or Edge. You can still type.');
+      return;
+    }
+    if (canSpeak()) window.speechSynthesis.cancel();
+    const rec = new Ctor();
+    rec.lang = 'en-NG';
+    rec.interimResults = true;
+    rec.continuous = false;
+    let said = '';
+    rec.onresult = (e) => {
+      said = Array.from(e.results)
+        .map((r) => r[0].transcript)
+        .join(' ')
+        .trim();
+      setText(said);
+    };
+    rec.onerror = (e) => {
+      if (e.error === 'not-allowed') nav.notify('Allow the microphone in your browser to talk to i-Auto.');
+    };
+    rec.onend = () => {
+      setListening(false);
+      recRef.current = null;
+      if (said) {
+        setSpeakOn(true);
+        speakOnRef.current = true;
+        askRef.current(said);
+      }
+    };
+    recRef.current = rec;
+    setListening(true);
+    rec.start();
+  };
 
   const run = (turn: Turn) => {
     const action = turn.plan?.action;
@@ -169,6 +266,8 @@ export const AdminAuto: React.FC<Props> = ({ open, onClose, nav }) => {
     window.setTimeout(() => finish(turn.id, action), 380 * steps.length + 200);
   };
 
+  askRef.current = ask;
+
   return (
     <>
       <div className="auto-backdrop" onClick={onClose} aria-hidden />
@@ -182,6 +281,21 @@ export const AdminAuto: React.FC<Props> = ({ open, onClose, nav }) => {
             <small>Admin automation · knows your panel</small>
           </div>
           <kbd className="auto__kbd">Ctrl K</kbd>
+          {canSpeak() && (
+            <button
+              type="button"
+              className="adm-icon-btn"
+              onClick={() => {
+                if (speakOn) window.speechSynthesis.cancel();
+                setSpeakOn((v) => !v);
+              }}
+              aria-pressed={speakOn}
+              aria-label={speakOn ? 'Stop reading replies aloud' : 'Read replies aloud'}
+              title={speakOn ? 'Replies are read aloud' : 'Read replies aloud'}
+            >
+              {speakOn ? <Volume2 size={19} aria-hidden /> : <VolumeX size={19} aria-hidden />}
+            </button>
+          )}
           <button type="button" className="adm-icon-btn" onClick={onClose} aria-label="Close i-Auto">
             <X size={20} aria-hidden />
           </button>
@@ -277,6 +391,11 @@ export const AdminAuto: React.FC<Props> = ({ open, onClose, nav }) => {
                         )}
                       </div>
                     )}
+                    {turn.run === 'running' && turn.progress && (
+                      <p className="auto__result is-muted">
+                        <LoaderCircle size={16} className="auto__spin" aria-hidden /> {turn.progress}
+                      </p>
+                    )}
                     {turn.run === 'cancelled' && <p className="auto__result is-muted">Cancelled — nothing changed.</p>}
                     {turn.run === 'done' && turn.result && (
                       <p className="auto__result">
@@ -316,11 +435,21 @@ export const AdminAuto: React.FC<Props> = ({ open, onClose, nav }) => {
             ask(text);
           }}
         >
+          <button
+            type="button"
+            className={`auto__mic${listening ? ' is-on' : ''}`}
+            onClick={toggleListen}
+            aria-pressed={listening}
+            aria-label={listening ? 'Stop listening' : 'Speak to i-Auto'}
+            title={listening ? 'Listening… tap to stop' : 'Speak to i-Auto'}
+          >
+            {listening ? <Square size={16} aria-hidden /> : <Mic size={18} aria-hidden />}
+          </button>
           <input
             ref={inputRef}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Tell i-Auto what to do…"
+            placeholder={listening ? 'Listening…' : 'Tell i-Auto what to do — or tap the mic'}
             aria-label="Tell i-Auto what to do"
           />
           <button type="submit" disabled={!text.trim() || thinking} aria-label="Send">
