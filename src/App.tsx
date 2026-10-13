@@ -275,7 +275,6 @@ export function App() {
             onEditGoal={() => goTo('setup')}
             onOpenCourse={() => goTo('course')}
             onOpenPostUtme={() => goTo('postutme')}
-            onOpenClassroom={() => goTo('classroom')}
             onStartPractice={launchCourseExam}
             tutor={tutor}
             onOpenPastQuestions={(exam) => {
