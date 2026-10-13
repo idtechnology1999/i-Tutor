@@ -19,7 +19,6 @@ import { PageHead, StatusChip } from './AdminApp';
 
 const ALL = '__all';
 const OTHER = '__other';
-const EXAMPLES = ['Set 30 questions', 'Set 10 questions on each topic', 'Set 20 harder questions with calculations'];
 
 const blank = (subject: CmsSubject, topic: string): QuestionDraft => ({
   subject,
@@ -300,13 +299,6 @@ export const AdminPractice: React.FC<{ nav: AdminNav }> = ({ nav }) => {
           </button>
         </form>
 
-        <div className="adm-pr__examples">
-          {EXAMPLES.map((ex) => (
-            <button key={ex} type="button" onClick={() => setInstruction(ex)} disabled={busy}>
-              {ex}
-            </button>
-          ))}
-        </div>
         <p className="adm-muted">
           They arrive as drafts, spread across the ticked topics. Check the answers, then publish — students only see published questions.
         </p>

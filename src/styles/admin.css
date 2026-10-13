@@ -2962,28 +2962,6 @@
   cursor: default;
 }
 
-.adm-pr__examples {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.adm-pr__examples button {
-  padding: 6px 12px;
-  border: 1px dashed var(--rule-2);
-  border-radius: 999px;
-  background: transparent;
-  font: inherit;
-  font-size: 0.8125rem;
-  color: var(--ink-2);
-  cursor: pointer;
-}
-
-.adm-pr__examples button:hover {
-  border-color: var(--brand);
-  color: var(--brand);
-}
-
 .adm-pr__ai .adm-muted {
   margin: 0;
 }
