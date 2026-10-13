@@ -36,9 +36,39 @@ const blank = (subject: CmsSubject, topic: string): QuestionDraft => ({
   reviewNote: '',
 });
 
-/** "set 10 questions on each topic" → 10 per topic; "set 30 questions" → 30 in total (20 if no number). */
-const countFrom = (instruction: string, topics: number) => {
-  const n = Number(instruction.match(/\d+/)?.[0] ?? 20);
+const UNITS: Record<string, number> = {
+  one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+  eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19,
+};
+const TENS: Record<string, number> = { twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 };
+
+/** The number the admin typed or said: "30", "thirty five", "a hundred", "two hundred". null if none. */
+const numberIn = (text: string): number | null => {
+  const digits = text.match(/\d+/)?.[0];
+  if (digits) return Number(digits);
+  const words = text.toLowerCase().replace(/-/g, ' ').split(/[^a-z]+/);
+  let total = 0;
+  let found = false;
+  for (let i = 0; i < words.length; i += 1) {
+    const w = words[i];
+    if (w === 'hundred') {
+      total = (total || 1) * 100;
+      found = true;
+    } else if (w in TENS) {
+      total += TENS[w];
+      found = true;
+    } else if (w in UNITS) {
+      total += UNITS[w];
+      found = true;
+    } else if (found && w !== 'and') break;
+  }
+  return found ? total : null;
+};
+
+/** "set 10 questions on each topic" → 10 per topic; "set 30 questions" → 30 in total; null until a number is given. */
+const countFrom = (instruction: string, topics: number): number | null => {
+  const n = numberIn(instruction);
+  if (!n) return null;
   const each = /\b(each|every|per)\b/i.test(instruction);
   return Math.max(1, Math.min(200, each ? n * Math.max(1, topics) : n));
 };
@@ -48,6 +78,7 @@ const noteFrom = (instruction: string) =>
   instruction
     .replace(/\b(please\s+)?(set|write|generate|make|create|give( me)?)\b/gi, ' ')
     .replace(/\b\d+\b/g, ' ')
+    .replace(new RegExp(`\\b(a\\s+)?(${[...Object.keys(UNITS), ...Object.keys(TENS), 'hundred'].join('|')})\\b`, 'gi'), ' ')
     .replace(/\b(in|on|for)\s+(this|the|these)\s+topics?(\s+selected)?\b/gi, ' ')
     .replace(/\b(on|for|in|from|across|based on)\s+(each|every|all|the|these|those|selected|this|the selected)(\s+(selected|chosen))?\s+topics?(\s+selected)?\b/gi, ' ')
     .replace(/\b(each|per|every)\s+topic\b/gi, ' ')
@@ -110,6 +141,11 @@ export const AdminPractice: React.FC<{ nav: AdminNav }> = ({ nav }) => {
       return;
     }
     const count = countFrom(text, picked.length);
+    if (!count) {
+      setAiError('Say or type how many questions you want, e.g. “set 25 questions”.');
+      if (spokeRef.current) speakText('How many questions do you want?');
+      return;
+    }
     setBusy(true);
     setAiError('');
     setProgress(`0 of ${count} written…`);
@@ -295,7 +331,7 @@ export const AdminPractice: React.FC<{ nav: AdminNav }> = ({ nav }) => {
           />
           <button type="submit" className="adm-btn adm-btn--primary" disabled={busy || !picked.length}>
             {busy ? <LoaderCircle size={18} className="adm-spin" aria-hidden /> : <Sparkles size={18} aria-hidden />}
-            {busy ? progress || 'Writing…' : `Write ${willWrite}`}
+            {busy ? progress || 'Writing…' : willWrite ? `Write ${willWrite}` : 'Write'}
           </button>
         </form>
 
