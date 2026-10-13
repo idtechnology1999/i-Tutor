@@ -26,7 +26,7 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initia
   // Only the student's own exams (in the usual order); everything if none chosen yet.
   const examTabs = exams?.length ? EXAM_TYPES.filter((t) => exams.includes(t)) : EXAM_TYPES;
   const [exam, setExam] = useState<ExamType>(
-    initialExam && examTabs.includes(initialExam) ? initialExam : (examTabs[0] ?? 'UTME'),
+    initialExam && (examTabs as readonly string[]).includes(initialExam) ? initialExam : (examTabs[0] ?? 'UTME'),
   );
   const [school, setSchool] = useState(initialSchool ?? '');
   const { questions: allQs } = useCms();

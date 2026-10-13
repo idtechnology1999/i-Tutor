@@ -1,41 +1,28 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  ArrowLeft,
-  Atom,
-  Calculator,
-  Check,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Clock3,
-  Flag,
-  GraduationCap,
-  Leaf,
-  BookOpen,
-  FlaskConical,
-  Languages,
-  Layers,
-  LayoutGrid,
-  MessageSquareText,
-  Play,
-  RotateCcw,
-  Sigma,
-  X,
-} from 'lucide-react';
+import { ArrowLeft, Calculator, Check, ChevronDown, ChevronLeft, ChevronRight, MessageSquareText, RotateCcw, X } from 'lucide-react';
 import type { DiagnosticQuestion, UserProfile } from '../../types';
-import { DIAGNOSTIC_QUESTIONS } from '../../data/nigerian-curriculum';
 import { ExamCalculator } from './ExamCalculator';
-import { DesktopWindow } from './DesktopWindow';
-import { CMS_SUBJECTS, toExamQuestion, useCms } from '../../lib/cms';
+import { CMS_SUBJECTS, PRACTICE, toExamQuestion, useCms, useQuestionsReady } from '../../lib/cms';
+import type { CmsQuestion } from '../../lib/cms';
+import { recordResult } from '../../lib/progress';
 import type { SolveRequest } from '../../data/tutors';
+
+/* The CBT, laid out like JAMB's: candidate bar with the clock, one button per
+   subject, radio-button options, a numbered question grid, and Previous /
+   Next / Submit. It starts as soon as it opens — no setup screen.
+   - Practise a subject: that subject's practice-bank questions (JAMB past
+     questions if the practice bank has none yet).
+   - Practice exam (no subject): a full UTME mock — English (60) and the
+     student's three subjects (40 each) — from past and practice questions.
+   - Course / Post-UTME: the subjects and exam the student picked there. */
 
 interface Props {
   profile: UserProfile;
   onExit: () => void;
   onOpenTutor?: () => void;
-  /** Subject the student tapped to get here, pre-selected in the setup. */
+  /** Practise one subject. */
   presetSubject?: DiagnosticQuestion['subject'];
-  /** Course mock: the four JAMB subjects for a course. */
+  /** Course or Post-UTME practice: its subjects, exam and school. */
   presetCourse?: { name: string; subjects: string[]; exam?: string; school?: string };
   /** "Solve with my tutor" (Premium) in the answer review. */
   onSolve?: (req: SolveRequest) => void;
@@ -43,115 +30,133 @@ interface Props {
   askLabel?: string;
 }
 
-type Subject = string;
-/** 'all', 'course', or a subject name. */
-type Choice = string;
-const CORE_SUBJECTS: Subject[] = ['English', 'Mathematics', 'Physics', 'Chemistry'];
-// Display order: JAMB's usual subject order, unknown subjects last.
-const orderOf = (s: string) => {
+/** JAMB: English has 60 questions, every other subject 40, all in 2 hours (40 seconds each). */
+const perSubject = (subject: string) => (subject === 'English' ? 60 : 40);
+const SECONDS_EACH = 40;
+const MOCK_SECONDS = 2 * 60 * 60;
+
+const bankName = (s: string) => (s === 'English Language' || s === 'Use of English' ? 'English' : s);
+const order = (s: string) => {
   const i = (CMS_SUBJECTS as readonly string[]).indexOf(s);
   return i < 0 ? 99 : i;
 };
-const bySubjectOrder = (a: string, b: string) => orderOf(a) - orderOf(b) || a.localeCompare(b);
 
-const SUBJECT_LOOK: Record<string, { note: string; icon: typeof Layers }> = {
-  English: { note: 'Use of English', icon: Languages },
-  Mathematics: { note: 'Algebra, calculus…', icon: Sigma },
-  Physics: { note: 'Motion, waves…', icon: Atom },
-  Chemistry: { note: 'Organic, moles…', icon: FlaskConical },
-  Biology: { note: 'Cells, genetics…', icon: Leaf },
-};
-const COUNT_STEPS = [5, 10, 20, 40, 60];
-const SECONDS_PER_QUESTION = 60;
+function shuffle<T>(items: T[]): T[] {
+  const a = [...items];
+  for (let i = a.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
-const poolFor = (bank: DiagnosticQuestion[], choice: Choice, courseSubjects: string[] = []) =>
-  choice === 'all'
-    ? bank
-    : choice === 'course'
-      ? bank.filter((q) => courseSubjects.includes(q.subject))
-      : bank.filter((q) => q.subject === choice);
+interface Paper {
+  title: string;
+  subjects: string[];
+  questions: DiagnosticQuestion[];
+  seconds: number;
+  /** Shown above the questions, e.g. when past questions stand in for practice ones. */
+  note: string;
+  /** Learning aids (Ask AI) are offered in practice, not in a mock. */
+  practice: boolean;
+}
 
-// Sensible counts for the pool size, always ending with "all of them".
-const countOptions = (available: number) => {
-  const steps = COUNT_STEPS.filter((n) => n < available);
-  return [...steps, available];
-};
+function buildPaper(
+  bank: CmsQuestion[],
+  profile: UserProfile,
+  presetSubject?: string,
+  presetCourse?: Props['presetCourse'],
+): Paper {
+  const live = bank.filter((q) => q.status === 'published');
+  const take = (subject: string, pool: CmsQuestion[]) => shuffle(pool.filter((q) => q.subject === subject)).slice(0, perSubject(subject));
 
-const formatTime = (secs: number) => {
+  if (presetCourse) {
+    const exam = presetCourse.exam ?? 'UTME';
+    const pool = live.filter((q) => q.examType === exam && (!presetCourse.school || q.school === presetCourse.school));
+    const subjects = [...new Set(presetCourse.subjects.map(bankName))].sort((a, b) => order(a) - order(b));
+    const questions = subjects.flatMap((s) => take(s, pool)).map(toExamQuestion);
+    return { title: presetCourse.name, subjects, questions, seconds: questions.length * SECONDS_EACH, note: '', practice: false };
+  }
+
+  if (presetSubject) {
+    const subject = bankName(presetSubject);
+    const practice = take(subject, live.filter((q) => q.examType === PRACTICE));
+    const usePast = practice.length === 0;
+    const chosen = usePast ? take(subject, live.filter((q) => q.examType === 'UTME')) : practice;
+    const questions = chosen.map(toExamQuestion);
+    return {
+      title: `${subject} practice`,
+      subjects: [subject],
+      questions,
+      seconds: questions.length * SECONDS_EACH,
+      note: usePast && questions.length ? `There are no ${subject} practice questions yet, so these are JAMB past questions.` : '',
+      practice: true,
+    };
+  }
+
+  // Full UTME mock: English plus the student's three subjects.
+  const chosen = profile.selectedSubjects.map(bankName).filter((s) => s !== 'English');
+  const subjects = ['English', ...chosen.slice(0, 3)];
+  const pool = live.filter((q) => q.examType === 'UTME' || q.examType === PRACTICE);
+  // Past questions first, topped up from the practice bank.
+  const questions = subjects
+    .flatMap((s) => {
+      const past = shuffle(pool.filter((q) => q.subject === s && q.examType === 'UTME'));
+      const extra = shuffle(pool.filter((q) => q.subject === s && q.examType === PRACTICE));
+      return [...past, ...extra].slice(0, perSubject(s));
+    })
+    .map(toExamQuestion);
+  return {
+    title: 'UTME mock exam',
+    subjects: subjects.filter((s) => questions.some((q) => q.subject === s)),
+    questions,
+    seconds: Math.min(MOCK_SECONDS, questions.length * SECONDS_EACH),
+    note: '',
+    practice: false,
+  };
+}
+
+const clock = (secs: number) => {
   const h = Math.floor(secs / 3600);
   const m = Math.floor((secs % 3600) / 60);
   const s = secs % 60;
-  return h > 0
-    ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-    : `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return `${h ? `${h}:` : ''}${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 };
 
-const minutesLabel = (count: number) => {
-  const mins = Math.round((count * SECONDS_PER_QUESTION) / 60);
-  if (mins < 60) return `${mins} min`;
-  const rest = mins % 60;
-  return rest ? `${Math.floor(mins / 60)} hr ${rest} min` : `${mins / 60} hr`;
-};
-
-export const CBTExamView: React.FC<Props> = ({
-  profile,
-  onExit,
-  onOpenTutor,
-  presetSubject,
-  presetCourse,
-  onSolve,
-  solveLabel,
-  askLabel,
-}) => {
-  // Published questions from the CMS, in the four CBT subjects.
-  const { questions: cmsQuestions } = useCms();
-  const bank = cmsQuestions
-    .filter(
-      (q) =>
-        q.status === 'published' &&
-        q.examType === (presetCourse?.exam ?? 'UTME') &&
-        (!presetCourse?.school || q.school === presetCourse.school),
-    )
-    .map(toExamQuestion);
-  const courseSubjects = presetCourse?.subjects ?? [];
-
-  // Setup: nothing runs until the student has chosen and pressed Start.
-  const [config, setConfig] = useState<null | { choice: Choice; count: number }>(null);
-  const startChoice: Choice = presetCourse ? 'course' : (presetSubject ?? 'all');
-  const [pickChoice, setPickChoice] = useState<Choice>(startChoice);
-  const [pickCount, setPickCount] = useState(() => poolFor(bank, startChoice, courseSubjects).length);
-
-  const [activeSubject, setActiveSubject] = useState<Subject>('English');
-  const [currentQIndex, setCurrentQIndex] = useState(0);
+export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, presetSubject, presetCourse, onSolve, solveLabel, askLabel }) => {
+  const { questions: bank } = useCms();
+  const ready = useQuestionsReady();
+  // The paper is drawn once, when the bank is ready, so it doesn't reshuffle mid-exam.
+  const [paper, setPaper] = useState<Paper | null>(null);
+  const [subject, setSubject] = useState('');
+  const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
-  const [flagged, setFlagged] = useState<Record<number, boolean>>({});
   const [timeLeft, setTimeLeft] = useState(0);
-  const [showCalculator, setShowCalculator] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [confirm, setConfirm] = useState<null | 'submit' | 'exit'>(null);
-  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [showCalculator, setShowCalculator] = useState(false);
   const [openReview, setOpenReview] = useState<number | null>(null);
 
-  const tabsRef = useRef<HTMLElement>(null);
+  const start = () => {
+    const next = buildPaper(bank, profile, presetSubject, presetCourse);
+    setPaper(next);
+    setSubject(next.subjects[0] ?? '');
+    setIndex(0);
+    setAnswers({});
+    setTimeLeft(next.seconds);
+    setSubmitted(false);
+    setConfirm(null);
+    setOpenReview(null);
+  };
 
-  const examQuestions = config ? poolFor(bank, config.choice, courseSubjects).slice(0, config.count) : [];
-  const examSubjects = [...new Set(examQuestions.map((q) => q.subject))].sort(bySubjectOrder);
-
-  // Keep the chosen subject tab visible when the strip scrolls on phones.
   useEffect(() => {
-    const tab = tabsRef.current?.querySelector<HTMLElement>('.is-on');
-    tab?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
-  }, [activeSubject]);
+    if (ready && !paper) start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- drawn once per visit
+  }, [ready]);
 
-  const subjectQuestions = examQuestions.filter((q) => q.subject === activeSubject);
-  const activeQuestion = subjectQuestions[currentQIndex] || examQuestions[0] || DIAGNOSTIC_QUESTIONS[0];
-  const total = examQuestions.length;
-  const answeredCount = Object.keys(answers).length;
-  const flaggedCount = Object.values(flagged).filter(Boolean).length;
-
-  // The paper is over when the candidate submits or the clock hits zero.
-  const running = config !== null;
-  const finished = running && (isSubmitted || timeLeft <= 0);
+  const total = paper?.questions.length ?? 0;
+  const running = Boolean(paper && total > 0);
+  const finished = running && (submitted || timeLeft <= 0);
 
   useEffect(() => {
     if (!running || finished) return;
@@ -159,423 +164,285 @@ export const CBTExamView: React.FC<Props> = ({
     return () => window.clearInterval(timer);
   }, [running, finished]);
 
-  const startExam = () => {
-    const pool = poolFor(bank, pickChoice, courseSubjects);
-    const count = Math.min(pickCount, pool.length);
-    const chosen = pool.slice(0, count);
-    const first = [...new Set(chosen.map((q) => q.subject))].sort(bySubjectOrder)[0] ?? 'English';
-    setAnswers({});
-    setFlagged({});
-    setCurrentQIndex(0);
-    setActiveSubject(first);
-    setTimeLeft(count * SECONDS_PER_QUESTION);
-    setIsSubmitted(false);
-    setOpenReview(null);
-    setConfig({ choice: pickChoice, count });
-  };
-
-  const goTo = (index: number) => {
-    setCurrentQIndex(Math.max(0, Math.min(subjectQuestions.length - 1, index)));
-    setPaletteOpen(false);
-  };
-
-  const switchSubject = (subject: Subject) => {
-    setActiveSubject(subject);
-    setCurrentQIndex(0);
-  };
-
-  const handleSelectOption = (label: string) => setAnswers((prev) => ({ ...prev, [activeQuestion.id]: label }));
-
-  const toggleFlag = () => setFlagged((prev) => ({ ...prev, [activeQuestion.id]: !prev[activeQuestion.id] }));
-
-  // Keyboard: A–D or 1–4 to answer, N / P to move, F to flag. The listener is
-  // attached once and always calls the latest handler through a ref.
-  const onKeyRef = useRef<(event: KeyboardEvent) => void>(() => undefined);
+  // Save the result once, for the dashboard.
+  const recorded = useRef(false);
   useEffect(() => {
-    onKeyRef.current = (event) => {
-      if (!running || finished || confirm) return;
-      const target = event.target as HTMLElement;
-      if (target.closest('input, textarea, .calc') || event.metaKey || event.ctrlKey) return;
-      const key = event.key.toLowerCase();
-      const pick = 'abcd'.indexOf(key) >= 0 ? 'abcd'.indexOf(key) : '1234'.indexOf(key);
-      if (pick >= 0 && activeQuestion.options[pick]) handleSelectOption(activeQuestion.options[pick].label);
-      else if (key === 'n' || key === 'arrowright') goTo(currentQIndex + 1);
-      else if (key === 'p' || key === 'arrowleft') goTo(currentQIndex - 1);
-      else if (key === 'f') toggleFlag();
+    if (!finished || !paper || recorded.current) return;
+    recorded.current = true;
+    recordResult(
+      paper.subjects.map((s) => {
+        const qs = paper.questions.filter((q) => q.subject === s);
+        return {
+          subject: s,
+          correct: qs.filter((q) => answers[q.id] === q.correctAnswer).length,
+          total: qs.length,
+          missedTopics: qs.filter((q) => answers[q.id] !== q.correctAnswer).map((q) => q.topic),
+        };
+      }),
+    );
+  }, [finished, paper, answers]);
+
+  const subjectQs = paper?.questions.filter((q) => q.subject === subject) ?? [];
+  const question = subjectQs[index];
+  const answered = Object.keys(answers).length;
+
+  const goTo = (i: number) => setIndex(Math.max(0, Math.min(subjectQs.length - 1, i)));
+  const choose = (label: string) => question && setAnswers((prev) => ({ ...prev, [question.id]: label }));
+  const switchSubject = (s: string) => {
+    setSubject(s);
+    setIndex(0);
+  };
+
+  // JAMB's keys: A–D to answer, N next, P previous, S submit.
+  const onKey = useRef<(e: KeyboardEvent) => void>(() => undefined);
+  useEffect(() => {
+    onKey.current = (e) => {
+      if (!running || finished || confirm || !question) return;
+      const target = e.target as HTMLElement;
+      if (target.closest('input, textarea, .calc') || e.metaKey || e.ctrlKey || e.altKey) return;
+      const key = e.key.toLowerCase();
+      const pick = 'abcde'.indexOf(key);
+      if (pick >= 0 && question.options[pick]) choose(question.options[pick].label);
+      else if (key === 'n' || key === 'arrowright') goTo(index + 1);
+      else if (key === 'p' || key === 'arrowleft') goTo(index - 1);
+      else if (key === 's') setConfirm('submit');
     };
   });
   useEffect(() => {
-    const onKey = (event: KeyboardEvent) => onKeyRef.current(event);
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    const handler = (e: KeyboardEvent) => onKey.current(e);
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  // "Try again" goes back to the setup so the student can change their mind.
-  const restart = () => {
-    setConfig(null);
-    setIsSubmitted(false);
-    setOpenReview(null);
-  };
-
-  /* ================================================================== Setup */
-  if (!running) {
-    const pool = poolFor(bank, pickChoice, courseSubjects);
-    const options = countOptions(pool.length);
-    const count = Math.min(pickCount, pool.length);
-    // Subjects: the core four always, plus any others that have JAMB questions.
-    const subjectIds = [...new Set([...CORE_SUBJECTS, ...bank.map((q) => q.subject)])].sort(bySubjectOrder);
-    const choices: Array<{ id: Choice; label: string; note: string; icon: typeof Layers }> = [
-      ...(presetCourse
-        ? [{ id: 'course', label: presetCourse.name, note: presetCourse.subjects.join(', '), icon: GraduationCap }]
-        : []),
-      { id: 'all', label: 'All subjects', note: 'Full mixed mock', icon: Layers },
-      ...subjectIds.map((sid) => ({
-        id: sid,
-        label: sid,
-        note: SUBJECT_LOOK[sid]?.note ?? 'JAMB past questions',
-        icon: SUBJECT_LOOK[sid]?.icon ?? BookOpen,
-      })),
-    ];
-    const chosen = choices.find((c) => c.id === pickChoice) ?? choices[0];
-
+  /* --------------------------------------------------------- Loading / empty */
+  if (!paper) {
     return (
-      <DesktopWindow title="Practice exam — i-Tutor CBT" onClose={onExit}>
-        <div className="xs">
-          <header className="xs__bar">
-            <button type="button" className="xs__back" onClick={onExit}>
-              <ArrowLeft size={18} aria-hidden /> Home
-            </button>
-          </header>
-
-          <div className="xs__wrap">
-            <header className="xs__intro">
-              <h1>{presetCourse ? presetCourse.name : 'Practice exam'}</h1>
-              <p>Pick a subject, choose how many questions, then start. You get about 1 minute per question.</p>
-            </header>
-
-            <section className="xs__group" aria-labelledby="xs-subject">
-              <h2 id="xs-subject">Subject</h2>
-              <div className="xs__list" role="radiogroup" aria-labelledby="xs-subject">
-                {choices.map((c) => {
-                  const Icon = c.icon;
-                  const on = pickChoice === c.id;
-                  const n = poolFor(bank, c.id, courseSubjects).length;
-                  return (
-                    <button
-                      key={c.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={on}
-                      className={`xs__row${on ? ' is-on' : ''}`}
-                      disabled={n === 0}
-                      onClick={() => {
-                        setPickChoice(c.id);
-                        setPickCount(n);
-                      }}
-                    >
-                      <span className="xs__row-icon">
-                        <Icon size={18} aria-hidden />
-                      </span>
-                      <span className="xs__row-name">{c.label}</span>
-                      <span className="xs__row-n">{n === 0 ? 'Coming soon' : n}</span>
-                      <span className="xs__row-tick" aria-hidden>
-                        {on && <Check size={18} strokeWidth={2.5} />}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-
-            {count > 0 && (
-              <section className="xs__group" aria-labelledby="xs-count">
-                <h2 id="xs-count">Questions</h2>
-                <div className="xs__seg" role="radiogroup" aria-labelledby="xs-count">
-                  {options.map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      role="radio"
-                      aria-checked={count === n}
-                      className={count === n ? 'is-on' : ''}
-                      onClick={() => setPickCount(n)}
-                    >
-                      {n === pool.length && options.length > 1 ? `All ${n}` : n}
-                    </button>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            <div className="xs__go">
-              <p className="xs__sum">
-                <strong>{chosen.label}</strong> · {count} {count === 1 ? 'question' : 'questions'} ·{' '}
-                {minutesLabel(count)}
-              </p>
-              <button type="button" className="xs__start" onClick={startExam} disabled={count === 0}>
-                <Play size={18} aria-hidden /> Start exam
-              </button>
-              <p className="xs__fine">The timer starts when you press Start.</p>
-            </div>
-
-            <details className="xs__how">
-              <summary>How the exam works</summary>
-              <ul>
-                <li>
-                  <Check size={16} aria-hidden /> Tap an answer to choose it. You can change it any time.
-                </li>
-                <li>
-                  <Flag size={16} aria-hidden /> Not sure? Flag it and come back later.
-                </li>
-                <li>
-                  <Calculator size={16} aria-hidden /> There’s a calculator if you need it.
-                </li>
-                <li>
-                  <Clock3 size={16} aria-hidden /> When time runs out, your answers are submitted for you.
-                </li>
-              </ul>
-            </details>
-          </div>
-        </div>
-      </DesktopWindow>
+      <div className="jamb-empty" aria-busy="true">
+        <p>Loading questions…</p>
+      </div>
     );
   }
 
-  /* ================================================================ Results */
-  if (finished) {
-    const correctCount = examQuestions.filter((q) => answers[q.id] === q.correctAnswer).length;
-    const scorePct = Math.round((correctCount / total) * 100);
-    const estimate = Math.round(160 + (scorePct / 100) * 200);
-
+  if (!total) {
+    const what = presetCourse?.name ?? (presetSubject ? bankName(presetSubject) : 'your subjects');
     return (
-      <DesktopWindow title="Results — i-Tutor CBT" onClose={onExit}>
-        <div className="ui-page exam-result">
-          <section className="ui-card exam-result__hero">
-            <span className="exam-result__badge">
-              <Check size={28} aria-hidden />
-            </span>
-            <h1>Exam finished</h1>
-            <p>Here’s how you did, {profile.fullName.split(' ')[0]}.</p>
+      <div className="jamb-empty">
+        <h1>No questions for {what} yet</h1>
+        <p>Questions appear here as soon as they’re published. Try another subject, or check back soon.</p>
+        <button type="button" className="ui-btn ui-btn--primary ui-btn--lg" onClick={onExit}>
+          <ArrowLeft size={18} aria-hidden /> Back to dashboard
+        </button>
+      </div>
+    );
+  }
 
-            <div className="exam-result__stats">
-              <div>
-                <strong>
-                  {correctCount}/{total}
-                </strong>
-                <span>Correct</span>
-              </div>
-              <div>
-                <strong>{scorePct}%</strong>
-                <span>Score</span>
-              </div>
+  /* ----------------------------------------------------------------- Results */
+  if (finished) {
+    const correct = paper.questions.filter((q) => answers[q.id] === q.correctAnswer).length;
+    const pct = Math.round((correct / total) * 100);
+    const estimate = Math.round((pct / 100) * 400);
+    return (
+      <div className="ui-page exam-result">
+        <section className="ui-card exam-result__hero">
+          <span className="exam-result__badge">
+            <Check size={28} aria-hidden />
+          </span>
+          <h1>{timeLeft <= 0 && !submitted ? 'Time up' : 'Exam submitted'}</h1>
+          <p>
+            {paper.title} · {profile.fullName.split(' ')[0]}
+          </p>
+          <div className="exam-result__stats">
+            <div>
+              <strong>
+                {correct}/{total}
+              </strong>
+              <span>Correct</span>
+            </div>
+            <div>
+              <strong>{pct}%</strong>
+              <span>Score</span>
+            </div>
+            {!paper.practice && paper.subjects.length === 4 && (
               <div className="is-key">
                 <strong>{estimate}</strong>
-                <span>Likely JAMB score</span>
+                <span>Out of 400</span>
               </div>
-            </div>
-
-            <div className="exam-result__actions">
-              <button type="button" className="ui-btn ui-btn--primary ui-btn--lg" onClick={onExit}>
-                Back to home
-              </button>
-              <button type="button" className="ui-btn ui-btn--ghost ui-btn--lg" onClick={restart}>
-                <RotateCcw size={18} aria-hidden /> Try again
-              </button>
-            </div>
-          </section>
-
-          <section className="ui-card exam-review">
-            <h2>Check your answers</h2>
-            <p className="exam-review__sub">Tap a question to see the right answer and why.</p>
-            <ol>
-              {examQuestions.map((q, i) => {
-                const yours = answers[q.id];
-                const right = yours === q.correctAnswer;
-                const open = openReview === q.id;
-                const correctText = q.options.find((o) => o.label === q.correctAnswer)?.text;
-                const yourText = q.options.find((o) => o.label === yours)?.text;
+            )}
+          </div>
+          {paper.subjects.length > 1 && (
+            <ul className="jamb-breakdown">
+              {paper.subjects.map((s) => {
+                const qs = paper.questions.filter((q) => q.subject === s);
+                const right = qs.filter((q) => answers[q.id] === q.correctAnswer).length;
                 return (
-                  <li
-                    key={q.id}
-                    className={`exam-review__item ${right ? 'is-right' : 'is-wrong'}${open ? ' is-open' : ''}`}
-                  >
-                    <button type="button" onClick={() => setOpenReview(open ? null : q.id)} aria-expanded={open}>
-                      <span className="exam-review__mark" aria-hidden>
-                        {right ? <Check size={14} /> : <X size={14} />}
-                      </span>
-                      <span className="exam-review__q">
-                        <small>
-                          {i + 1}. {q.subject}
-                        </small>
-                        {q.question}
-                      </span>
-                      <ChevronDown size={18} className="exam-review__chev" aria-hidden />
-                    </button>
-                    {open && (
-                      <div className="exam-review__body">
-                        <p>
-                          <b>Your answer:</b> {yours ? `${yours}. ${yourText}` : 'Not answered'}
-                        </p>
-                        {!right && (
-                          <p>
-                            <b>Right answer:</b> {q.correctAnswer}. {correctText}
-                          </p>
-                        )}
-                        <p className="exam-review__why">{q.explanation}</p>
-                        {onSolve ? (
-                          <button
-                            type="button"
-                            className="ui-link"
-                            onClick={() =>
-                              onSolve({
-                                subject: q.subject,
-                                question: q.question,
-                                options: q.options,
-                                correctAnswer: q.correctAnswer,
-                                explanation: q.explanation,
-                                yourAnswer: yours,
-                              })
-                            }
-                          >
-                            <MessageSquareText size={16} aria-hidden /> {solveLabel ?? 'Solve with my tutor'}
-                          </button>
-                        ) : (
-                          onOpenTutor && (
-                            <button type="button" className="ui-link" onClick={onOpenTutor}>
-                              <MessageSquareText size={16} aria-hidden /> Still confused? Ask the tutor
-                            </button>
-                          )
-                        )}
-                      </div>
-                    )}
+                  <li key={s}>
+                    <span>{s}</span>
+                    <b>
+                      {right}/{qs.length}
+                    </b>
                   </li>
                 );
               })}
-            </ol>
-          </section>
-        </div>
-      </DesktopWindow>
+            </ul>
+          )}
+          <div className="exam-result__actions">
+            <button type="button" className="ui-btn ui-btn--primary ui-btn--lg" onClick={onExit}>
+              Back to dashboard
+            </button>
+            <button
+              type="button"
+              className="ui-btn ui-btn--ghost ui-btn--lg"
+              onClick={() => {
+                recorded.current = false;
+                start();
+              }}
+            >
+              <RotateCcw size={18} aria-hidden /> New set of questions
+            </button>
+          </div>
+        </section>
+
+        <section className="ui-card exam-review">
+          <h2>Check your answers</h2>
+          <p className="exam-review__sub">Tap a question to see the right answer and why.</p>
+          <ol>
+            {paper.questions.map((q, i) => {
+              const yours = answers[q.id];
+              const right = yours === q.correctAnswer;
+              const open = openReview === q.id;
+              const text = (label?: string) => q.options.find((o) => o.label === label)?.text;
+              return (
+                <li key={q.id} className={`exam-review__item ${right ? 'is-right' : 'is-wrong'}${open ? ' is-open' : ''}`}>
+                  <button type="button" onClick={() => setOpenReview(open ? null : q.id)} aria-expanded={open}>
+                    <span className="exam-review__mark" aria-hidden>
+                      {right ? <Check size={14} /> : <X size={14} />}
+                    </span>
+                    <span className="exam-review__q">
+                      <small>
+                        {i + 1}. {q.subject}
+                        {q.topic && q.topic !== 'General' ? ` · ${q.topic}` : ''}
+                      </small>
+                      {q.question}
+                    </span>
+                    <ChevronDown size={18} className="exam-review__chev" aria-hidden />
+                  </button>
+                  {open && (
+                    <div className="exam-review__body">
+                      <p>
+                        <b>Your answer:</b> {yours ? `${yours}. ${text(yours)}` : 'Not answered'}
+                      </p>
+                      {!right && (
+                        <p>
+                          <b>Right answer:</b> {q.correctAnswer}. {text(q.correctAnswer)}
+                        </p>
+                      )}
+                      {q.explanation && <p className="exam-review__why">{q.explanation}</p>}
+                      {onSolve ? (
+                        <button
+                          type="button"
+                          className="ui-link"
+                          onClick={() =>
+                            onSolve({
+                              subject: q.subject,
+                              question: q.question,
+                              options: q.options,
+                              correctAnswer: q.correctAnswer,
+                              explanation: q.explanation,
+                              yourAnswer: yours,
+                            })
+                          }
+                        >
+                          <MessageSquareText size={16} aria-hidden /> {solveLabel ?? 'Solve with my tutor'}
+                        </button>
+                      ) : (
+                        onOpenTutor && (
+                          <button type="button" className="ui-link" onClick={onOpenTutor}>
+                            <MessageSquareText size={16} aria-hidden /> Still confused? Ask the tutor
+                          </button>
+                        )
+                      )}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+      </div>
     );
   }
 
-  /* ================================================================== Exam */
-  const isFlagged = Boolean(flagged[activeQuestion.id]);
-  // Warn in the last fifth of the paper (never more than the final 5 minutes).
-  const lowTime = timeLeft < Math.min(5 * 60, (config?.count ?? 0) * SECONDS_PER_QUESTION * 0.2);
+  /* -------------------------------------------------------------------- Exam */
+  const lowTime = timeLeft <= Math.min(5 * 60, paper.seconds * 0.1);
+  const last = index === subjectQs.length - 1;
+  const nextSubject = paper.subjects[paper.subjects.indexOf(subject) + 1];
 
-  const palette = (
-    <>
-      <div className="exam-palette__head">
-        <strong>{activeSubject}</strong>
-        <span>
-          {subjectQuestions.filter((q) => answers[q.id]).length} of {subjectQuestions.length} answered
-        </span>
-      </div>
-      <div className="exam-palette__grid">
-        {subjectQuestions.map((q, idx) => {
-          const state =
-            idx === currentQIndex ? 'is-current' : flagged[q.id] ? 'is-flag' : answers[q.id] ? 'is-done' : '';
+  return (
+    <div className="jamb">
+      <header className="jamb__top">
+        <div className="jamb__brand">
+          <strong>{paper.title}</strong>
+          <span>i-Tutor CBT</span>
+        </div>
+        <div className="jamb__candidate">
+          <span className="jamb__photo" aria-hidden>
+            {profile.fullName.charAt(0).toUpperCase() || 'C'}
+          </span>
+          <span>
+            <strong>{profile.fullName || 'Candidate'}</strong>
+            <small>
+              {answered} of {total} answered
+            </small>
+          </span>
+        </div>
+        <div className={`jamb__time${lowTime ? ' is-low' : ''}`} role="timer" aria-label="Time left">
+          <small>Time left</small>
+          <strong>{clock(timeLeft)}</strong>
+        </div>
+      </header>
+
+      <nav className="jamb__subjects" aria-label="Subjects">
+        {paper.subjects.map((s) => {
+          const qs = paper.questions.filter((q) => q.subject === s);
           return (
-            <button
-              key={q.id}
-              type="button"
-              className={state}
-              onClick={() => goTo(idx)}
-              aria-label={`Question ${idx + 1}`}
-            >
-              {idx + 1}
+            <button key={s} type="button" className={s === subject ? 'is-on' : ''} onClick={() => switchSubject(s)} aria-current={s === subject ? 'true' : undefined}>
+              {s}
+              <small>
+                {qs.filter((q) => answers[q.id]).length}/{qs.length}
+              </small>
             </button>
           );
         })}
-      </div>
-      <ul className="exam-palette__legend">
-        <li>
-          <i className="is-done" /> Answered
-        </li>
-        <li>
-          <i className="is-flag" /> Flagged
-        </li>
-        <li>
-          <i /> Not yet
-        </li>
-      </ul>
-    </>
-  );
-
-  return (
-    <DesktopWindow title={`${profile.fullName} — i-Tutor CBT`} onClose={() => setConfirm('exit')}>
-      <div className="exam">
-        {/* ----------------------------------------------------------- Top bar */}
-        <header className="exam__bar">
-          <button type="button" className="exam__exit" onClick={() => setConfirm('exit')}>
-            <X size={18} aria-hidden />
-            <span>Exit</span>
+        <span className="jamb__tools">
+          <button type="button" className={showCalculator ? 'is-on' : ''} onClick={() => setShowCalculator((v) => !v)} aria-pressed={showCalculator}>
+            <Calculator size={16} aria-hidden /> Calculator
           </button>
-          <div className="exam__title">
-            <strong>Practice exam</strong>
-            <span>{profile.fullName}</span>
-          </div>
-          <div className="exam__bar-right">
-            <span className={`exam__timer${lowTime ? ' is-low' : ''}`} role="timer" aria-label="Time left">
-              <Clock3 size={16} aria-hidden />
-              {formatTime(timeLeft)}
-            </span>
-            <button
-              type="button"
-              className={`exam__icon-btn${showCalculator ? ' is-on' : ''}`}
-              onClick={() => setShowCalculator((v) => !v)}
-              aria-label="Calculator"
-              aria-pressed={showCalculator}
-            >
-              <Calculator size={18} aria-hidden />
-            </button>
-            <button type="button" className="exam__submit" onClick={() => setConfirm('submit')}>
-              Submit
-            </button>
-          </div>
-        </header>
+          <button type="button" onClick={() => setConfirm('exit')}>
+            <X size={16} aria-hidden /> Exit
+          </button>
+        </span>
+      </nav>
 
-        {/* ------------------------------------------------------ Subject tabs */}
-        <nav className="exam__tabs" aria-label="Subjects" ref={tabsRef}>
-          {examSubjects.map((subject) => {
-            const qs = examQuestions.filter((q) => q.subject === subject);
-            const done = qs.filter((q) => answers[q.id]).length;
-            return (
-              <button
-                key={subject}
-                type="button"
-                className={activeSubject === subject ? 'is-on' : ''}
-                onClick={() => switchSubject(subject)}
-                aria-current={activeSubject === subject ? 'true' : undefined}
-              >
-                {subject}
-                <small>
-                  {done}/{qs.length}
-                </small>
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="exam__layout">
-          {/* ------------------------------------------------------ Question */}
-          <main className="exam__card">
-            <div className="exam__meta">
-              <span>
-                Question <b>{currentQIndex + 1}</b> of {subjectQuestions.length}
-              </span>
-              {onSolve && (
+      <main className="jamb__body">
+        {paper.note && <p className="jamb__note">{paper.note}</p>}
+        {question && (
+          <section className="jamb__question" aria-labelledby="jamb-q">
+            <div className="jamb__qhead">
+              <h2 id="jamb-q">
+                {subject} · Question {index + 1} of {subjectQs.length}
+              </h2>
+              {paper.practice && onSolve && (
                 <button
                   type="button"
-                  className="ask-ai"
+                  className="jamb__hint"
                   onClick={() =>
                     onSolve({
-                      subject: activeQuestion.subject,
-                      question: activeQuestion.question,
-                      options: activeQuestion.options,
-                      correctAnswer: activeQuestion.correctAnswer,
-                      explanation: activeQuestion.explanation,
-                      topic: activeQuestion.topic,
+                      subject: question.subject,
+                      question: question.question,
+                      options: question.options,
+                      correctAnswer: question.correctAnswer,
+                      explanation: question.explanation,
+                      topic: question.topic,
                       mode: 'hint',
                     })
                   }
@@ -583,156 +450,104 @@ export const CBTExamView: React.FC<Props> = ({
                   <MessageSquareText size={15} aria-hidden /> {askLabel ?? 'Ask AI'}
                 </button>
               )}
-              <button
-                type="button"
-                className={`exam__flag${isFlagged ? ' is-on' : ''}`}
-                onClick={toggleFlag}
-                aria-pressed={isFlagged}
-              >
-                <Flag size={16} aria-hidden />
-                {isFlagged ? 'Flagged' : 'Flag'}
-              </button>
             </div>
-
-            <p className="exam__topic">{activeQuestion.topic}</p>
-            <h2 className="exam__question" key={activeQuestion.id}>
-              {activeQuestion.question}
-            </h2>
-
-            <div className="exam__options" role="radiogroup" aria-label="Answer options" key={`o${activeQuestion.id}`}>
-              {activeQuestion.options.map((opt, i) => {
-                const isSelected = answers[activeQuestion.id] === opt.label;
+            <p className="jamb__text" key={question.id}>
+              {question.question}
+            </p>
+            <div className="jamb__options" role="radiogroup" aria-labelledby="jamb-q">
+              {question.options.map((o) => {
+                const on = answers[question.id] === o.label;
                 return (
-                  <button
-                    key={opt.label}
-                    type="button"
-                    role="radio"
-                    aria-checked={isSelected}
-                    className={`exam__option${isSelected ? ' is-picked' : ''}`}
-                    style={{ ['--i' as string]: i }}
-                    onClick={() => handleSelectOption(opt.label)}
-                  >
-                    <span className="exam__key">{opt.label}</span>
-                    <span>{opt.text}</span>
-                    {isSelected && <Check size={18} className="exam__picked" aria-hidden />}
-                  </button>
+                  <label key={o.label} className={`jamb__option${on ? ' is-on' : ''}`}>
+                    <input type="radio" name={`q${question.id}`} checked={on} onChange={() => choose(o.label)} />
+                    <b>{o.label}.</b>
+                    <span>{o.text}</span>
+                  </label>
                 );
               })}
             </div>
+          </section>
+        )}
 
-            <div className="exam__nav">
-              <button
-                type="button"
-                className="ui-btn ui-btn--ghost"
-                disabled={currentQIndex === 0}
-                onClick={() => goTo(currentQIndex - 1)}
-              >
-                <ChevronLeft size={18} aria-hidden /> Previous
-              </button>
-              <button
-                type="button"
-                className="ui-btn ui-btn--ghost exam__grid-btn"
-                onClick={() => setPaletteOpen(true)}
-              >
-                <LayoutGrid size={18} aria-hidden /> {currentQIndex + 1}/{subjectQuestions.length}
-              </button>
-              {currentQIndex < subjectQuestions.length - 1 ? (
-                <button type="button" className="ui-btn ui-btn--primary" onClick={() => goTo(currentQIndex + 1)}>
-                  Next <ChevronRight size={18} aria-hidden />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="ui-btn ui-btn--primary"
-                  onClick={() => {
-                    const nextSubject = examSubjects[(examSubjects.indexOf(activeSubject) + 1) % examSubjects.length];
-                    switchSubject(nextSubject);
-                  }}
-                >
-                  Next subject <ChevronRight size={18} aria-hidden />
-                </button>
-              )}
-            </div>
-            <p className="exam__keys">Tip: press A–D to answer, N for next, P for previous, F to flag.</p>
-          </main>
-
-          {/* ------------------------------------------------ Side (desktop) */}
-          <aside className="exam__side">
-            <div className="ui-card exam-palette">{palette}</div>
-          </aside>
+        <div className="jamb__nav">
+          <button type="button" className="jamb__btn" onClick={() => goTo(index - 1)} disabled={index === 0}>
+            <ChevronLeft size={18} aria-hidden /> Previous
+          </button>
+          {!last ? (
+            <button type="button" className="jamb__btn" onClick={() => goTo(index + 1)}>
+              Next <ChevronRight size={18} aria-hidden />
+            </button>
+          ) : nextSubject ? (
+            <button type="button" className="jamb__btn" onClick={() => switchSubject(nextSubject)}>
+              {nextSubject} <ChevronRight size={18} aria-hidden />
+            </button>
+          ) : null}
+          <button type="button" className="jamb__btn jamb__btn--submit" onClick={() => setConfirm('submit')}>
+            Submit
+          </button>
         </div>
 
-        {/* --------------------------------------------- Palette sheet (phone) */}
-        {paletteOpen && (
-          <div className="ui-overlay" onClick={() => setPaletteOpen(false)}>
-            <div
-              className="ui-sheet exam-palette"
-              onClick={(e) => e.stopPropagation()}
-              role="dialog"
-              aria-label="All questions"
+        <div className="jamb__grid" role="group" aria-label={`${subject} questions`}>
+          {subjectQs.map((q, i) => (
+            <button
+              key={q.id}
+              type="button"
+              className={`${i === index ? 'is-current' : ''}${answers[q.id] ? ' is-done' : ''}`}
+              onClick={() => goTo(i)}
+              aria-label={`Question ${i + 1}${answers[q.id] ? ', answered' : ''}`}
             >
-              <div className="ui-sheet__grab" aria-hidden />
-              {palette}
-              <button
-                type="button"
-                className="ui-btn ui-btn--ghost ui-btn--block"
-                onClick={() => setPaletteOpen(false)}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        )}
+              {i + 1}
+            </button>
+          ))}
+        </div>
+        <p className="jamb__keys">Keys: A–D to answer · N next · P previous · S submit</p>
+      </main>
 
-        {/* ----------------------------------------------------- Calculator */}
-        {showCalculator && <ExamCalculator onClose={() => setShowCalculator(false)} />}
+      {showCalculator && <ExamCalculator onClose={() => setShowCalculator(false)} />}
 
-        {/* -------------------------------------------------------- Confirm */}
-        {confirm && (
-          <div className="ui-overlay ui-overlay--center" onClick={() => setConfirm(null)}>
-            <div className="ui-dialog" role="alertdialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-              {confirm === 'submit' ? (
-                <>
-                  <h2>Submit your exam?</h2>
-                  <p>
-                    You answered <b>{answeredCount}</b> of {total} questions.
-                    {total - answeredCount > 0 && ` ${total - answeredCount} still unanswered.`}
-                    {flaggedCount > 0 && ` ${flaggedCount} flagged to check.`}
-                  </p>
-                  <div className="ui-dialog__actions">
-                    <button type="button" className="ui-btn ui-btn--ghost" onClick={() => setConfirm(null)}>
-                      Keep working
-                    </button>
-                    <button
-                      type="button"
-                      className="ui-btn ui-btn--primary"
-                      onClick={() => {
-                        setConfirm(null);
-                        setIsSubmitted(true);
-                      }}
-                    >
-                      Yes, submit
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <h2>Leave the exam?</h2>
-                  <p>Your answers in this practice exam will not be saved.</p>
-                  <div className="ui-dialog__actions">
-                    <button type="button" className="ui-btn ui-btn--ghost" onClick={() => setConfirm(null)}>
-                      Stay
-                    </button>
-                    <button type="button" className="ui-btn ui-btn--danger" onClick={onExit}>
-                      Leave exam
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
+      {confirm && (
+        <div className="ui-overlay ui-overlay--center" onClick={() => setConfirm(null)}>
+          <div className="ui-dialog" role="alertdialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            {confirm === 'submit' ? (
+              <>
+                <h2>Submit your exam?</h2>
+                <p>
+                  You answered <b>{answered}</b> of {total} questions.
+                  {total - answered > 0 && ` ${total - answered} not answered.`} You can’t change your answers after you submit.
+                </p>
+                <div className="ui-dialog__actions">
+                  <button type="button" className="ui-btn ui-btn--ghost" onClick={() => setConfirm(null)}>
+                    Go back
+                  </button>
+                  <button
+                    type="button"
+                    className="ui-btn ui-btn--primary"
+                    onClick={() => {
+                      setConfirm(null);
+                      setSubmitted(true);
+                    }}
+                  >
+                    Yes, submit
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2>Leave the exam?</h2>
+                <p>Your answers won’t be saved.</p>
+                <div className="ui-dialog__actions">
+                  <button type="button" className="ui-btn ui-btn--ghost" onClick={() => setConfirm(null)}>
+                    Stay
+                  </button>
+                  <button type="button" className="ui-btn ui-btn--danger" onClick={onExit}>
+                    Leave exam
+                  </button>
+                </div>
+              </>
+            )}
           </div>
-        )}
-      </div>
-    </DesktopWindow>
+        </div>
+      )}
+    </div>
   );
 };

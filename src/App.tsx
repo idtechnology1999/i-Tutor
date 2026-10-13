@@ -16,6 +16,7 @@ import { AdminApp } from './components/admin/AdminApp';
 import { CourseView } from './components/web/CourseView';
 import { PostUtmeView } from './components/web/PostUtmeView';
 import { ClassroomView } from './components/web/ClassroomView';
+import { syncQuestions } from './lib/cms';
 import type { ExamType } from './lib/cms';
 import { tutorById } from './data/tutors';
 import { loadProfile, saveProfile } from './services/profile';
@@ -203,6 +204,8 @@ export function App() {
       }
     }
     void refreshProfile();
+    // The admin loads its own copy (drafts too) when an admin signs in.
+    if (!window.location.pathname.startsWith('/admin')) void syncQuestions('student');
   }, []);
 
   const activatePremium = () => {

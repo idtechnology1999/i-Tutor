@@ -4,6 +4,7 @@ import { DIAGNOSTIC_QUESTIONS } from '../data/nigerian-curriculum';
 import { NEWS } from '../data/news';
 import type { NewsItem } from '../data/news';
 import { COURSE_SEED, FACULTY_SET_SEED } from '../data/courses';
+import { api, isLive } from '../services/api';
 import type { CourseExam, FacultySet } from '../data/courses';
 
 export type { FacultySet };
@@ -12,10 +13,14 @@ import { NIGERIAN_INSTITUTIONS } from '../data/nigerian-curriculum';
 /* -----------------------------------------------------------------------------
    Content store for the admin CMS and the student pages.
 
-   Persists to localStorage, so it works with no backend: what an admin
-   publishes shows up for students *in the same browser*. For a live site,
-   swap `load`/`save` for calls to a database (Supabase, Vercel Postgres…) —
-   every component reads through the hooks below, so nothing else changes.
+   Demo mode (no backend): everything persists to localStorage, so what an
+   admin publishes shows up for students in the same browser.
+   Live: questions come from the database. Students load the published ones,
+   a signed-in admin loads everything (syncQuestions), and every change is
+   sent to the server. Questions saved in this browser before the site used
+   the database are kept aside so an admin can upload them
+   (browserOnlyQuestions / uploadBrowserQuestions). News and courses still
+   live in this browser.
    -------------------------------------------------------------------------- */
 
 export const CMS_SUBJECTS = [
@@ -40,7 +45,9 @@ export type CmsSubject = (typeof CMS_SUBJECTS)[number];
 
 /** Exam bodies. Each one is its own past-question collection. */
 export const EXAM_TYPES = ['UTME', 'WAEC', 'NECO', 'GCE', 'NABTEB', 'Post-UTME'] as const;
-export type ExamType = (typeof EXAM_TYPES)[number];
+/** The syllabus practice bank: questions admins set per subject and topic, not from a paper. */
+export const PRACTICE = 'Practice' as const;
+export type ExamType = (typeof EXAM_TYPES)[number] | typeof PRACTICE;
 
 /** What students and admins see. UTME is the JAMB exam. */
 export const EXAM_LABEL: Record<ExamType, string> = {
@@ -50,6 +57,7 @@ export const EXAM_LABEL: Record<ExamType, string> = {
   GCE: 'GCE',
   NABTEB: 'NABTEB',
   'Post-UTME': 'Post-UTME',
+  Practice: 'Practice',
 };
 
 /** Post-UTME papers belong to a school. Short name is the stored value. */
@@ -64,6 +72,7 @@ export const EXAM_FULL_NAME: Record<ExamType, string> = {
   GCE: 'GCE (private candidates)',
   NABTEB: 'NABTEB',
   'Post-UTME': 'University Post-UTME',
+  Practice: 'Syllabus practice',
 };
 
 export type Status = 'draft' | 'published';
@@ -182,9 +191,18 @@ const load = (): CmsState => {
 let state: CmsState = typeof window === 'undefined' ? seed() : load();
 const listeners = new Set<() => void>();
 
+// Live: the database owns the questions. What this browser had saved stays
+// aside (and stays in storage) until an admin uploads it.
+let browserQuestions: CmsQuestion[] = [];
+if (isLive) {
+  browserQuestions = state.questions;
+  state = { ...state, questions: [] };
+}
+let questionsReady = !isLive;
+
 const save = () => {
   try {
-    window.localStorage.setItem(KEY, JSON.stringify(state));
+    window.localStorage.setItem(KEY, JSON.stringify(isLive ? { ...state, questions: browserQuestions } : state));
   } catch {
     /* quota or blocked — keep working in memory */
   }
@@ -202,7 +220,8 @@ const commit = (next: CmsState, activity?: string) => {
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (e) => {
     if (e.key === KEY) {
-      state = load();
+      const next = load();
+      state = isLive ? { ...next, questions: state.questions } : next;
       listeners.forEach((l) => l());
     }
   });
@@ -216,6 +235,101 @@ const subscribe = (l: () => void) => {
 /* ------------------------------------------------------------------ Hooks */
 
 export const useCms = () => useSyncExternalStore(subscribe, () => state);
+
+/** False until the live question bank has loaded (always true in demo mode). */
+export const useQuestionsReady = () => useSyncExternalStore(subscribe, () => questionsReady);
+
+/* ------------------------------------------------------------ Live sync */
+
+const errorListeners = new Set<(message: string) => void>();
+/** Hear about changes the server refused (the admin shows them as a toast). */
+export const onCmsError = (fn: (message: string) => void) => {
+  errorListeners.add(fn);
+  return () => {
+    errorListeners.delete(fn);
+  };
+};
+const report = (message: string) => errorListeners.forEach((fn) => fn(message));
+
+let syncScope: 'student' | 'admin' = 'student';
+
+/** Live: load the question bank. Students get published questions; a signed-in admin gets everything. */
+export function syncQuestions(scope: 'student' | 'admin' = syncScope): Promise<void> {
+  if (!isLive) return Promise.resolve();
+  syncScope = scope;
+  return api<CmsQuestion[]>(scope === 'admin' ? '/api/admin/questions' : '/api/questions')
+    .then((rows) => {
+      questionsReady = true;
+      state = { ...state, questions: rows };
+      listeners.forEach((l) => l());
+    })
+    .catch((error: Error) => {
+      questionsReady = true;
+      listeners.forEach((l) => l());
+      report(error.message);
+    });
+}
+
+/** Live: send a change to the server. If it's refused, say why and reload what the server has. */
+const remote = (work: Promise<unknown>) => {
+  work.catch((error: Error) => {
+    report(error.message);
+    void syncQuestions();
+  });
+};
+
+const bankKey = (q: Pick<CmsQuestion, 'examType' | 'subject' | 'question'>) => `${q.examType}|${q.subject}|${questionKey(q.question)}`;
+
+/** Live: questions saved only in this browser, from before the site used the database. */
+export const browserOnlyQuestions = () => {
+  const onServer = new Set(state.questions.map(bankKey));
+  return browserQuestions.filter((q) => !onServer.has(bankKey(q)));
+};
+
+/** Live: put this browser's questions into the database, keeping their draft/published state. */
+export async function uploadBrowserQuestions(): Promise<{ uploaded: number; failed: number; error?: string }> {
+  const papers = new Map<string, QuestionDraft[]>();
+  for (const { id: _id, createdAt: _c, updatedAt: _u, ...draft } of browserOnlyQuestions()) {
+    const key = [draft.examType, draft.subject, draft.year ?? 0, draft.school ?? ''].join('|');
+    papers.set(key, [...(papers.get(key) ?? []), draft]);
+  }
+  let uploaded = 0;
+  let failed = 0;
+  let error: string | undefined;
+  const send = async (batch: QuestionDraft[]) => {
+    const rows = await api<CmsQuestion[]>('/api/admin/questions', { method: 'POST', body: batch, timeout: 60_000 });
+    uploaded += rows.length;
+  };
+  for (const group of papers.values()) {
+    for (let i = 0; i < group.length; i += 400) {
+      const batch = group.slice(i, i + 400);
+      try {
+        await send(batch);
+      } catch (e) {
+        // That paper is already on the server: add the missing questions one by one.
+        if ((e as { status?: number }).status === 409) {
+          for (const one of batch) {
+            try {
+              await send([one]);
+            } catch (inner) {
+              failed += 1;
+              error = (inner as Error).message;
+            }
+          }
+        } else {
+          failed += batch.length;
+          error = (e as Error).message;
+        }
+      }
+    }
+  }
+  await syncQuestions('admin');
+  if (!failed) {
+    browserQuestions = [];
+    save();
+  }
+  return { uploaded, failed, error };
+}
 
 /** Published questions in the four CBT subjects, shaped for the exam engine. */
 export const toExamQuestion = (q: CmsQuestion): DiagnosticQuestion => ({
@@ -274,6 +388,15 @@ export const cms = {
     const stamp = now();
     const added = drafts.map((d) => ({ ...d, id: nextId(), createdAt: stamp, updatedAt: stamp }));
     commit({ ...state, questions: [...added, ...state.questions] }, label);
+    if (isLive && drafts.length) {
+      // Shown at once; swapped for the saved rows (with their real ids) when the server answers.
+      const temp = new Set(added.map((q) => q.id));
+      remote(
+        api<CmsQuestion[]>('/api/admin/questions', { method: 'POST', body: drafts, timeout: 60_000 }).then((rows) =>
+          commit({ ...state, questions: [...rows, ...state.questions.filter((q) => !temp.has(q.id))] }),
+        ),
+      );
+    }
     return added.length;
   },
 
@@ -282,6 +405,13 @@ export const cms = {
       ...state,
       questions: state.questions.map((q) => (q.id === id ? { ...q, ...patch, updatedAt: now() } : q)),
     });
+    if (isLive) {
+      remote(
+        api<CmsQuestion>(`/api/admin/questions/${id}`, { method: 'PATCH', body: patch }).then((row) =>
+          commit({ ...state, questions: state.questions.map((q) => (q.id === id ? row : q)) }),
+        ),
+      );
+    }
   },
 
   setStatus(ids: number[], status: Status) {
@@ -295,6 +425,7 @@ export const cms = {
       },
       `${status === 'published' ? 'Published' : 'Unpublished'} ${ids.length} question${ids.length === 1 ? '' : 's'}.`,
     );
+    if (isLive && ids.length) remote(api('/api/admin/questions/status', { method: 'POST', body: { ids, status } }));
   },
 
   deleteQuestions(ids: number[]) {
@@ -303,6 +434,7 @@ export const cms = {
       { ...state, questions: state.questions.filter((q) => !set.has(q.id)) },
       `Deleted ${ids.length} question${ids.length === 1 ? '' : 's'}.`,
     );
+    if (isLive && ids.length) remote(api('/api/admin/questions', { method: 'DELETE', body: { ids } }));
   },
 
   saveNews(item: CmsNews) {

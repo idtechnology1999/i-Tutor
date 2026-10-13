@@ -37,7 +37,7 @@ export type AppView =
 
 export const VIEW_PATHS: Record<AppView, string> = {
   home: '/',
-  cbt: '/cbt-simulation',
+  cbt: '/exam',
   syllabus: '/syllabus',
   dashboard: '/dashboard',
   setup: '/setup',
@@ -118,6 +118,7 @@ const PATH_VIEWS: Record<string, AppView> = Object.entries(VIEW_PATHS).reduce(
 /** Legacy / hand-typed variants we still answer to, so old links keep working. */
 const ALIASES: Record<string, AppView> = {
   '/cbt': 'cbt',
+  '/cbt-simulation': 'cbt',
   '/cbt_simulation': 'cbt',
   '/cbt_simulation.html': 'cbt',
   '/cbt_simulation/': 'cbt',

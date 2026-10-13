@@ -14,7 +14,8 @@ import {
 } from 'lucide-react';
 import type { DiagnosticQuestion, UserProfile } from '../../types';
 import { useCms } from '../../lib/cms';
-import { findInstitution } from '../../data/nigerian-curriculum';
+import { JAMB_SUBJECTS, findInstitution } from '../../data/nigerian-curriculum';
+import { masteryOf, readProgress } from '../../lib/progress';
 import type { ExamType } from '../../lib/cms';
 import type { StudentExam } from '../../types';
 import { SCHOOL_CERT_EXAMS, examsOf } from '../../lib/student-exams';
@@ -52,12 +53,6 @@ interface Props {
   tutor?: TutorPersona;
 }
 
-const SUBJECTS = [
-  { name: 'Use of English', exam: 'English' as Subject, mastery: 84, weak: 'Stress patterns' },
-  { name: 'Mathematics', exam: 'Mathematics' as Subject, mastery: 78, weak: 'Matrices' },
-  { name: 'Physics', exam: 'Physics' as Subject, mastery: 72, weak: 'Magnetic induction' },
-  { name: 'Chemistry', exam: 'Chemistry' as Subject, mastery: 58, weak: 'Organic isomers' },
-];
 
 const TASKS = [
   { text: 'Physics: 20 questions on motion', subject: 'Physics' as Subject, done: true },
@@ -93,6 +88,14 @@ export const DashboardView: React.FC<Props> = ({
   const [room, setRoom] = useState<StudentExam>(exams[0] ?? 'UTME');
   const current = exams.includes(room) ? room : (exams[0] ?? 'UTME');
   const { questions } = useCms();
+  // The student's real subjects (English plus the three they chose) and how
+  // their practice has gone, from results saved on this device.
+  const mySubjects = [
+    'English',
+    ...profile.selectedSubjects.map((s) => (s === 'English Language' ? 'English' : s)).filter((s) => s !== 'English'),
+  ].slice(0, 4);
+  const progress = readProgress();
+  const subjectLabel = (s: string) => (s === 'English' ? 'Use of English' : (JAMB_SUBJECTS.find((j) => j.name === s)?.label ?? s));
   // The school picked at registration sets the student's Post-UTME.
   const school = findInstitution(profile.targetInstitution);
   const schoolQs = school
@@ -272,22 +275,26 @@ export const DashboardView: React.FC<Props> = ({
         <section className="ui-card dash__subjects">
           <h3>My subjects</h3>
           <ul>
-            {SUBJECTS.map((s) => {
-              const l = level(s.mastery);
+            {mySubjects.map((s) => {
+              const p = progress[s];
+              const mastery = masteryOf(p);
+              const l = mastery === null ? null : level(mastery);
               return (
-                <li key={s.name}>
+                <li key={s}>
                   <div className="dash__subj-top">
-                    <strong>{s.name}</strong>
-                    <span className={`ui-chip ui-chip--${l.tone}`}>{l.label}</span>
+                    <strong>{subjectLabel(s)}</strong>
+                    {l ? <span className={`ui-chip ui-chip--${l.tone}`}>{l.label}</span> : <span className="ui-chip">Not started</span>}
                   </div>
-                  <div className={`dash__subj-bar is-${l.tone}`} aria-hidden>
-                    <i style={{ width: `${s.mastery}%` }} />
+                  <div className={`dash__subj-bar${l ? ` is-${l.tone}` : ''}`} aria-hidden>
+                    <i style={{ width: `${mastery ?? 0}%` }} />
                   </div>
                   <div className="dash__subj-foot">
                     <span>
-                      {s.mastery}% · work on: {s.weak}
+                      {mastery === null
+                        ? 'No practice yet'
+                        : `${mastery}% · ${p?.weakTopic ? `work on: ${p.weakTopic}` : `${p?.answered ?? 0} questions answered`}`}
                     </span>
-                    <button type="button" onClick={() => onLaunchCBT(s.exam)}>
+                    <button type="button" onClick={() => onLaunchCBT(s)}>
                       Practise <ArrowRight size={14} aria-hidden />
                     </button>
                   </div>

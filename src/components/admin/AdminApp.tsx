@@ -5,6 +5,7 @@ import {
   GraduationCap,
   Landmark,
   LayoutDashboard,
+  ListChecks,
   LogOut,
   Newspaper,
   ScanText,
@@ -15,10 +16,11 @@ import {
   Workflow,
 } from 'lucide-react';
 import { BrandMark } from '../web/BrandMark';
-import { useCms } from '../../lib/cms';
+import { browserOnlyQuestions, onCmsError, syncQuestions, uploadBrowserQuestions, useCms } from '../../lib/cms';
 import type { CmsSubject, ExamType } from '../../lib/cms';
 import { AdminOverview } from './AdminOverview';
 import { AdminQuestions } from './AdminQuestions';
+import { AdminPractice } from './AdminPractice';
 import { AdminImport } from './AdminImport';
 import { AdminNews } from './AdminNews';
 import { AdminSettings } from './AdminSettings';
@@ -33,7 +35,7 @@ import { adminLogout, currentAdminAccount } from '../../services/admin-auth';
 import type { AdminAccount } from '../../services/admin-auth';
 import { isLive } from '../../services/api';
 
-export type Section = 'overview' | 'questions' | 'import' | 'postutme' | 'courses' | 'news' | 'users' | 'team' | 'admins' | 'settings';
+export type Section = 'overview' | 'questions' | 'practice' | 'import' | 'postutme' | 'courses' | 'news' | 'users' | 'team' | 'admins' | 'settings';
 export type QuestionFilter = 'all' | 'published' | 'draft' | 'review';
 
 /** Which part of the bank is open: a subject (or All) and a year (or all years). */
@@ -63,6 +65,7 @@ export interface AdminNav {
 const NAV: Array<{ id: Section; label: string; icon: typeof LayoutDashboard }> = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'questions', label: 'Past questions', icon: BookOpenCheck },
+  { id: 'practice', label: 'Practice questions', icon: ListChecks },
   { id: 'import', label: 'Import with AI', icon: ScanText },
   { id: 'postutme', label: 'Post-UTME', icon: Landmark },
   { id: 'courses', label: 'Courses', icon: GraduationCap },
@@ -77,6 +80,7 @@ const NAV: Array<{ id: Section; label: string; icon: typeof LayoutDashboard }> =
 const SECTION_PATH: Record<Section, string> = {
   overview: '/admin',
   questions: '/admin/past-questions',
+  practice: '/admin/practice',
   import: '/admin/import',
   postutme: '/admin/post-utme',
   courses: '/admin/courses',
@@ -115,6 +119,11 @@ export const AdminApp: React.FC<{
   useEffect(() => {
     if (isLive) void currentAdminAccount().then(setAccount);
   }, []);
+  // Signed in: load the whole bank, drafts included.
+  const signedIn = Boolean(account);
+  useEffect(() => {
+    if (signedIn) void syncQuestions('admin');
+  }, [signedIn]);
   // The address is the source of truth: /admin/settings shows Settings, and
   // back/forward move between sections.
   const section = sectionForPath(path);
@@ -138,11 +147,16 @@ export const AdminApp: React.FC<{
     return () => window.removeEventListener('keydown', onKey);
   }, []);
   const { questions } = useCms();
-  const reviewCount = questions.filter((q) => q.needsReview || q.status === 'draft').length;
+  const toCheck = questions.filter((q) => q.needsReview || q.status === 'draft');
+  const reviewCount = toCheck.filter((q) => q.examType !== 'Practice').length;
+  const practiceCount = toCheck.length - reviewCount;
 
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [section]);
+
+  // Changes the server refused (e.g. a duplicate paper) are reported, then the bank reloads.
+  useEffect(() => onCmsError((text) => setToast((prev) => ({ id: (prev?.id ?? 0) + 1, text }))), []);
 
   useEffect(() => {
     if (!toast) return;
@@ -212,6 +226,7 @@ export const AdminApp: React.FC<{
               <Icon size={18} aria-hidden />
               <span>{label}</span>
               {id === 'questions' && reviewCount > 0 && <b className="adm-side__count">{reviewCount}</b>}
+              {id === 'practice' && practiceCount > 0 && <b className="adm-side__count">{practiceCount}</b>}
             </button>
           ))}
         </nav>
@@ -235,6 +250,7 @@ export const AdminApp: React.FC<{
       </aside>
 
       <main className="adm-main">
+        {mode === 'live' && <BrowserQuestionsBanner nav={nav} />}
         {section === 'overview' && <AdminOverview nav={nav} mode={mode} />}
         {section === 'questions' && (
           <AdminQuestions
@@ -245,6 +261,7 @@ export const AdminApp: React.FC<{
             onScope={setBankScope}
           />
         )}
+        {section === 'practice' && <AdminPractice nav={nav} />}
         {section === 'import' && <AdminImport key={importPreset.n} nav={nav} preset={importPreset.value} />}
         {section === 'postutme' && <AdminPostUtme nav={nav} />}
         {section === 'courses' && <AdminCourses nav={nav} />}
@@ -268,6 +285,41 @@ export const AdminApp: React.FC<{
           {toast.text}
         </div>
       )}
+    </div>
+  );
+};
+
+/** Live: offers to upload questions an admin saved in this browser before the
+    site used the database, so students can see them. */
+const BrowserQuestionsBanner: React.FC<{ nav: AdminNav }> = ({ nav }) => {
+  useCms(); // re-check after every change to the bank
+  const [busy, setBusy] = useState(false);
+  const pending = isLive ? browserOnlyQuestions() : [];
+  if (!pending.length) return null;
+  const upload = () => {
+    setBusy(true);
+    void uploadBrowserQuestions()
+      .then((r) =>
+        nav.notify(
+          r.failed
+            ? `Uploaded ${r.uploaded}. ${r.failed} couldn’t be uploaded: ${r.error ?? 'try again'}.`
+            : `Uploaded ${r.uploaded} question${r.uploaded === 1 ? '' : 's'} to the database.`,
+        ),
+      )
+      .finally(() => setBusy(false));
+  };
+  return (
+    <div className="adm-note adm-banner adm-upload-banner" role="status">
+      <div>
+        <strong>
+          {pending.length} question{pending.length === 1 ? ' is' : 's are'} saved only in this browser.
+        </strong>{' '}
+        Students can’t see {pending.length === 1 ? 'it' : 'them'} until {pending.length === 1 ? 'it’s' : 'they’re'} in the database. Drafts stay
+        drafts.
+      </div>
+      <button type="button" className="adm-btn adm-btn--primary" onClick={upload} disabled={busy}>
+        {busy ? 'Uploading…' : 'Upload to database'}
+      </button>
     </div>
   );
 };

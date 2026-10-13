@@ -3,6 +3,7 @@ import { CircleAlert, Plus, Trash2, X } from 'lucide-react';
 import { CMS_SUBJECTS, EXAM_LABEL, EXAM_TYPES, SCHOOLS, needsSchool } from '../../lib/cms';
 import type { CmsQuestion, QuestionDraft } from '../../lib/cms';
 import { publishProblems } from '../../lib/question-rules';
+import { jambTopics } from '../../data/jamb-syllabus';
 
 interface Props {
   initial: CmsQuestion | QuestionDraft;
@@ -10,9 +11,11 @@ interface Props {
   onClose: () => void;
   onSave: (q: QuestionDraft, publish: boolean) => void;
   onDelete?: () => void;
+  /** Practice bank: no exam, year or school; the topic comes from the JAMB syllabus. */
+  practice?: boolean;
 }
 
-export const QuestionEditor: React.FC<Props> = ({ initial, isNew, onClose, onSave, onDelete }) => {
+export const QuestionEditor: React.FC<Props> = ({ initial, isNew, onClose, onSave, onDelete, practice = false }) => {
   const [q, setQ] = useState<QuestionDraft>(() => {
     const { ...draft } = initial as CmsQuestion;
     return draft;
@@ -81,6 +84,16 @@ export const QuestionEditor: React.FC<Props> = ({ initial, isNew, onClose, onSav
           )}
           {q.reviewNote && <div className="adm-note">{q.reviewNote}</div>}
 
+          {practice ? (
+            <label className="adm-field">
+              <span>Subject</span>
+              <select className="adm-input" value={q.subject} onChange={(e) => set('subject', e.target.value as QuestionDraft['subject'])}>
+                {CMS_SUBJECTS.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
+              </select>
+            </label>
+          ) : (
           <div className="adm-grid-3">
             <label className="adm-field">
               <span>Subject</span>
@@ -114,8 +127,9 @@ export const QuestionEditor: React.FC<Props> = ({ initial, isNew, onClose, onSav
               />
             </label>
           </div>
+          )}
 
-          {needsSchool(q.examType) && (
+          {!practice && needsSchool(q.examType) && (
             <label className="adm-field">
               <span>School</span>
               <select className="adm-input" value={q.school ?? ''} onChange={(e) => set('school', e.target.value)}>
@@ -130,8 +144,21 @@ export const QuestionEditor: React.FC<Props> = ({ initial, isNew, onClose, onSav
           )}
 
           <label className="adm-field">
-            <span>Topic</span>
-            <input className="adm-input" value={q.topic} onChange={(e) => set('topic', e.target.value)} placeholder="e.g. Kinematics" />
+            <span>{practice ? 'Syllabus topic' : 'Topic'}</span>
+            <input
+              className="adm-input"
+              value={q.topic}
+              onChange={(e) => set('topic', e.target.value)}
+              placeholder="e.g. Kinematics"
+              list={practice ? 'adm-topics' : undefined}
+            />
+            {practice && (
+              <datalist id="adm-topics">
+                {jambTopics(q.subject).map((t) => (
+                  <option key={t} value={t} />
+                ))}
+              </datalist>
+            )}
           </label>
 
           <label className="adm-field">

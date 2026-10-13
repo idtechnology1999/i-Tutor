@@ -1,0 +1,432 @@
+/* ---------------------------------------------------------------------------
+   The CBT, laid out like JAMB's: a plain, full-screen exam with the candidate
+   bar and clock on top, subject buttons, radio options and a numbered grid.
+   ------------------------------------------------------------------------- */
+
+.jamb {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--slate-100);
+  color: var(--text);
+}
+
+/* Candidate bar ----------------------------------------------------------- */
+
+.jamb__top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 24px;
+  background: var(--teal-900);
+  color: var(--text-invert);
+}
+
+.jamb__brand {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.jamb__brand strong {
+  font-size: 1.0625rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jamb__brand span,
+.jamb__candidate small,
+.jamb__time small {
+  font-size: 0.75rem;
+  color: var(--text-invert-soft);
+}
+
+.jamb__candidate {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.jamb__candidate > span:last-child {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.jamb__candidate strong {
+  font-size: 0.875rem;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jamb__photo {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 46px;
+  border-radius: 4px;
+  background: var(--teal-100);
+  color: var(--teal-900);
+  font-weight: 800;
+  font-size: 1.125rem;
+}
+
+.jamb__time {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.jamb__time strong {
+  font-size: 1.375rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.jamb__time.is-low {
+  background: var(--rose-600);
+}
+
+.jamb__time.is-low small {
+  color: #fff;
+}
+
+/* Subject buttons ----------------------------------------------------------- */
+
+.jamb__subjects {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 24px;
+  background: var(--white);
+  border-bottom: 1px solid var(--line-strong);
+  overflow-x: auto;
+}
+
+.jamb__subjects > button,
+.jamb__tools button {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--white);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--teal-900);
+  cursor: pointer;
+}
+
+.jamb__subjects > button small {
+  font-size: 0.75rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--slate-500);
+}
+
+.jamb__subjects > button.is-on {
+  background: var(--teal-900);
+  border-color: var(--teal-900);
+  color: var(--white);
+}
+
+.jamb__subjects > button.is-on small {
+  color: var(--text-invert-soft);
+}
+
+.jamb__tools {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+
+.jamb__tools button.is-on {
+  background: var(--teal-50);
+  border-color: var(--teal-500);
+}
+
+/* Question ------------------------------------------------------------------ */
+
+.jamb__body {
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.jamb__note {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--orange-50);
+  color: var(--orange-700);
+  font-size: 0.875rem;
+}
+
+.jamb__question {
+  padding: 24px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--white);
+}
+
+.jamb__qhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.jamb__qhead h2 {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--teal-900);
+}
+
+.jamb__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--white);
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--teal-700);
+  cursor: pointer;
+}
+
+.jamb__text {
+  margin: 0 0 18px;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+.jamb__options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.jamb__option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 1rem;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.jamb__option:hover {
+  background: var(--slate-50);
+}
+
+.jamb__option input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 3px 0 0;
+  accent-color: var(--teal-900);
+}
+
+.jamb__option b {
+  flex: none;
+  min-width: 1.4em;
+}
+
+.jamb__option.is-on {
+  border-color: var(--teal-700);
+  background: var(--teal-50);
+}
+
+/* Navigation and grid -------------------------------------------------------- */
+
+.jamb__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.jamb__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 10px 20px;
+  border: 1px solid var(--teal-900);
+  border-radius: 6px;
+  background: var(--white);
+  font: inherit;
+  font-weight: 700;
+  color: var(--teal-900);
+  cursor: pointer;
+}
+
+.jamb__btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.jamb__btn--submit {
+  margin-left: auto;
+  background: var(--teal-900);
+  color: var(--white);
+}
+
+.jamb__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--white);
+}
+
+.jamb__grid button {
+  height: 40px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--white);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--slate-700);
+  cursor: pointer;
+}
+
+.jamb__grid button.is-done {
+  background: var(--emerald-600);
+  border-color: var(--emerald-600);
+  color: var(--white);
+}
+
+.jamb__grid button.is-current {
+  outline: 3px solid var(--orange-500);
+  outline-offset: 1px;
+}
+
+.jamb__keys {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--slate-500);
+}
+
+/* Loading, empty and results --------------------------------------------------- */
+
+.jamb-empty {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px 16px;
+  text-align: center;
+  background: var(--slate-100);
+}
+
+.jamb-empty h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--teal-900);
+}
+
+.jamb-empty p {
+  margin: 0 0 8px;
+  max-width: 44ch;
+  color: var(--slate-600);
+}
+
+.jamb-breakdown {
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.jamb-breakdown li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 0.875rem;
+}
+
+.jamb-breakdown b {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 720px) {
+  .jamb__top {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px 14px;
+    padding: 10px 16px;
+  }
+
+  .jamb__candidate {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .jamb__subjects {
+    padding: 8px 16px;
+  }
+
+  .jamb__tools {
+    margin-left: 0;
+  }
+
+  .jamb__body {
+    padding: 16px;
+  }
+
+  .jamb__question {
+    padding: 16px;
+  }
+
+  .jamb__btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 10px 14px;
+  }
+
+  .jamb__btn--submit {
+    margin-left: 0;
+  }
+
+  .jamb__keys {
+    display: none;
+  }
+}
