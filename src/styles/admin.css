@@ -2858,14 +2858,140 @@
 
 /* ---------------------------------------------------- Practice questions */
 
-.adm-pr__subject {
+.adm-pr__subject.adm-scope__pick {
+  flex: none;
   max-width: 360px;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
+/* AI writer: works on the ticked topics of the whole subject. */
+.adm-pr__ai {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 18px;
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  background: var(--mist);
+}
+
+.adm-pr__ai-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--brand);
+}
+
+.adm-pr__picked {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 32px;
+  align-items: center;
+}
+
+.adm-pr__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 6px 5px 12px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--rule-2);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.adm-pr__chip.is-all {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+
+.adm-pr__chip button {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.adm-pr__chip button:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.adm-pr__ai-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.adm-pr__ai-row .adm-input {
+  flex: 1 1 260px;
+}
+
+.adm-pr__mic {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--rule);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--brand);
+  cursor: pointer;
+}
+
+.adm-pr__mic.is-on {
+  background: var(--bad);
+  border-color: var(--bad);
+  color: #fff;
+  animation: auto-listen 1.4s ease-in-out infinite;
+}
+
+.adm-pr__mic:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.adm-pr__examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.adm-pr__examples button {
+  padding: 6px 12px;
+  border: 1px dashed var(--rule-2);
+  border-radius: 999px;
+  background: transparent;
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.adm-pr__examples button:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.adm-pr__ai .adm-muted {
+  margin: 0;
+}
+
+/* Topics (tick for the AI, tap the name to see its questions) and questions. */
 .adm-pr {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
+  grid-template-columns: 300px minmax(0, 1fr);
   gap: 20px;
   align-items: start;
 }
@@ -2884,7 +3010,26 @@
   background: #fff;
 }
 
-.adm-pr__topics button {
+.adm-pr__all {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  padding: 10px;
+  border: 1px solid var(--rule-2);
+  border-radius: 10px;
+  background: var(--mist);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--brand);
+  cursor: pointer;
+}
+
+.adm-pr__view,
+.adm-pr__topic button {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2900,21 +3045,39 @@
   cursor: pointer;
 }
 
-.adm-pr__topics button:hover {
+.adm-pr__view:hover,
+.adm-pr__topic button:hover {
   background: var(--mist);
 }
 
-.adm-pr__topics button.is-on {
+.adm-pr__view.is-on,
+.adm-pr__topic.is-on button {
   background: var(--brand-tint);
   color: var(--brand);
   font-weight: 700;
 }
 
-.adm-pr__topics button.is-empty span {
+.adm-pr__topic {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-left: 8px;
+}
+
+.adm-pr__topic input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--brand);
+  cursor: pointer;
+}
+
+.adm-pr__topic button.is-empty span {
   color: var(--ink-3);
 }
 
-.adm-pr__topics small {
+.adm-pr__view small,
+.adm-pr__topic small {
   flex: none;
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
@@ -2928,38 +3091,6 @@
   gap: 14px;
 }
 
-.adm-pr__ai {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 16px;
-  border: 1px solid var(--rule);
-  border-radius: 14px;
-  background: var(--mist);
-}
-
-.adm-pr__ai-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--brand);
-}
-
-.adm-pr__ai-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-}
-
-.adm-pr__ai-row .adm-input {
-  flex: 1 1 220px;
-}
-
-.adm-pr__ai .adm-muted {
-  margin: 0;
-}
-
 @media (max-width: 900px) {
   .adm-pr {
     grid-template-columns: minmax(0, 1fr);
@@ -2967,6 +3098,6 @@
 
   .adm-pr__topics {
     position: static;
-    max-height: 260px;
+    max-height: 320px;
   }
 }
