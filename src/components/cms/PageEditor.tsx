@@ -25,6 +25,7 @@ import type { CmsEnv } from '../../cms/read';
 import type { CmsBlock } from '../../cms/types';
 import { HOME_SLUG, deletePage, discardDraft, getPage, listPages, pagePath, publishPage, savePage, slugify, unpublishPage } from '../../services/pages';
 import type { PageFull, PageInput, PageSummary } from '../../services/pages';
+import { ConfirmDelete } from './ConfirmDelete';
 import { FieldList, Switch } from './Fields';
 import { FieldContext } from './field-context';
 import { MediaPicker } from './MediaLibrary';
@@ -148,6 +149,7 @@ export const PageEditor: React.FC<{
   const [tab, setTab] = useState<Tab>('layers');
   const [picker, setPicker] = useState<number | null>(null);
   const [busy, setBusy] = useState<'' | 'save' | 'publish' | 'other'>('');
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
   const [pages, setPages] = useState<PageSummary[]>([]);
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -321,25 +323,11 @@ export const PageEditor: React.FC<{
   const run = async (what: 'unpublish' | 'discard' | 'delete') => {
     if (!page) return;
     if (what === 'discard' && !window.confirm('Throw away every change since the last publish?')) return;
-    if (
-      what === 'delete' &&
-      !window.confirm(
-        isHome
-          ? 'Reset the homepage? Your edits are deleted and the site goes back to the built-in homepage.'
-          : `Delete “${page.title}”? Its address ${pagePath(page.slug)} will stop working. This can’t be undone.`,
-      )
-    )
-      return;
+    // Deleting asks for the super admin password first (see deleteThisPage below).
+    if (what === 'delete') return setDeleting(true);
     setBusy('other');
     setError('');
     try {
-      if (what === 'delete') {
-        await deletePage(page.id);
-        setDirty(false);
-        notify(isHome ? 'Homepage reset to the built-in design.' : 'Page deleted.');
-        onBack();
-        return;
-      }
       const next = what === 'unpublish' ? await unpublishPage(page.id) : await discardDraft(page.id);
       setPage(next);
       if (what === 'discard') {
@@ -352,6 +340,15 @@ export const PageEditor: React.FC<{
     } finally {
       setBusy('');
     }
+  };
+
+  const deleteThisPage = async (password: string) => {
+    if (!page) return;
+    await deletePage(page.id, password);
+    setDirty(false);
+    setDeleting(false);
+    notify(isHome ? 'Homepage reset to the built-in design.' : 'Page deleted.');
+    onBack();
   };
 
   /* -------------------------------------------------------- Keyboard */
@@ -674,6 +671,19 @@ export const PageEditor: React.FC<{
         </div>
 
         {picker !== null && <BlockPicker onPick={(type) => insert(type, picker)} onClose={() => setPicker(null)} />}
+        {deleting && page && (
+          <ConfirmDelete
+            title={isHome ? 'Reset the homepage' : 'Delete page'}
+            message={
+              isHome
+                ? 'Your edits are deleted and the website goes back to the built-in homepage.'
+                : `“${page.title}” is removed from the website and ${pagePath(page.slug)} stops working. This can’t be undone.`
+            }
+            action={isHome ? 'Reset homepage' : 'Delete page'}
+            onConfirm={deleteThisPage}
+            onClose={() => setDeleting(false)}
+          />
+        )}
       </div>
     </FieldContext.Provider>
   );

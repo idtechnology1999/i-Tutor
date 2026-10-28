@@ -6,6 +6,7 @@ import type { CmsBlock } from '../../cms/types';
 import { SCREENS_SLUG } from '../../cms/screens';
 import { HOME_SLUG, createPage, deletePage, getPage, listPages, pagePath, slugify } from '../../services/pages';
 import type { PageSummary } from '../../services/pages';
+import { ConfirmDelete } from './ConfirmDelete';
 
 /* /cms: every page on the website. The homepage is always first; until it
    has been opened in the editor it shows the built-in design. */
@@ -31,6 +32,7 @@ export const PagesList: React.FC<{ onOpen: (id: string) => void; notify: (text: 
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState('');
+  const [deleting, setDeleting] = useState<PageSummary | null>(null);
 
   const load = () =>
     listPages()
@@ -74,22 +76,11 @@ export const PagesList: React.FC<{ onOpen: (id: string) => void; notify: (text: 
       .finally(() => setBusy(''));
   };
 
-  const remove = (p: PageSummary) => {
-    const isHome = p.slug === HOME_SLUG;
-    const ok = window.confirm(
-      isHome
-        ? 'Reset the homepage? Your edits are deleted and the site goes back to the built-in homepage.'
-        : `Delete “${p.title}”? Its address ${pagePath(p.slug)} will stop working. This can’t be undone.`,
-    );
-    if (!ok) return;
-    setBusy(p.id);
-    deletePage(p.id)
-      .then(() => {
-        setPages((list) => (list ?? []).filter((x) => x.id !== p.id));
-        notify(isHome ? 'Homepage reset to the built-in design.' : 'Page deleted.');
-      })
-      .catch((err: Error) => setError(err.message))
-      .finally(() => setBusy(''));
+  const remove = async (p: PageSummary, password: string) => {
+    await deletePage(p.id, password);
+    setDeleting(null);
+    setPages((list) => (list ?? []).filter((x) => x.id !== p.id));
+    notify(p.slug === HOME_SLUG ? 'Homepage reset to the built-in design.' : 'Page deleted.');
   };
 
   const status = (p: PageSummary) =>
@@ -128,7 +119,7 @@ export const PagesList: React.FC<{ onOpen: (id: string) => void; notify: (text: 
         <button type="button" className="adm-icon-btn" onClick={() => duplicate(p)} disabled={busy === p.id} aria-label="Duplicate" title="Duplicate">
           <Copy size={17} aria-hidden />
         </button>
-        <button type="button" className="adm-icon-btn cms-danger" onClick={() => remove(p)} disabled={busy === p.id} aria-label="Delete" title="Delete">
+        <button type="button" className="adm-icon-btn cms-danger" onClick={() => setDeleting(p)} disabled={busy === p.id} aria-label="Delete" title="Delete">
           <Trash2 size={17} aria-hidden />
         </button>
       </span>
@@ -182,6 +173,20 @@ export const PagesList: React.FC<{ onOpen: (id: string) => void; notify: (text: 
             <FilePlus2 size={18} aria-hidden /> Create a page
           </button>
         </div>
+      )}
+
+      {deleting && (
+        <ConfirmDelete
+          title={deleting.slug === HOME_SLUG ? 'Reset the homepage' : 'Delete page'}
+          message={
+            deleting.slug === HOME_SLUG
+              ? 'Your edits are deleted and the website goes back to the built-in homepage.'
+              : `“${deleting.title}” is removed from the website and ${pagePath(deleting.slug)} stops working. This can’t be undone.`
+          }
+          action={deleting.slug === HOME_SLUG ? 'Reset homepage' : 'Delete page'}
+          onConfirm={(password) => remove(deleting, password)}
+          onClose={() => setDeleting(null)}
+        />
       )}
 
       {creating && (

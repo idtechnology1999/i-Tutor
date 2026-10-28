@@ -210,7 +210,8 @@ export async function discardDraft(id: string): Promise<PageFull> {
   return api<PageFull>(`/api/admin/pages/${id}/discard`, { method: 'POST' });
 }
 
-export async function deletePage(id: string) {
+/** Needs the super admin's password. */
+export async function deletePage(id: string, password: string) {
   if (!isLive) {
     writeLocal(
       PAGES_KEY,
@@ -218,7 +219,7 @@ export async function deletePage(id: string) {
     );
     return;
   }
-  await api(`/api/admin/pages/${id}`, { method: 'DELETE' });
+  await api(`/api/admin/pages/${id}`, { method: 'DELETE', body: { password } });
 }
 
 /* ------------------------------------------------------------------ Images */
@@ -356,7 +357,8 @@ export async function updateMediaAlt(id: string, alt: string): Promise<MediaItem
   return api<MediaItem>(`/api/admin/media/${id}`, { method: 'PATCH', body: { alt } });
 }
 
-export async function deleteMedia(id: string) {
+/** Needs the super admin's password. */
+export async function deleteMedia(id: string, password: string) {
   if (!isLive) {
     writeLocal(
       MEDIA_KEY,
@@ -364,5 +366,5 @@ export async function deleteMedia(id: string) {
     );
     return;
   }
-  await api(`/api/admin/media/${id}`, { method: 'DELETE' });
+  await api(`/api/admin/media/${id}`, { method: 'DELETE', body: { password } });
 }

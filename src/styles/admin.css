@@ -250,6 +250,16 @@
   border-color: var(--brand-2);
 }
 
+.adm-btn--danger {
+  background: var(--bad);
+  border-color: var(--bad);
+  color: #fff;
+}
+
+.adm-btn--danger:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+
 .adm-btn--danger-ghost {
   color: var(--bad);
 }

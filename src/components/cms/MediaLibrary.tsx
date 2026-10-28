@@ -5,6 +5,7 @@ import type { MediaItem } from '../../services/pages';
 import { mediaSrc } from '../../cms/read';
 import { isLive } from '../../services/api';
 import type { CmsImage } from '../../cms/types';
+import { ConfirmDelete } from './ConfirmDelete';
 
 /* The image library: upload (button, drag and drop, or paste), browse, edit
    descriptions and delete. Used as its own page (/cms/media) and as the
@@ -21,6 +22,7 @@ const MediaGrid: React.FC<{
   const [uploading, setUploading] = useState(0);
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<MediaItem | null>(null);
+  const [deleting, setDeleting] = useState<MediaItem | null>(null);
   const [dragging, setDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -71,15 +73,12 @@ const MediaGrid: React.FC<{
   const uploaded = filter(items ?? []);
   const site = filter(SITE_IMAGES);
 
-  const remove = (item: MediaItem) => {
-    if (!window.confirm(`Delete “${item.name}”? Pages that use it will show no image there.`)) return;
-    deleteMedia(item.id)
-      .then(() => {
-        setItems((list) => (list ?? []).filter((m) => m.id !== item.id));
-        setSelected(null);
-        notify('Image deleted.');
-      })
-      .catch((err: Error) => setError(err.message));
+  const remove = async (item: MediaItem, password: string) => {
+    await deleteMedia(item.id, password);
+    setDeleting(null);
+    setItems((list) => (list ?? []).filter((m) => m.id !== item.id));
+    setSelected(null);
+    notify('Image deleted.');
   };
 
   const tile = (m: MediaItem, own: boolean) => (
@@ -170,13 +169,23 @@ const MediaGrid: React.FC<{
           own={!selected.id.startsWith('site-')}
           onPick={pick}
           onClose={() => setSelected(null)}
-          onDelete={remove}
+          onDelete={setDeleting}
           onSaved={(m) => {
             setItems((list) => (list ?? []).map((x) => (x.id === m.id ? m : x)));
             setSelected(m);
             notify('Description saved.');
           }}
           onError={setError}
+        />
+      )}
+
+      {deleting && (
+        <ConfirmDelete
+          title="Delete image"
+          message={`“${deleting.name}” is deleted, and pages on the website that use it will show no image there.`}
+          action="Delete image"
+          onConfirm={(password) => remove(deleting, password)}
+          onClose={() => setDeleting(null)}
         />
       )}
 
