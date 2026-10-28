@@ -199,6 +199,7 @@ export const A11_InstitutionCourse: React.FC<Props> = ({
 
   return (
     <OnboardingShell
+      screen="institution"
       step={3}
       title="Where are you aiming?"
       lede="Pick your school and course. We’ll check the latest cut-off marks and the subjects they ask for, and prepare you with the school’s Post-UTME questions."

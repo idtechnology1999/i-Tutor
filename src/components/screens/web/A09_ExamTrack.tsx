@@ -14,6 +14,7 @@ interface Props {
 /** Step 1: every exam the student is sitting — JAMB, Post-UTME, WAEC, NECO… */
 export const A09_ExamTrack: React.FC<Props> = ({ selected, onToggle, onContinue, onBack }) => (
   <OnboardingShell
+    screen="track"
     step={1}
     title="Which exams are you preparing for?"
     lede="Tick all that apply. We’ll show you the right past questions and practice exams for each one. You can change this later."

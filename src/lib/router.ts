@@ -33,7 +33,9 @@ export type AppView =
   | 'institution'
   | 'goals'
   | 'permissions'
-  | 'baseline';
+  | 'baseline'
+  // A page made in the CMS: every address the app doesn't know.
+  | 'page';
 
 export const VIEW_PATHS: Record<AppView, string> = {
   home: '/',
@@ -58,6 +60,7 @@ export const VIEW_PATHS: Record<AppView, string> = {
   goals: '/onboarding/goals',
   permissions: '/onboarding/permissions',
   baseline: '/onboarding/baseline',
+  page: '/page',
 };
 
 export type AccountView =
@@ -127,7 +130,6 @@ const ALIASES: Record<string, AppView> = {
   '/home': 'home',
   '/portal': 'dashboard',
   '/premium': 'upgrade',
-  '/cms': 'admin',
   '/courses': 'course',
   '/postutme': 'postutme',
   '/post-utme/': 'postutme',
@@ -179,15 +181,18 @@ const SCREEN_IDS: Record<string, AppView> = {
   home_dashboard: 'dashboard',
 };
 
+/** /cms and everything under it: the CMS, inside the admin area. */
+export const isCmsPath = (path: string) => /^\/cms(\/|$)/i.test(path);
+
 export const pathForView = (view: AppView) => VIEW_PATHS[view];
 
 export const viewForPath = (pathname: string): AppView => {
   const path = normalise(pathname).toLowerCase();
   const fromScreenId = SCREEN_IDS[path.replace(/^\/|\.html$/g, '')];
   if (fromScreenId) return fromScreenId;
-  // Every /admin/... address belongs to the admin area.
-  if (path === '/admin' || path.startsWith('/admin/')) return 'admin';
-  return PATH_VIEWS[path] ?? ALIASES[path] ?? 'home';
+  // Every /admin/... and /cms/... address belongs to the admin area.
+  if (path === '/admin' || path.startsWith('/admin/') || path === '/cms' || path.startsWith('/cms/')) return 'admin';
+  return PATH_VIEWS[path] ?? ALIASES[path] ?? 'page';
 };
 
 export const useRouter = () => {
@@ -218,10 +223,10 @@ export const useRouter = () => {
 };
 
 /**
- * Dev-only check so a mistyped path does not silently land on the homepage.
+ * Dev-only check so a mistyped path does not silently land on a CMS page.
  * Call it from the app shell; it is a no-op in production builds.
  */
 export const assertRouteCovers = (paths: string[]): string[] => {
   if (!import.meta.env.DEV) return [];
-  return paths.filter((path) => viewForPath(path) === 'home' && path !== '/');
+  return paths.filter((path) => viewForPath(path) === 'page');
 };

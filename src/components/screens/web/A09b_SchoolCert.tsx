@@ -20,6 +20,8 @@ export const A09b_SchoolCert: React.FC<Props> = ({ exams, value, onChange, onCon
 
   return (
     <OnboardingShell
+      screen="schoolcert"
+      vars={{ names }}
       step={2}
       title={`Your ${names} class`}
       lede={`Choose your class, then check the subjects you’ll sit. We’ll give you ${names} past questions for each one.`}

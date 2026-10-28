@@ -16,6 +16,9 @@ import { AdminApp } from './components/admin/AdminApp';
 import { CourseView } from './components/web/CourseView';
 import { PostUtmeView } from './components/web/PostUtmeView';
 import { ClassroomView } from './components/web/ClassroomView';
+import { CmsPageView } from './components/web/CmsPageView';
+import { CmsContext } from './cms/read';
+import type { CmsEnv } from './cms/read';
 import { syncQuestions } from './lib/cms';
 import type { ExamType } from './lib/cms';
 import { tutorById } from './data/tutors';
@@ -91,6 +94,7 @@ const TITLES: Record<AppView, string> = {
   goals: 'Step 4 · Exam date & goal — i-Tutor',
   permissions: 'Step 5 · Reminders & offline — i-Tutor',
   baseline: 'Step 6 · Placement test — i-Tutor',
+  page: 'i-Tutor',
 };
 
 export function App() {
@@ -174,7 +178,8 @@ export function App() {
   }, [activeView]);
 
   useEffect(() => {
-    document.title = TITLES[activeView];
+    // CMS pages set their own title once loaded.
+    if (activeView !== 'page') document.title = TITLES[activeView];
   }, [activeView]);
 
   const handleUpdateProfile = (updated: Partial<UserProfile>) => {
@@ -222,6 +227,23 @@ export function App() {
     }
   };
 
+  // Buttons and links on CMS-built pages (the homepage included).
+  const cmsEnv: CmsEnv = {
+    editing: false,
+    run: (href) => {
+      if (href === 'action:cbt') return launchExam();
+      if (href === 'action:tutor') return openTutor();
+      if (href.startsWith('action:')) return;
+      if (/^(https?:|mailto:|tel:)/i.test(href)) {
+        window.open(href, '_blank', 'noopener');
+        return;
+      }
+      const [to, hash] = href.split('#');
+      if (to) navigate(to);
+      if (hash) window.setTimeout(() => document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth' }), to ? 400 : 0);
+    },
+  };
+
   if (isAdmin) return <AdminApp path={path} navigate={navigate} onExit={() => goTo('home')} />;
 
   return (
@@ -236,6 +258,7 @@ export function App() {
         />
       )}
 
+      <CmsContext.Provider value={cmsEnv}>
       <main>
         {isCbt && (
           <CBTExamView
@@ -255,15 +278,9 @@ export function App() {
           />
         )}
 
-        {activeView === 'home' && (
-          <HomePageView
-            onLaunchCBT={() => launchExam()}
-            onOpenSyllabus={() => goTo('syllabus')}
-            onGoToDashboard={() => goTo('dashboard')}
-            onOpenTutor={openTutor}
-            onUpgrade={() => goTo('upgrade')}
-          />
-        )}
+        {activeView === 'home' && <HomePageView />}
+
+        {activeView === 'page' && <CmsPageView key={path} slug={path.replace(/^\/+|\/+$/g, '').toLowerCase()} onHome={() => goTo('home')} />}
 
         {activeView === 'dashboard' && (
           <DashboardView
@@ -361,6 +378,7 @@ export function App() {
           />
         )}
       </main>
+      </CmsContext.Provider>
 
       <AITutorDrawer
         key={solve?.n ?? 0}
@@ -374,7 +392,7 @@ export function App() {
         onNavigate={(view) => (view === 'cbt' ? launchExam() : goTo(view))}
       />
 
-      {!isCbt && activeView !== 'home' && (
+      {!isCbt && activeView !== 'home' && activeView !== 'page' && (
         <footer className="app-footer">
           <div className="container app-footer__inner">
             <span>

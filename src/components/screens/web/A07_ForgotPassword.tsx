@@ -54,6 +54,8 @@ export const A07_ForgotPassword: React.FC<Props> = ({
   if (phase === 'sent') {
     return (
       <AuthShell
+        screen="forgot-sent"
+        vars={{ destination }}
         eyebrow="Recovery"
         title="Check your messages"
         lede={`If an account exists for ${destination}, a reset code is on its way.`}
@@ -108,6 +110,7 @@ export const A07_ForgotPassword: React.FC<Props> = ({
 
   return (
     <AuthShell
+      screen="forgot"
       eyebrow="Recovery"
       title="Reset your password"
       lede="Tell us the email address on the account and we will send a reset code."

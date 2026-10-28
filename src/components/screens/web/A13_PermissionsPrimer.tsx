@@ -72,6 +72,7 @@ export const A13_PermissionsPrimer: React.FC<Props> = ({
 
   return (
     <OnboardingShell
+      screen="permissions"
       step={5}
       title="Two settings that make i-Tutor work on a weak network"
       lede="Both are optional and both can be changed later in Settings. Nothing here requires a payment card or a phone number."

@@ -1,5 +1,7 @@
 import React from 'react';
 import { OnboardingStepsContext } from './onboarding-context';
+import { screenText, useScreenText } from '../../../cms/screens';
+import { image as readImage, mediaSrc } from '../../../cms/read';
 import {
   CheckIcon,
   ShieldCheckIcon,
@@ -60,6 +62,10 @@ interface AuthShellProps {
   narrow?: boolean;
   /** Split-screen layout: form on the left, a full-height photo on the right. */
   photo?: boolean;
+  /** Its id in the CMS (cms/screens.ts), so an admin can change the text. */
+  screen?: string;
+  /** Values for {placeholders} in that text. */
+  vars?: Record<string, string | number | undefined>;
 }
 
 /**
@@ -77,22 +83,28 @@ export const AuthShell: React.FC<AuthShellProps> = ({
   footer,
   narrow,
   photo,
-}) => (
-  <div className={`auth${photo ? ' auth--photo' : ''}`}>
-    <div className="auth__frame">
-      <div className="auth__main">
-        <header className={`auth__head${narrow ? ' auth__head--narrow' : ''}`}>
-          <p className="auth__eyebrow">{eyebrow}</p>
-          <h1 className="auth__title">{title}</h1>
-          {lede ? <p className="auth__lede">{lede}</p> : null}
-        </header>
-        {children}
-        {footer ? <div className="auth__foot">{footer}</div> : null}
+  screen,
+  vars,
+}) => {
+  const cms = useScreenText(screen);
+  const shownLede = screenText(cms.lede, lede ?? '', vars);
+  return (
+    <div className={`auth${photo ? ' auth--photo' : ''}`}>
+      <div className="auth__frame">
+        <div className="auth__main">
+          <header className={`auth__head${narrow ? ' auth__head--narrow' : ''}`}>
+            <p className="auth__eyebrow">{screenText(cms.eyebrow, eyebrow, vars)}</p>
+            <h1 className="auth__title">{screenText(cms.title, title, vars)}</h1>
+            {shownLede ? <p className="auth__lede">{shownLede}</p> : null}
+          </header>
+          {children}
+          {footer ? <div className="auth__foot">{footer}</div> : null}
+        </div>
+        <aside className="auth__aside">{aside}</aside>
       </div>
-      <aside className="auth__aside">{aside}</aside>
     </div>
-  </div>
-);
+  );
+};
 
 export const TrustList: React.FC<{ items: string[] }> = ({ items }) => (
   <ul className="auth__trust">
@@ -154,18 +166,31 @@ export const PhotoAside: React.FC<{
   stats?: Array<{ value: string; label: string }>;
   /** A small card carved into the photo's top-right corner. */
   badge?: { label: string; value: string; note: string };
-}> = ({ src, alt, caption, stats, badge }) => (
+  /** Its screen's id in the CMS: an admin can change the photo, caption and card. */
+  screen?: string;
+}> = ({ src, alt, caption, stats, badge, screen }) => {
+  const cms = useScreenText(screen);
+  const picked = readImage(cms.image);
+  const card =
+    cms.showBadge === false
+      ? undefined
+      : badge && {
+          label: screenText(cms.badgeLabel, badge.label),
+          value: screenText(cms.badgeValue, badge.value),
+          note: screenText(cms.badgeNote, badge.note),
+        };
+  return (
   <figure className="auth-photo">
-    <img src={src} alt={alt} width={1280} height={960} decoding="async" />
-    {badge ? (
+    <img src={picked.src ? mediaSrc(picked.src) : src} alt={picked.src ? picked.alt : alt} width={1280} height={960} decoding="async" />
+    {card ? (
       <div className="lp-carve-corner auth-photo__badge" aria-hidden>
-        <span className="lp-hero__score-label">{badge.label}</span>
-        <span className="lp-hero__score-value">{badge.value}</span>
-        <span className="lp-hero__score-delta">{badge.note}</span>
+        <span className="lp-hero__score-label">{card.label}</span>
+        <span className="lp-hero__score-value">{card.value}</span>
+        <span className="lp-hero__score-delta">{card.note}</span>
       </div>
     ) : null}
     <figcaption className="auth-photo__caption">
-      <p>{caption}</p>
+      <p>{screenText(cms.caption, caption)}</p>
       {stats ? (
         <dl className="auth-photo__stats">
           {stats.map((stat) => (
@@ -176,12 +201,16 @@ export const PhotoAside: React.FC<{
           ))}
         </dl>
       ) : null}
-      <span className="auth-photo__credit">
-        Photo: James Rhoda / Wikimedia Commons, CC BY-SA 4.0
-      </span>
+      {/* The credit is for the built-in photos only. */}
+      {!picked.src && (
+        <span className="auth-photo__credit">
+          Photo: James Rhoda / Wikimedia Commons, CC BY-SA 4.0
+        </span>
+      )}
     </figcaption>
   </figure>
-);
+  );
+};
 
 /** Segmented progress rail for the onboarding sequence. */
 export const StepRail: React.FC<{
@@ -237,6 +266,10 @@ interface OnboardingShellProps {
   aside?: React.ReactNode;
   /** Defaults to the six onboarding step names. */
   steps?: string[];
+  /** Its id in the CMS (cms/screens.ts), so an admin can change the text. */
+  screen?: string;
+  /** Values for {placeholders} in that text. */
+  vars?: Record<string, string | number | undefined>;
 }
 
 export const ONBOARDING_TOTAL = ONBOARDING_STEPS.length;
@@ -249,7 +282,11 @@ export const OnboardingShell: React.FC<OnboardingShellProps> = ({
   children,
   aside,
   steps = ONBOARDING_STEPS,
+  screen,
+  vars,
 }) => {
+  const cms = useScreenText(screen);
+  const note = useScreenText('onboarding');
   const flow = React.useContext(OnboardingStepsContext);
   const labels = flow?.labels ?? steps;
   const current = flow?.current ?? step;
@@ -260,15 +297,17 @@ export const OnboardingShell: React.FC<OnboardingShellProps> = ({
           <StepRail current={current} steps={labels} total={labels.length} />
           <div className="onboard__rail-note">
             <p>
-              Answers here calibrate your question bank. You can change any of
-              this later in Settings.
+              {screenText(
+                note.railNote,
+                'Answers here calibrate your question bank. You can change any of this later in Settings.',
+              )}
             </p>
           </div>
         </aside>
         <div className="onboard__main">
           <header className="onboard__head">
-            <h1 className="onboard__title">{title}</h1>
-            <p className="onboard__lede">{lede}</p>
+            <h1 className="onboard__title">{screenText(cms.title, title, vars)}</h1>
+            <p className="onboard__lede">{screenText(cms.lede, lede, vars)}</p>
           </header>
           {children}
           {aside ? <aside className="onboard__aside">{aside}</aside> : null}

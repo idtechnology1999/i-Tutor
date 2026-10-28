@@ -147,6 +147,37 @@ Add a unique index; the admin UI already blocks duplicates but the server must t
 
 ---
 
+## 8. CMS pages and images — `src/services/pages.ts`
+
+Pages are lists of blocks (`src/cms/types.ts`); block types are in
+`src/cms/registry.ts`. Slug `home` is the homepage; any other slug is served at
+`/<slug>`. Saving writes `draft`; publishing copies it to `blocks`.
+
+| Endpoint | Body | Success |
+|---|---|---|
+| `GET /api/pages?slug=` | — (public) | `{ slug, title, description, image, blocks, updatedAt }`; `404` if not published |
+| `GET /api/admin/pages` | | `PageSummary[]` |
+| `GET /api/admin/pages/:id` | | `PageFull` |
+| `GET /api/admin/pages/preview?slug=` | | as the public page, with the draft |
+| `POST /api/admin/pages` | `{ title, slug, description, image, blocks }` | `PageFull` (draft); `409` slug taken |
+| `PUT /api/admin/pages/:id` | `{ title, slug, description, image, draft }` | `PageFull` |
+| `POST /api/admin/pages/:id/publish` · `/unpublish` · `/discard` | | `PageFull` |
+| `DELETE /api/admin/pages/:id` | | `204` |
+| `GET /api/admin/media` | | `MediaItem[]` (`url` is `/uploads/<file>` on the API) |
+| `POST /api/admin/media?name=&width=&height=&alt=` | the image itself, `content-type: image/*`, ≤ 12 MB | `MediaItem` |
+| `PATCH /api/admin/media/:id` | `{ alt }` | `MediaItem` |
+| `DELETE /api/admin/media/:id` | | `204` (the file is removed too) |
+
+The text on the login, sign-up and onboarding screens is one more CMS page,
+slug `screens`: one block per screen (`src/cms/screens.ts`), same endpoints.
+It is edited in the CMS's Screens tab and never shown as a page itself.
+
+Images are saved in `UPLOADS_DIR` (default: `uploads/` in the backend folder)
+and served at `/uploads/…`. A reverse proxy in front of the API must allow
+request bodies of at least 13 MB (nginx: `client_max_body_size`).
+
+---
+
 ## Security checklist before real students
 
 1. **Card details must not touch i-Tutor's code.** The current card form on `/upgrade`

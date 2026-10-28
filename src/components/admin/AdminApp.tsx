@@ -5,6 +5,7 @@ import {
   GraduationCap,
   Landmark,
   LayoutDashboard,
+  LayoutTemplate,
   ListChecks,
   LogOut,
   Newspaper,
@@ -34,8 +35,22 @@ import { AdminAuth, AdminChangePassword } from './AdminAuth';
 import { adminLogout, currentAdminAccount } from '../../services/admin-auth';
 import type { AdminAccount } from '../../services/admin-auth';
 import { isLive } from '../../services/api';
+import { CmsApp } from '../cms/CmsApp';
+import { isCmsPath } from '../../lib/router';
 
-export type Section = 'overview' | 'questions' | 'practice' | 'import' | 'postutme' | 'courses' | 'news' | 'users' | 'team' | 'admins' | 'settings';
+export type Section =
+  | 'overview'
+  | 'questions'
+  | 'practice'
+  | 'import'
+  | 'postutme'
+  | 'courses'
+  | 'news'
+  | 'cms'
+  | 'users'
+  | 'team'
+  | 'admins'
+  | 'settings';
 export type QuestionFilter = 'all' | 'published' | 'draft' | 'review';
 
 /** Which part of the bank is open: a subject (or All) and a year (or all years). */
@@ -70,6 +85,8 @@ const NAV: Array<{ id: Section; label: string; icon: typeof LayoutDashboard }> =
   { id: 'postutme', label: 'Post-UTME', icon: Landmark },
   { id: 'courses', label: 'Courses', icon: GraduationCap },
   { id: 'news', label: 'News', icon: Newspaper },
+  // Website pages: opens the CMS (/cms), its own full-screen area.
+  { id: 'cms', label: 'CMS', icon: LayoutTemplate },
   { id: 'users', label: 'Users', icon: UsersRound },
   { id: 'team', label: 'Team', icon: UserRoundCog },
   { id: 'admins', label: 'Admins', icon: ShieldCheck },
@@ -85,6 +102,7 @@ const SECTION_PATH: Record<Section, string> = {
   postutme: '/admin/post-utme',
   courses: '/admin/courses',
   news: '/admin/news',
+  cms: '/cms',
   users: '/admin/users',
   team: '/admin/team',
   admins: '/admin/admins',
@@ -197,6 +215,8 @@ export const AdminApp: React.FC<{
   if (isLive && account === undefined) return <div className="adm-signin" aria-busy="true" />;
   if (!demo && !account) return <AdminAuth onSignedIn={setAccount} onDemo={enterDemo} onExit={onExit} />;
   if (account?.mustChangePassword) return <AdminChangePassword admin={account} onDone={setAccount} onSignOut={signOut} />;
+
+  if (isCmsPath(path)) return <CmsApp path={path} navigate={navigate} onExit={() => navigate('/admin')} />;
 
   // Only the super admin sees (and may open) Admins.
   const isSuper = account?.role === 'superadmin';

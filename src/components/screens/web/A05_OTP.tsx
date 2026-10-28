@@ -121,6 +121,8 @@ export const A05_OTP: React.FC<Props> = ({
 
   return (
     <AuthShell
+      screen="otp"
+      vars={{ digits: CODE_LENGTH, destination: maskDestination(phoneOrEmail) }}
       eyebrow="Verification"
       title="Enter the email code"
       lede={`We sent a ${CODE_LENGTH}-digit code to ${maskDestination(phoneOrEmail)}. It expires in 10 minutes.`}

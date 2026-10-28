@@ -13,6 +13,7 @@ import './styles/news.css'
 import './styles/admin.css'
 import './styles/courses.css'
 import './styles/theme.css'
+import './styles/cms.css'
 import App from './App.tsx'
 
 createRoot(document.getElementById('root')!).render(

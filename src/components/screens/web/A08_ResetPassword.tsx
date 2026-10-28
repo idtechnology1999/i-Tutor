@@ -97,6 +97,7 @@ export const A08_ResetPassword: React.FC<Props> = ({
   if (done) {
     return (
       <AuthShell
+        screen="reset-done"
         eyebrow="Password updated"
         title="Your password has been changed"
         lede="For your security, every other session on this account has been signed out."
@@ -139,6 +140,8 @@ export const A08_ResetPassword: React.FC<Props> = ({
 
   return (
     <AuthShell
+      screen="reset"
+      vars={{ destination: phoneOrEmail }}
       eyebrow="Recovery"
       title="Enter your code"
       lede={

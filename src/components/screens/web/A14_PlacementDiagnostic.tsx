@@ -20,6 +20,7 @@ export const A14_PlacementDiagnostic: React.FC<Props> = ({
   onBack,
 }) => (
   <OnboardingShell
+    screen="baseline"
     step={6}
     title="One last step: a short placement test"
     lede="Twenty questions across your subjects. It is the fastest way for i-Tutor to know which topics to show you first — and which ones to leave alone for now."

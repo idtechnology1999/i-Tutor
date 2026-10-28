@@ -24,6 +24,7 @@ export const A10_SubjectPicker: React.FC<Props> = ({
 
   return (
     <OnboardingShell
+      screen="subjects"
       step={2}
       title="Choose your subjects"
       lede="JAMB is 4 subjects: English plus the 3 you choose. We use this to build your question bank and to work out which topics need attention first."

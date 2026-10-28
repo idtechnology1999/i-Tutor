@@ -82,12 +82,14 @@ export const A06_Login: React.FC<Props> = ({
 
   return (
     <AuthShell
+      screen="login"
       photo
       eyebrow="Welcome back"
       title="Log in to i-Tutor"
       lede="Pick up your mocks, weak topics and tutor sessions where you left off."
       aside={
         <PhotoAside
+          screen="login"
           src="/images/student-cbt-focus.jpg"
           alt="A student concentrating at a computer in a school CBT lab"
           caption="Your progress follows you — phone, laptop or the cyber-café computer."

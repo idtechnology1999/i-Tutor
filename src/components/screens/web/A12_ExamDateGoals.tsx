@@ -54,6 +54,7 @@ export const A12_ExamDateGoals: React.FC<Props> = ({
 
   return (
     <OnboardingShell
+      screen="goals"
       step={4}
       title="When is your exam, and what score are you aiming for?"
       lede="We use your exam month and target score to build a study plan that fits the time you actually have."

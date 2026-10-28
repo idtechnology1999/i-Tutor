@@ -91,12 +91,14 @@ export const A04_SignUp: React.FC<Props> = ({
 
   return (
     <AuthShell
+      screen="signup"
       photo
       eyebrow="Free to start · No card needed"
       title="Create your account"
       lede="Takes under a minute. We’ll send a one-time code to confirm it’s really you."
       aside={
         <PhotoAside
+          screen="signup"
           src="/images/students-at-terminals.jpg"
           alt="Secondary-school students in white uniforms working at computers in a CBT lab"
           caption="Practise on a screen that feels like the real CBT hall — then learn from every question you miss."
