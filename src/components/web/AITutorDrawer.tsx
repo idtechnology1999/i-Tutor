@@ -3,6 +3,8 @@ import { askTutor, demoExplain, explainQuestion } from '../../services/tutor';
 import { isLive } from '../../services/api';
 import { ArrowRight, AudioLines, BadgeCheck, LockOpen, MessageSquareText, Mic, SendHorizontal, X } from 'lucide-react';
 import { VoiceLesson } from './VoiceLesson';
+import { TutorReply } from './TutorReply';
+import { replyForHistory } from '../../lib/tutor-reply';
 import { FREE_DAILY, readUsed, writeUsed } from '../../lib/tutor-quota';
 import type { SolveRequest, TutorPersona } from '../../data/tutors';
 import type { AppView } from '../../lib/router';
@@ -32,20 +34,6 @@ interface Message {
   links?: NavLink[];
 }
 
-
-/** Light formatting: **bold**, $maths$ and a few LaTeX commands as plain text. */
-const formatText = (text: string) => {
-  const clean = text
-    .replace(/\\frac\{1\}\{2\}/g, '½')
-    .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1/$2')
-    .replace(/\\implies/g, '⇒')
-    .replace(/\$/g, '');
-  return clean
-    .split(/(\*\*[^*]+\*\*)/g)
-    .map((part, i) =>
-      part.startsWith('**') && part.endsWith('**') ? <strong key={i}>{part.slice(2, -2)}</strong> : part,
-    );
-};
 
 /* -----------------------------------------------------------------------------
    Site guide. Questions about using i-Tutor get a plain answer plus buttons
@@ -167,6 +155,7 @@ export const AITutorDrawer: React.FC<Props> = ({
       ]
     : [];
   const shown = [...messages.slice(0, 1), ...seeded, ...messages.slice(1)];
+  const lastTutor = shown.map((m) => m.sender).lastIndexOf('tutor');
   const [inputText, setInputText] = useState('');
   const [typing, setTyping] = useState(false);
   const thinking = typing || (Boolean(solve) && seedReply === null);
@@ -221,7 +210,9 @@ export const AITutorDrawer: React.FC<Props> = ({
     }
 
     setTyping(true);
-    const history = shown.map((m) => ({ role: m.sender === 'user' ? ('student' as const) : ('tutor' as const), text: m.text }));
+    const history = shown.map((m) =>
+      m.sender === 'user' ? { role: 'student' as const, text: m.text } : { role: 'tutor' as const, text: replyForHistory(m.text) },
+    );
     askTutor(query, history, tutor?.id)
       .then((reply) => setMessages((prev) => [...prev, { sender: 'tutor', text: reply }]))
       .catch((err: Error) => setMessages((prev) => [...prev, { sender: 'tutor', text: `Sorry — ${err.message}` }]))
@@ -320,7 +311,14 @@ export const AITutorDrawer: React.FC<Props> = ({
             <div className="tutor__log" ref={logRef} aria-live="polite">
               {shown.map((m, idx) => (
                 <React.Fragment key={idx}>
-                  <p className={`tutor__msg tutor__msg--${m.sender}`}>{formatText(m.text)}</p>
+                  {m.sender === 'user' ? (
+                    <p className="tutor__msg tutor__msg--user">{m.text}</p>
+                  ) : (
+                    // The newest answer opens step by step; older ones show in full.
+                    <div className="tutor__msg tutor__msg--tutor tutor__msg--rich">
+                      <TutorReply text={m.text} stepwise={idx === lastTutor} />
+                    </div>
+                  )}
                   {m.links && onNavigate && (
                     <div className="tutor__links">
                       {m.links.map((link) => (

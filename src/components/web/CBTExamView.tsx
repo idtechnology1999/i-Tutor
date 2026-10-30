@@ -10,8 +10,9 @@ import type { SolveRequest } from '../../data/tutors';
 /* The CBT, laid out like JAMB's: candidate bar with the clock, one button per
    subject, radio-button options, a numbered question grid, and Previous /
    Next / Submit. It starts as soon as it opens — no setup screen.
-   - Practise a subject: that subject's practice-bank questions (JAMB past
-     questions if the practice bank has none yet).
+   - Practise a subject: a whole practice exam that starts with that subject,
+     then the student's other subjects (practice-bank questions, or JAMB past
+     questions where the practice bank has none yet).
    - Practice exam (no subject): a full UTME mock — English (60) and the
      student's three subjects (40 each) — from past and practice questions.
    - Course / Post-UTME: the subjects and exam the student picked there. */
@@ -79,17 +80,31 @@ function buildPaper(
   }
 
   if (presetSubject) {
-    const subject = bankName(presetSubject);
-    const practice = take(subject, live.filter((q) => q.examType === PRACTICE));
-    const usePast = practice.length === 0;
-    const chosen = usePast ? take(subject, live.filter((q) => q.examType === 'UTME')) : practice;
-    const questions = chosen.map(toExamQuestion);
+    // The subject the student tapped comes first, then the rest of their
+    // subjects (English plus their three), so it's a whole practice exam.
+    const first = bankName(presetSubject);
+    const theirs = ['English', ...profile.selectedSubjects.map(bankName).filter((s) => s !== 'English').slice(0, 3)];
+    const sequence = [first, ...theirs.filter((s) => s !== first)];
+    const pastFor: string[] = [];
+    const questions = sequence.flatMap((s) => {
+      const practice = take(s, live.filter((q) => q.examType === PRACTICE));
+      if (practice.length) return practice.map(toExamQuestion);
+      // No practice questions yet: JAMB past questions stand in.
+      const past = take(s, live.filter((q) => q.examType === 'UTME'));
+      if (past.length) pastFor.push(s);
+      return past.map(toExamQuestion);
+    });
+    const subjects = sequence.filter((s) => questions.some((q) => q.subject === s));
     return {
-      title: `${subject} practice`,
-      subjects: [subject],
+      title: `Practice exam · ${first} first`,
+      subjects,
       questions,
       seconds: questions.length * SECONDS_EACH,
-      note: usePast && questions.length ? `There are no ${subject} practice questions yet, so these are JAMB past questions.` : '',
+      note: !pastFor.length
+        ? ''
+        : pastFor.length === subjects.length
+          ? 'There are no practice questions yet, so these are JAMB past questions.'
+          : `There are no ${pastFor.join(' or ')} practice questions yet, so those are JAMB past questions.`,
       practice: true,
     };
   }

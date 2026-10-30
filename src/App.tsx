@@ -24,7 +24,7 @@ import type { ExamType } from './lib/cms';
 import { tutorById } from './data/tutors';
 import { loadProfile, saveProfile } from './services/profile';
 import { isLive } from './services/api';
-import { examsOf } from './lib/student-exams';
+import { examsOf, subjectsFor } from './lib/student-exams';
 import { logOut } from './services/auth';
 import { FREE_DAILY, readUsed, writeUsed } from './lib/tutor-quota';
 import type { SolveRequest } from './data/tutors';
@@ -311,6 +311,7 @@ export function App() {
             initialExam={pq.exam}
             initialSchool={pq.school}
             exams={examsOf(profile)}
+            subjectsFor={(exam) => subjectsFor(profile, exam)}
           />
         )}
 

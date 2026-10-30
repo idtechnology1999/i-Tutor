@@ -6,11 +6,24 @@
    the same shape as `Lesson`, written by the model.
    -------------------------------------------------------------------------- */
 
-export type BoardKind = 'title' | 'line' | 'formula' | 'example' | 'note';
+/** Board marker colours: title blue, formula black (boxed), example green,
+    note red. `diagram` is drawn, `ask` stops the lesson for the student. */
+export type BoardKind = 'title' | 'line' | 'formula' | 'example' | 'note' | 'diagram' | 'ask';
 
 export interface BoardLine {
   kind: BoardKind;
+  /** The words written (a diagram's caption; an ask line's question). */
   text: string;
+  /** A formula as LaTeX, shown as real maths instead of `text`. */
+  tex?: string;
+  /** A diagram: one simple SVG, drawn stroke by stroke. */
+  svg?: string;
+  /** What the teacher says while writing this line (caption, and voice). */
+  say?: string;
+  /** An ask line: the choices, the right letter and why. */
+  options?: { label: string; text: string }[];
+  answer?: string;
+  why?: string;
 }
 
 export interface LessonStep {
@@ -66,28 +79,51 @@ export const LESSONS: Lesson[] = [
       {
         say: 'Let’s start with the words JAMB uses for motion. I’m writing them on the board.',
         board: [
-          L('title', 'Motion in a straight line'),
-          L('line', 'u = initial velocity    v = final velocity'),
-          L('line', 'a = acceleration    t = time    s = distance'),
-          L('note', 'From rest means u = 0'),
+          { kind: 'title', text: 'Motion in a straight line', say: 'Today: motion in a straight line.' },
+          { kind: 'line', text: 'u = initial velocity    v = final velocity', say: 'u is how fast it starts, v is how fast it ends.' },
+          { kind: 'line', text: 'a = acceleration    t = time    s = distance' },
+          { kind: 'note', text: 'From rest means u = 0', say: 'Watch out: “from rest” is JAMB’s way of telling you u is zero.' },
+        ],
+      },
+      {
+        say: 'Here is what steady acceleration looks like on a graph.',
+        board: [
+          {
+            kind: 'diagram',
+            text: 'Velocity–time graph: the slope is a, the area is s',
+            say: 'The line climbs steadily. Its slope is the acceleration, and the area under it is the distance.',
+            svg: '<svg viewBox="0 0 320 190" xmlns="http://www.w3.org/2000/svg"><defs><marker id="ah" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#1d3fb3"/></marker></defs><g stroke="#1d3fb3" stroke-width="2.5" fill="none"><line x1="40" y1="160" x2="300" y2="160" marker-end="url(#ah)"/><line x1="40" y1="160" x2="40" y2="20" marker-end="url(#ah)"/></g><polygon points="40,160 250,50 250,160" fill="#1d3fb3" fill-opacity="0.08" stroke="none"/><line x1="40" y1="160" x2="250" y2="50" stroke="#111" stroke-width="3"/><line x1="250" y1="50" x2="250" y2="160" stroke="#c0392b" stroke-width="2" stroke-dasharray="6 5"/><g font-size="15" fill="#111"><text x="292" y="180">t</text><text x="18" y="28">v</text><text x="150" y="140" fill="#1d3fb3">area = s</text><text x="120" y="88" fill="#c0392b">slope = a</text></g></svg>',
+          },
         ],
       },
       {
         say: 'These three equations solve almost every motion question. Copy them down.',
         board: [
-          L('formula', 'v = u + at'),
-          L('formula', 's = ut + ½at²'),
-          L('formula', 'v² = u² + 2as'),
-          L('note', 'No time given? Use v² = u² + 2as'),
+          { kind: 'formula', text: 'v = u + at', tex: 'v = u + at', say: 'One: v equals u plus a t.' },
+          { kind: 'formula', text: 's = ut + ½at²', tex: 's = ut + \\tfrac{1}{2}at^2', say: 'Two: s equals u t plus half a t squared.' },
+          { kind: 'formula', text: 'v² = u² + 2as', tex: 'v^2 = u^2 + 2as', say: 'Three: v squared equals u squared plus two a s.' },
+          { kind: 'note', text: 'No time given? Use v² = u² + 2as', say: 'If the question gives no time, go straight to the third one.' },
+          {
+            kind: 'ask',
+            text: 'A question gives u, a and s, but no t. Which equation do you use?',
+            say: 'Your turn. Tap your answer on the board.',
+            options: [
+              { label: 'A', text: 'v = u + at' },
+              { label: 'B', text: 's = ut + ½at²' },
+              { label: 'C', text: 'v² = u² + 2as' },
+            ],
+            answer: 'C',
+            why: 'Only v² = u² + 2as has no t in it.',
+          },
         ],
       },
       {
         say: 'Now a worked example, step by step.',
         board: [
-          L('example', 'A car starts from rest and reaches 20 m/s in 5 s. Find a.'),
-          L('line', 'u = 0,  v = 20,  t = 5'),
-          L('line', 'v = u + at  →  20 = 0 + 5a'),
-          L('formula', 'a = 4 m/s²'),
+          { kind: 'example', text: 'A car starts from rest and reaches 20 m/s in 5 s. Find a.', say: 'Read it carefully: from rest, 20 metres per second, 5 seconds.' },
+          { kind: 'line', text: 'u = 0,  v = 20,  t = 5', say: 'First, write down what we know.' },
+          { kind: 'formula', text: '20 = 0 + 5a', tex: 'v = u + at \\;\\Rightarrow\\; 20 = 0 + 5a', say: 'We have v, u and t, so we use v equals u plus a t.' },
+          { kind: 'formula', text: 'a = 4 m/s²', tex: 'a = \\dfrac{20}{5} = 4\\ \\text{m/s}^2', say: 'Divide both sides by 5. a is 4 metres per second squared.' },
         ],
       },
     ],
@@ -110,19 +146,36 @@ export const LESSONS: Lesson[] = [
       {
         say: 'Ohm’s law links voltage, current and resistance.',
         board: [
-          L('title', "Ohm's law"),
-          L('formula', 'V = I R'),
-          L('line', 'V = voltage (volts, V)'),
-          L('line', 'I = current (amperes, A)'),
-          L('line', 'R = resistance (ohms, Ω)'),
+          { kind: 'title', text: "Ohm's law" },
+          { kind: 'formula', text: 'V = IR', tex: 'V = IR', say: 'V equals I times R. Learn this one by heart.' },
+          { kind: 'line', text: 'V = voltage (volts, V)' },
+          { kind: 'line', text: 'I = current (amperes, A)' },
+          { kind: 'line', text: 'R = resistance (ohms, Ω)' },
         ],
       },
       {
-        say: 'Resistors in series add up; in parallel, the reciprocals add up.',
+        say: 'Resistors in series sit on one path. In parallel, each has its own path.',
         board: [
-          L('formula', 'Series:  R = R₁ + R₂'),
-          L('formula', 'Parallel:  1/R = 1/R₁ + 1/R₂'),
-          L('example', '2 Ω and 2 Ω in parallel  →  1/R = ½ + ½  →  R = 1 Ω'),
+          {
+            kind: 'diagram',
+            text: 'Two resistors in parallel between A and B',
+            say: 'Look at the two paths. Current can split and take either one.',
+            svg: '<svg viewBox="0 0 320 150" xmlns="http://www.w3.org/2000/svg"><g stroke="#111" stroke-width="2.5" fill="none"><line x1="20" y1="75" x2="60" y2="75"/><line x1="60" y1="30" x2="60" y2="120"/><line x1="260" y1="30" x2="260" y2="120"/><line x1="260" y1="75" x2="300" y2="75"/><line x1="60" y1="30" x2="125" y2="30"/><rect x="125" y="18" width="70" height="24"/><line x1="195" y1="30" x2="260" y2="30"/><line x1="60" y1="120" x2="125" y2="120"/><rect x="125" y="108" width="70" height="24"/><line x1="195" y1="120" x2="260" y2="120"/></g><g font-size="15" fill="#1d3fb3" text-anchor="middle"><text x="160" y="12">R₁</text><text x="160" y="102">R₂</text><text x="12" y="70">A</text><text x="308" y="70">B</text></g></svg>',
+          },
+          { kind: 'formula', text: 'Series: R = R₁ + R₂', tex: '\\text{Series: } R = R_1 + R_2', say: 'In series, just add them.' },
+          { kind: 'formula', text: 'Parallel: 1/R = 1/R₁ + 1/R₂', tex: '\\text{Parallel: } \\frac{1}{R} = \\frac{1}{R_1} + \\frac{1}{R_2}', say: 'In parallel, add the reciprocals, then flip.' },
+          {
+            kind: 'ask',
+            text: 'Two 2 Ω resistors in parallel. What is the total?',
+            say: 'Try this one before I show you.',
+            options: [
+              { label: 'A', text: '4 Ω' },
+              { label: 'B', text: '1 Ω' },
+              { label: 'C', text: '2 Ω' },
+            ],
+            answer: 'B',
+            why: '1/R = ½ + ½ = 1, so R = 1 Ω. Parallel is always smaller than the smallest one.',
+          },
         ],
       },
     ],

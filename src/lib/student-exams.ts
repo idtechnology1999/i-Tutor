@@ -108,3 +108,27 @@ export const onboardingSteps = (exams: StudentExam[]): OnboardingStep[] => {
 };
 
 export const onboardingLabels = (steps: OnboardingStep[]) => steps.map((s) => STEP_LABEL[s]);
+
+/* ------------------------------------------------------- Registered subjects */
+
+/** Profile names → question-bank names ("English Language" → "English"). */
+const bankSubject = (s: string) => (s === 'English Language' || s === 'Use of English' ? 'English' : s);
+
+/**
+ * The subjects the student registered for one exam: JAMB is English plus
+ * their three, the school-certificate exams are their class subjects. Null
+ * when the exam has no subject list of its own (Post-UTME follows the school).
+ */
+export const subjectsFor = (
+  profile: Pick<UserProfile, 'selectedSubjects' | 'schoolCert'>,
+  exam: string,
+): string[] | null => {
+  const picked =
+    exam === 'UTME'
+      ? ['English', ...profile.selectedSubjects]
+      : SCHOOL_CERT_EXAMS.includes(exam as StudentExam)
+        ? (profile.schoolCert?.subjects ?? [])
+        : [];
+  const list = [...new Set(picked.map(bankSubject))];
+  return list.length ? list : null;
+};

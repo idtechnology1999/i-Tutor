@@ -32,11 +32,16 @@ export const pickVoice = () => {
   );
 };
 
-/** Read a line aloud in the best English voice available. */
-export const speakText = (text: string) => {
-  if (!canSpeak()) return;
+/** Read a line aloud in the best English voice available. `onEnd` runs when
+    it finishes or is cut off (and straight away if the device can't speak). */
+export const speakText = (text: string, onEnd?: () => void) => {
+  if (!canSpeak()) return onEnd?.();
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
+  if (onEnd) {
+    u.onend = onEnd;
+    u.onerror = onEnd;
+  }
   const voice = pickVoice();
   if (voice) u.voice = voice;
   u.lang = voice?.lang ?? 'en-GB';

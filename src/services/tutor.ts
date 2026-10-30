@@ -12,9 +12,69 @@ export interface ChatTurn {
   text: string;
 }
 
+/** A worked answer in the step / formula / diagram format the real tutor uses. */
+const DEMO_RESISTORS = `Let’s take this one piece at a time.
+
+:::step Picture the circuit
+In **parallel**, each resistor has its own path between the same two points, like three roads joining the same two towns.
+:::diagram Three resistors side by side between points A and B
+<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg">
+<g stroke="#111" stroke-width="2" fill="none">
+<line x1="40" y1="20" x2="40" y2="150"/><line x1="280" y1="20" x2="280" y2="150"/>
+<line x1="40" y1="30" x2="125" y2="30"/><rect x="125" y="20" width="70" height="20"/><line x1="195" y1="30" x2="280" y2="30"/>
+<line x1="40" y1="85" x2="125" y2="85"/><rect x="125" y="75" width="70" height="20"/><line x1="195" y1="85" x2="280" y2="85"/>
+<line x1="40" y1="140" x2="125" y2="140"/><rect x="125" y="130" width="70" height="20"/><line x1="195" y1="140" x2="280" y2="140"/>
+</g>
+<g font-size="13" text-anchor="middle" fill="#111">
+<text x="160" y="15">2 Ω</text><text x="160" y="70">3 Ω</text><text x="160" y="125">6 Ω</text>
+<text x="22" y="90">A</text><text x="298" y="90">B</text>
+</g>
+</svg>
+:::
+:::
+
+:::step Write the parallel formula
+For parallel resistors, we add the **reciprocals**:
+:::formula
+\\frac{1}{R} = \\frac{1}{R_1} + \\frac{1}{R_2} + \\frac{1}{R_3}
+:::
+:::
+
+:::step Put in the values
+Replace $R_1$, $R_2$ and $R_3$ with 2, 3 and 6:
+:::formula
+\\frac{1}{R} = \\frac{1}{2} + \\frac{1}{3} + \\frac{1}{6}
+:::
+:::
+
+:::step Add the fractions
+The LCM of 2, 3 and 6 is 6:
+:::formula
+\\frac{1}{R} = \\frac{3 + 2 + 1}{6} = \\frac{6}{6} = 1
+:::
+:::
+
+:::step Flip it to get R
+We found $\\frac{1}{R}$, not $R$, so turn it upside down:
+:::formula
+R = \\frac{1}{1} = 1\\ \\Omega
+:::
+:::
+
+:::answer
+The effective resistance is **1 Ω**. Notice it is smaller than the smallest resistor (2 Ω). That is always true in parallel.
+:::
+
+:::trap
+Adding them straight (2 + 3 + 6 = 11 Ω) is the **series** formula. Examiners always put 11 Ω among the options.
+:::
+
+Your turn: what would the total be if the same three were connected in **series**?`;
+
 /** Demo replies, used until the backend is connected. */
 const demoReply = (query: string) => {
   const q = query.toLowerCase();
+  if (q.includes('resist') || q.includes('parallel')) return DEMO_RESISTORS;
   if (q.includes('isomer') || q.includes('chem')) {
     return 'Good question on Organic Chemistry.\n\n• **Functional group isomers** have the same formula but different groups — e.g. ethanol C₂H₅OH (alcohol) and methoxymethane CH₃OCH₃ (ether).\n• **Chain isomers** have the same group but a different carbon chain — e.g. butane and 2-methylpropane.\n\nQuick check: which of the two would have the higher boiling point, ethanol or methoxymethane? Tell me what you think and why.';
   }

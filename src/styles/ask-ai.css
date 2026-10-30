@@ -439,3 +439,234 @@
 @media (prefers-reduced-motion: reduce) {
   .voice__orb i { animation: none !important; }
 }
+
+/* =============================================================================
+   Tutor answers drawn piece by piece (components/web/TutorReply.tsx): steps,
+   formula cards, diagrams, the answer and exam traps.
+   ============================================================================= */
+
+.tutor__msg--rich {
+  max-width: 100%;
+  width: 100%;
+  white-space: normal;
+}
+
+.tr {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.tr p,
+.tr ul,
+.tr ol {
+  margin: 0;
+}
+
+.tr ul,
+.tr ol {
+  padding-left: 1.25em;
+  display: grid;
+  gap: 4px;
+}
+
+.tr-reveal {
+  animation: msg-in 380ms var(--spring, ease) both;
+}
+
+.tr-step {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.tr-step__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--brand);
+  font-family: var(--font-display);
+}
+
+.tr-step__num {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.tr-step__body {
+  display: grid;
+  gap: 8px;
+  color: var(--ink);
+}
+
+.tr-formula {
+  position: relative;
+  background: var(--brand-tint);
+  border-radius: 12px;
+  padding: 12px 14px 12px 38px;
+  overflow-x: auto;
+  color: var(--brand);
+}
+
+.tr-formula__icon {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.55;
+}
+
+.tr-formula .katex-display {
+  margin: 0;
+  text-align: left;
+}
+
+.tr-formula .katex {
+  font-size: 1.12em;
+}
+
+.tr-tex-plain {
+  font-family: 'Cambria Math', 'Times New Roman', serif;
+}
+
+.tr-formula .tr-tex-plain {
+  font-size: 1.05rem;
+}
+
+.tr-diagram {
+  margin: 0;
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+
+.tr-diagram img {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+}
+
+.tr-diagram figcaption {
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+  text-align: center;
+}
+
+.tr-answer,
+.tr-trap {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+.tr-answer > div,
+.tr-trap > div {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.tr-answer > svg,
+.tr-trap > svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.tr-answer {
+  background: var(--ok-bg);
+  color: var(--ok);
+  border: 1px solid color-mix(in srgb, var(--ok) 25%, transparent);
+}
+
+.tr-answer p {
+  color: var(--ink);
+}
+
+.tr-trap {
+  background: var(--orange-tint);
+  border: 1px solid color-mix(in srgb, var(--orange) 30%, transparent);
+  color: var(--orange-ink);
+}
+
+.tr-trap__label {
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tr-trap p {
+  color: var(--ink);
+}
+
+.tr-next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+
+.tr-next__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 99px;
+  background: var(--brand);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 160ms ease, transform 120ms ease;
+}
+
+.tr-next__btn:hover {
+  background: var(--brand-2);
+}
+
+.tr-next__btn:active {
+  transform: scale(0.97);
+}
+
+.tr-next__count {
+  font-weight: 500;
+  opacity: 0.75;
+  font-size: 0.875em;
+}
+
+.tr-next__all {
+  border: 0;
+  background: none;
+  padding: 4px 0;
+  color: var(--brand);
+  font: inherit;
+  font-size: 0.9rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tr-reveal {
+    animation: none;
+  }
+}

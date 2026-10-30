@@ -3329,8 +3329,8 @@ body.cbt-active {
   background: linear-gradient(transparent 60%, rgba(232, 163, 61, 0.45) 60%);
 }
 .bl--note::before { content: '★ '; color: #e8a33d; }
-.cls__board > .bl--formula,
-.cls__board > .bl--note { display: table; }
+.cls__sheet > .bl--formula,
+.cls__sheet > .bl--note { display: table; }
 .cls__pen {
   display: inline-block;
   margin-left: 2px;
@@ -3500,3 +3500,161 @@ body.cbt-active {
 }
 
 .pay__error { background: var(--bad-bg); color: var(--bad); border-color: transparent; }
+
+/* Classroom board: steps, the teacher's caption, formulas, drawings,
+   questions on the board, tap-a-line menu and the student's ink. */
+.cls__steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.cls__steps button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--rule-2);
+  border-radius: 99px;
+  background: #fff;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cls__steps button.is-done { border-color: var(--brand); color: var(--brand); }
+.cls__steps button.is-on { background: var(--brand); border-color: var(--brand); color: #fff; }
+.cls__steps button:disabled { opacity: 0.45; cursor: default; }
+.cls__steps-hint { margin-left: auto; font-size: 0.8125rem; color: var(--ink-3, #6b7c7b); }
+
+.cls__board { position: relative; transition: padding 0.2s; }
+.cls__board.has-caption { padding-bottom: 96px; }
+.cls__sheet { position: relative; min-height: 100%; }
+
+.cls__caption {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -78px 26px 22px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: rgba(14, 59, 58, 0.94);
+  color: #fff;
+  box-shadow: 0 10px 28px -14px rgba(11, 31, 30, 0.7);
+  animation: msg-in 320ms var(--spring, ease) both;
+}
+.cls__caption p { margin: 0; flex: 1; font-size: 0.95rem; line-height: 1.45; }
+.cls__caption strong { color: #ffd7a8; font-weight: 600; }
+.cls__caption .tutor-avatar { flex: none; width: 34px; height: 34px; font-size: 0.9rem; }
+.cls__waves { display: inline-flex; align-items: center; gap: 3px; height: 18px; }
+.cls__waves i { width: 3px; height: 100%; border-radius: 2px; background: #ffd7a8; animation: cls-wave 0.9s ease-in-out infinite; }
+.cls__waves i:nth-child(2) { animation-delay: 0.15s; }
+.cls__waves i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes cls-wave { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
+
+/* Tap a line to ask about it */
+.bl.is-tappable { cursor: pointer; border-radius: 8px; transition: background 0.15s; }
+.bl.is-tappable:hover { background: rgba(29, 78, 216, 0.06); }
+.bl.is-tappable:focus-visible { outline: 2px dashed #1d4ed8; outline-offset: 3px; }
+.bl.is-focus { background: linear-gradient(transparent 8%, rgba(250, 204, 21, 0.45) 8%, rgba(250, 204, 21, 0.45) 92%, transparent 92%); }
+.cls__linemenu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 2px 0 12px;
+  font-family: var(--font-sans);
+  animation: msg-in 260ms var(--spring, ease) both;
+}
+.cls__linemenu button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid #1d4ed8;
+  border-radius: 99px;
+  background: #fff;
+  color: #1d4ed8;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cls__linemenu button:hover:not(:disabled) { background: #1d4ed8; color: #fff; }
+.cls__linemenu .cls__linemenu-close { border-color: var(--rule-2); color: var(--ink-2); padding: 0 9px; }
+.cls__linemenu .cls__linemenu-close:hover { background: var(--mist); color: var(--ink); }
+
+/* Formulas as real maths, in the red marker */
+.bl--formula .katex { font-size: 1.05em; color: #c2352b; }
+.bl--formula .tr-tex-plain { font-family: inherit; }
+.bl__wipe { display: inline-block; }
+
+/* Diagrams drawn stroke by stroke */
+.bl--diagram { margin: 6px 0 14px; display: grid; justify-items: start; gap: 2px; }
+.bl__drawing { width: min(100%, 440px); }
+.bl__drawing svg { display: block; width: 100%; height: auto; overflow: visible; }
+.bl__drawing [pathLength] {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: bl-draw 0.55s ease-out forwards;
+  animation-delay: calc(var(--i, 0) * 1.4s / var(--n, 1));
+}
+.bl__drawing text { opacity: 0; animation: bl-ink 0.35s ease-out forwards; animation-delay: calc(var(--i, 0) * 1.4s / var(--n, 1)); }
+@keyframes bl-draw { to { stroke-dashoffset: 0; } }
+@keyframes bl-ink { to { opacity: 1; } }
+.bl--diagram figcaption { font-size: 1.3rem; color: #1d4ed8; animation: bl-ink 0.4s ease-out both; }
+
+/* The teacher's question on the board */
+.bl--ask { margin: 10px 0 16px; padding: 12px 16px 14px; border: 2px dashed #1d4ed8; border-radius: 14px; }
+.bl-ask__q { margin: 0 0 10px; color: #1d4ed8; font-weight: 700; }
+.bl-ask__q::before { content: '? '; }
+.bl-ask__opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.bl-ask__opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 4px 16px;
+  border: 2px solid #1f2933;
+  border-radius: 12px;
+  background: #fff;
+  color: #1f2933;
+  font-family: inherit;
+  font-size: 1.45rem;
+  cursor: pointer;
+  animation: msg-in 300ms var(--spring, ease) both;
+  transition: transform 0.2s var(--spring, ease), background 0.15s;
+}
+.bl-ask__opt:hover:not(:disabled) { background: #eef3ff; transform: translateY(-1px); }
+.bl-ask__opt:active:not(:disabled) { transform: scale(0.97); }
+.bl-ask__opt:disabled { cursor: default; }
+.bl-ask__opt.is-right { border-color: #0f7b4f; background: #e7f5ee; color: #0f7b4f; }
+.bl-ask__opt.is-wrong { border-color: #c2352b; background: #fdecea; color: #c2352b; text-decoration: line-through; }
+.bl-ask__opt.is-dim { opacity: 0.45; }
+.bl-ask__wait { margin: 10px 0 0; font-family: var(--font-sans); font-size: 0.875rem; color: #1d4ed8; animation: cls-blink 1.6s ease-in-out infinite; }
+@keyframes cls-blink { 50% { opacity: 0.45; } }
+.bl-ask__why { margin: 10px 0 0; font-size: 1.55rem; animation: msg-in 320ms var(--spring, ease) both; }
+.bl-ask__why.is-right { color: #0f7b4f; }
+.bl-ask__why.is-wrong { color: #c2352b; }
+
+/* The student's own pen */
+.cls__ink { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; fill: none; stroke: #7c3aed; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.cls__ink.is-active { pointer-events: auto; cursor: crosshair; touch-action: none; }
+.cls__board.is-inking { box-shadow: inset 0 0 0 1px #c3cac9, inset 0 0 0 4px rgba(124, 58, 237, 0.25), 0 18px 40px -26px rgba(11, 31, 30, 0.55); }
+
+@media (max-width: 980px) {
+  .cls__steps-hint { width: 100%; margin-left: 0; }
+  .cls__caption { margin: -74px 14px 18px; }
+  .bl-ask__opt { font-size: 1.3rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bl__drawing [pathLength], .bl__drawing text { animation: none; stroke-dashoffset: 0; opacity: 1; }
+  .cls__waves i, .bl-ask__wait { animation: none; }
+}
