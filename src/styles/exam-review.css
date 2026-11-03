@@ -158,6 +158,24 @@
 .xr-check__more { border-color: var(--brand); background: var(--brand-tint); color: var(--brand); }
 .xr-check__more:hover { background: #d6e7e5; }
 .xr-check--done { justify-items: start; padding: 0; border: 0; background: none; }
+.xr-check__skip { border-color: var(--rule-2) !important; background: #fff; color: var(--ink-2); }
+.xr-check__skip:hover { background: var(--mist); }
+.xr-sim__skip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  justify-self: start;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--ink-3);
+  font: inherit;
+  font-size: 0.9rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.xr-sim__skip:hover { color: var(--ink); }
 
 .xr-sim { display: grid; gap: 12px; padding: 16px; border: 2px solid var(--brand-tint); border-radius: 16px; background: #fff; }
 .xr-sim__label { font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--orange-ink); }

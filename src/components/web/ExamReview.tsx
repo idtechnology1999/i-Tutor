@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, GraduationCap, Repeat, RotateCcw, Sparkles, ThumbsUp, X } from 'lucide-react';
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, ChevronsRight, GraduationCap, Repeat, RotateCcw, Sparkles, ThumbsUp, X } from 'lucide-react';
 import type { DiagnosticQuestion } from '../../types';
 import type { TutorPersona } from '../../data/tutors';
 import { explainQuestion, explainSimpler, similarQuestion } from '../../services/tutor';
@@ -157,6 +157,14 @@ export const ExamReview: React.FC<Props> = ({ title, questions, subjects, answer
       `${name} is writing a question for you…`,
       similarQuestion(request(item), tutor?.id).then((sq): Turn => ({ kind: 'similar', item: sq })),
     );
+  };
+
+  /** Skip: no answer needed, straight on to the next question (no AI, no credits). */
+  const skip = (item: DiagnosticQuestion) => {
+    setSettled((x) => ({ ...x, [item.id]: true }));
+    // A practice question left unanswered is put away.
+    setThreads((t) => ({ ...t, [item.id]: (t[item.id] ?? []).filter((x) => !(x.kind === 'similar' && !x.picked)) }));
+    if (pos < list.length - 1) setAt(pos + 1);
   };
 
   const pickSimilar = (id: number, index: number, label: string) =>
@@ -417,6 +425,11 @@ export const ExamReview: React.FC<Props> = ({ title, questions, subjects, answer
                             );
                           })}
                         </div>
+                        {!picked && (
+                          <button type="button" className="xr-sim__skip" onClick={() => skip(q)}>
+                            Skip this one <ChevronsRight size={15} aria-hidden />
+                          </button>
+                        )}
                         {picked && (
                           <>
                             <p className={`xr-sim__result ${picked === sq.answer ? 'is-right' : 'is-wrong'}`}>
@@ -445,6 +458,9 @@ export const ExamReview: React.FC<Props> = ({ title, questions, subjects, answer
                     </button>
                     <button type="button" className="xr-check__more" onClick={() => similar(q)}>
                       <Repeat size={16} aria-hidden /> Give me a similar question
+                    </button>
+                    <button type="button" className="xr-check__skip" onClick={() => skip(q)}>
+                      <ChevronsRight size={16} aria-hidden /> Skip
                     </button>
                   </div>
                 </div>
