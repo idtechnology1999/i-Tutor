@@ -205,6 +205,17 @@ export const ExamReview: React.FC<Props> = ({ title, questions, subjects, answer
 
   return (
     <div className="ui-page xr">
+      {/* The site menu is hidden on /exam: this bar is the way out, and stays in view while scrolling. */}
+      <nav className="xr-bar" aria-label="Leave the review">
+        <button type="button" className="xr-bar__back" onClick={onExit}>
+          <ArrowLeft size={18} aria-hidden /> Back to dashboard
+        </button>
+        <span className="xr-bar__title">{title}</span>
+        <button type="button" className="xr-bar__again" onClick={onRetake}>
+          <RotateCcw size={16} aria-hidden /> <span>New set of questions</span>
+        </button>
+      </nav>
+
       {/* ------------------------------------------------------------ Result */}
       <section className="ui-card xr-hero">
         <ScoreRing pct={pct} />

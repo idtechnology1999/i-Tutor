@@ -4,6 +4,43 @@
    ============================================================================= */
 .xr { display: grid; gap: 18px; max-width: 900px; margin: 0 auto; padding-bottom: 40px; }
 
+/* The way out, always in view (the site menu is hidden on /exam). */
+.xr-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 -8px;
+  padding: 10px 8px;
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--rule);
+}
+.xr-bar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 99px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.xr-bar__back { border: 0; background: var(--brand); color: #fff; }
+.xr-bar__back:hover { background: var(--brand-2); }
+.xr-bar__again { border: 1px solid var(--rule-2); background: #fff; color: var(--ink); }
+.xr-bar__again:hover { background: var(--mist); }
+.xr-bar__title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; color: var(--ink-2); font-weight: 600; }
+@media (max-width: 640px) {
+  .xr-bar__title { display: none; }
+  .xr-bar { justify-content: space-between; }
+  .xr-bar__again span { display: none; }
+}
+
 .xr-hero { display: flex; align-items: center; gap: 28px; padding: 26px 28px; }
 .xr-hero__text { flex: 1; min-width: 0; display: grid; gap: 10px; }
 .xr-hero__eyebrow { margin: 0; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--brand); }

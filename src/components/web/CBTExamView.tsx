@@ -142,6 +142,52 @@ const clock = (secs: number) => {
   return `${h ? `${h}:` : ''}${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 };
 
+/* An exam in progress is saved on this device as it goes, so a refresh (or a
+   closed tab) comes back to the same questions, answers and place, with the
+   clock still counting down to the same end time. */
+const SESSION_KEY = 'itutor-exam-session';
+
+interface Session {
+  /** Which exam this is (practice subject, course, or the mock). */
+  key: string;
+  paper: Paper;
+  answers: Record<number, string>;
+  subject: string;
+  index: number;
+  /** When the time runs out (ms since 1970): the clock is real time, not "seconds left". */
+  deadline: number;
+  submitted: boolean;
+  /** The result has gone to the dashboard already. */
+  recorded: boolean;
+}
+
+const readSession = (key: string): Session | null => {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(SESSION_KEY) ?? 'null') as Session | null;
+    // Another exam, or one long finished: start afresh.
+    if (!saved || saved.key !== key || !saved.paper?.questions?.length) return null;
+    if (Date.now() - saved.deadline > 24 * 3600 * 1000) return null;
+    return saved;
+  } catch {
+    return null;
+  }
+};
+const writeSession = (session: Session) => {
+  try {
+    window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  } catch {
+    /* storage full or blocked: the exam still works, it just won't survive a refresh */
+  }
+};
+const clearSession = () => {
+  try {
+    window.localStorage.removeItem(SESSION_KEY);
+  } catch {
+    /* nothing saved */
+  }
+};
+const secondsUntil = (deadline: number) => Math.max(0, Math.round((deadline - Date.now()) / 1000));
+
 export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, presetCourse, onSolve, askLabel, onUpgrade }) => {
   const { questions: bank } = useCms();
   const ready = useQuestionsReady();
@@ -154,22 +200,49 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
   const [submitted, setSubmitted] = useState(false);
   const [confirm, setConfirm] = useState<null | 'submit' | 'exit'>(null);
   const [showCalculator, setShowCalculator] = useState(false);
+  const [deadline, setDeadline] = useState(0);
+  // Save the result once, for the dashboard.
+  const recorded = useRef(false);
+  const sessionKey = JSON.stringify([presetSubject ?? '', presetCourse?.name ?? '', presetCourse?.exam ?? '', presetCourse?.school ?? '']);
 
   const start = () => {
     const next = buildPaper(bank, profile, presetSubject, presetCourse);
+    const end = Date.now() + next.seconds * 1000;
     setPaper(next);
     setSubject(next.subjects[0] ?? '');
     setIndex(0);
     setAnswers({});
+    setDeadline(end);
     setTimeLeft(next.seconds);
     setSubmitted(false);
     setConfirm(null);
+    recorded.current = false;
   };
 
   useEffect(() => {
-    if (ready && !paper) start();
+    if (!ready || paper) return;
+    // Back after a refresh: carry on with the same exam.
+    const saved = readSession(sessionKey);
+    if (saved) {
+      setPaper(saved.paper);
+      setSubject(saved.subject);
+      setIndex(saved.index);
+      setAnswers(saved.answers);
+      setDeadline(saved.deadline);
+      setTimeLeft(secondsUntil(saved.deadline));
+      setSubmitted(saved.submitted);
+      recorded.current = saved.recorded;
+      return;
+    }
+    start();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- drawn once per visit
   }, [ready]);
+
+  /** Leaving the exam for good: nothing to come back to. */
+  const leave = () => {
+    clearSession();
+    onExit();
+  };
 
   const total = paper?.questions.length ?? 0;
   const running = Boolean(paper && total > 0);
@@ -177,15 +250,29 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
 
   useEffect(() => {
     if (!running || finished) return;
-    const timer = window.setInterval(() => setTimeLeft((t) => Math.max(0, t - 1)), 1000);
+    // Counts down to the end time, so time away (or a refresh) still counts.
+    const timer = window.setInterval(() => setTimeLeft(secondsUntil(deadline)), 1000);
     return () => window.clearInterval(timer);
+  }, [running, finished, deadline]);
+
+  // Every change is saved, so a refresh picks up exactly here.
+  useEffect(() => {
+    if (!paper || !total) return;
+    writeSession({ key: sessionKey, paper, answers, subject, index, deadline, submitted: finished, recorded: recorded.current });
+  }, [paper, answers, subject, index, deadline, finished, total, sessionKey]);
+
+  // Mid-exam, the browser asks before a refresh or closing the tab.
+  useEffect(() => {
+    if (!running || finished) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
   }, [running, finished]);
 
-  // Save the result once, for the dashboard.
-  const recorded = useRef(false);
   useEffect(() => {
     if (!finished || !paper || recorded.current) return;
     recorded.current = true;
+    writeSession({ key: sessionKey, paper, answers, subject, index, deadline, submitted: true, recorded: true });
     recordResult(
       paper.subjects.map((s) => {
         const qs = paper.questions.filter((q) => q.subject === s);
@@ -197,7 +284,7 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
         };
       }),
     );
-  }, [finished, paper, answers]);
+  }, [finished, paper, answers, sessionKey, subject, index, deadline]);
 
   const subjectQs = paper?.questions.filter((q) => q.subject === subject) ?? [];
   const question = subjectQs[index];
@@ -246,7 +333,7 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
       <div className="jamb-empty">
         <h1>No questions for {what} yet</h1>
         <p>Questions appear here as soon as they’re published. Try another subject, or check back soon.</p>
-        <button type="button" className="ui-btn ui-btn--primary ui-btn--lg" onClick={onExit}>
+        <button type="button" className="ui-btn ui-btn--primary ui-btn--lg" onClick={leave}>
           <ArrowLeft size={18} aria-hidden /> Back to dashboard
         </button>
       </div>
@@ -267,11 +354,8 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
         timeUp={timeLeft <= 0 && !submitted}
         estimate={full ? Math.round((correct / total) * 400) : undefined}
         tutor={profile.plan === 'premium' ? tutorById(profile.tutorId) : undefined}
-        onExit={onExit}
-        onRetake={() => {
-          recorded.current = false;
-          start();
-        }}
+        onExit={leave}
+        onRetake={start}
         onUpgrade={onUpgrade}
       />
     );
@@ -447,7 +531,7 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
                   <button type="button" className="ui-btn ui-btn--ghost" onClick={() => setConfirm(null)}>
                     Stay
                   </button>
-                  <button type="button" className="ui-btn ui-btn--danger" onClick={onExit}>
+                  <button type="button" className="ui-btn ui-btn--danger" onClick={leave}>
                     Leave exam
                   </button>
                 </div>
