@@ -14,6 +14,7 @@ import {
 import { CMS_SUBJECTS, EXAM_LABEL, EXAM_TYPES, cms, needsSchool, paperQuestions, paperSize, questionKey, takenExams, useCms } from '../../lib/cms';
 import { SCHOOLS } from '../../lib/schools';
 import type { CmsSubject, ExamType, QuestionDraft } from '../../lib/cms';
+import { ConfirmDelete } from '../cms/ConfirmDelete';
 import { organiseWithAI } from '../../lib/question-import';
 import type { ImportResult, ParsedQuestion } from '../../lib/question-import';
 import type { AdminNav, ImportPreset } from './AdminApp';
@@ -74,6 +75,14 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
   const [items, setItems] = useState<ReviewItem[]>([]);
   const [openKey, setOpenKey] = useState<number | null>(null);
   const [summary, setSummary] = useState({ published: 0, drafts: 0, skipped: 0 });
+  /** A replacement waiting for the super admin password. */
+  const [pendingReplace, setPendingReplace] = useState<{
+    ids: number[];
+    drafts: QuestionDraft[];
+    label: string;
+    published: number;
+    skipped: number;
+  } | null>(null);
 
   const yearNum = year ? Number(year) : null;
   const bySchool = needsSchool(examType);
@@ -206,8 +215,12 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
     const drafts = fresh.map((it) => toDraft(it, publishReady && readyKeys.has(it.key)));
     const published = drafts.filter((d) => d.status === 'published').length;
     const label = `Imported ${drafts.length} ${subject} question${drafts.length === 1 ? '' : 's'}${published ? ` (${published} published)` : ''}.`;
-    if (replacing) cms.replacePaper([...replacedIds], drafts, `Replaced ${examName} ${subject} ${yearNum}: ${label}`);
-    else cms.addQuestions(drafts, label);
+    // Replacing deletes the old questions for good: it waits for the super admin password.
+    if (replacing) {
+      setPendingReplace({ ids: [...replacedIds], drafts, label: `Replaced ${examName} ${subject} ${yearNum}: ${label}`, published, skipped });
+      return;
+    }
+    cms.addQuestions(drafts, label);
     setSummary({ published, drafts: drafts.length - published, skipped });
     setStage('done');
   };
@@ -438,6 +451,27 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
             Publish {ready.length} ready{chosen.length > ready.length ? `, draft ${chosen.length - ready.length}` : ''}
           </button>
         </div>
+
+        {pendingReplace && (
+          <ConfirmDelete
+            title={`Replace ${examName} ${subject} ${yearNum}`}
+            message={
+              <>
+                The {pendingReplace.ids.length} question{pendingReplace.ids.length === 1 ? '' : 's'} in this paper now are deleted for good and the{' '}
+                {pendingReplace.drafts.length} new one{pendingReplace.drafts.length === 1 ? '' : 's'} take their place. Students see the change straight away.
+              </>
+            }
+            action="Replace paper"
+            onConfirm={async (password) => {
+              const p = pendingReplace;
+              await cms.replacePaper(p.ids, p.drafts, p.label, password);
+              setPendingReplace(null);
+              setSummary({ published: p.published, drafts: p.drafts.length - p.published, skipped: p.skipped });
+              setStage('done');
+            }}
+            onClose={() => setPendingReplace(null)}
+          />
+        )}
       </div>
     );
   }
@@ -465,7 +499,7 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
       {replacing && oldPaper.length > 0 && (
         <div className="adm-note is-warn" role="status">
           You’re replacing {examName} {subject} {yearNum}. Its {oldPaper.length} current question{oldPaper.length === 1 ? '' : 's'} will be removed when
-          you save the new ones. If you leave without saving, nothing changes.
+          you save the new ones and enter the super admin password. If you leave without saving, nothing changes.
         </div>
       )}
 

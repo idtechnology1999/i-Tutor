@@ -229,7 +229,7 @@ export const AdminQuestions: React.FC<{
               onClick={() => {
                 if (
                   !window.confirm(
-                    `Replace ${label}? You’ll add the real paper next. The ${existing} question${existing === 1 ? '' : 's'} there now are removed only when you save the new ones.`,
+                    `Replace ${label}? You’ll add the real paper next. The ${existing} question${existing === 1 ? '' : 's'} there now are removed only when you save the new ones, with the super admin password.`,
                   )
                 )
                   return;

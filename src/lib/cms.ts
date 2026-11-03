@@ -399,21 +399,25 @@ export const cms = {
   },
 
   /** Swaps a paper's questions for new ones (e.g. test questions for the real
-      paper). Live, the old ones are deleted on the server before the new ones
-      are sent, so a question kept word for word isn't refused as a duplicate. */
-  replacePaper(oldIds: number[], drafts: QuestionDraft[], label: string) {
-    const stamp = now();
+      paper). The old ones are deleted for good, so the server needs the super
+      admin's password, and the bank only changes once the server agrees.
+      Rejects (wrong password, network) leave everything as it was. */
+  async replacePaper(oldIds: number[], drafts: QuestionDraft[], label: string, password: string) {
     const old = new Set(oldIds);
-    const added = drafts.map((d) => ({ ...d, id: nextId(), createdAt: stamp, updatedAt: stamp }));
-    commit({ ...state, questions: [...added, ...state.questions.filter((q) => !old.has(q.id))] }, label);
-    if (!isLive) return added.length;
-    const temp = new Set(added.map((q) => q.id));
-    remote(
-      (oldIds.length ? api('/api/admin/questions', { method: 'DELETE', body: { ids: oldIds } }) : Promise.resolve())
-        .then(() => (drafts.length ? api<CmsQuestion[]>('/api/admin/questions', { method: 'POST', body: drafts, timeout: 60_000 }) : []))
-        .then((rows) => commit({ ...state, questions: [...rows, ...state.questions.filter((q) => !temp.has(q.id))] })),
-    );
-    return added.length;
+    if (!isLive) {
+      if (!password) throw new Error('Enter the super admin password to confirm.');
+      const stamp = now();
+      const added = drafts.map((d) => ({ ...d, id: nextId(), createdAt: stamp, updatedAt: stamp }));
+      commit({ ...state, questions: [...added, ...state.questions.filter((q) => !old.has(q.id))] }, label);
+      return added.length;
+    }
+    const rows = await api<CmsQuestion[]>('/api/admin/questions/replace', {
+      method: 'POST',
+      body: { password, ids: oldIds, questions: drafts },
+      timeout: 60_000,
+    });
+    commit({ ...state, questions: [...rows, ...state.questions.filter((q) => !old.has(q.id))] }, label);
+    return rows.length;
   },
 
   updateQuestion(id: number, patch: Partial<CmsQuestion>) {
