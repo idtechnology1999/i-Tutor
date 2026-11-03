@@ -1,5 +1,6 @@
 import { api, demoDelay, isLive } from './api';
 import { spendAi } from './credits';
+import { replyForHistory } from '../lib/tutor-reply';
 import { hintSteps, solveSteps, tutorById } from '../data/tutors';
 import type { SolveRequest } from '../data/tutors';
 
@@ -120,4 +121,44 @@ export async function explainQuestion(req: SolveRequest, tutorId?: string): Prom
     });
     return data.reply;
   });
+}
+
+/** A fresh practice question on the same idea ("Give me a similar question"). */
+export interface SimilarQuestion {
+  question: string;
+  options: { label: string; text: string }[];
+  answer: string;
+  /** The working, in the step / formula format. */
+  why: string;
+}
+
+export async function similarQuestion(req: SolveRequest, tutorId?: string): Promise<SimilarQuestion> {
+  return spendAi('similar', async () => {
+    if (!isLive) {
+      await demoDelay(800);
+      // Demo: the same question with its options in a new order.
+      const options = [...req.options].reverse().map((o, i) => ({ label: 'ABCD'[i] ?? o.label, text: o.text }));
+      const right = req.options.find((o) => o.label === req.correctAnswer)?.text;
+      return {
+        question: `Practice: ${req.question}`,
+        options,
+        answer: options.find((o) => o.text === right)?.label ?? 'A',
+        why: 'With the live tutor, this is a brand-new question on the same idea, with the working shown step by step.',
+      };
+    }
+    return api<SimilarQuestion>('/api/tutor/similar', { method: 'POST', body: { ...req, tutorId }, timeout: 60_000 });
+  });
+}
+
+/** "No, I don't understand": the same question explained again, more simply. */
+export async function explainSimpler(req: SolveRequest, before: string, tutorId?: string): Promise<string> {
+  const options = req.options.map((o) => `${o.label}. ${o.text}`).join('\n');
+  // The earlier explanation is quoted, so the tutor tries a different way instead of repeating it.
+  const message =
+    `I didn't understand your explanation of this ${req.subject} question. Please explain it again much more simply: ` +
+    `smaller steps, plain words, and an everyday example if it helps. Don't repeat the same explanation.\n\n` +
+    `Question: ${req.question}\nOptions:\n${options}\nCorrect answer: ${req.correctAnswer}` +
+    (req.yourAnswer ? `\nI picked: ${req.yourAnswer}` : '') +
+    `\n\nYour first explanation was:\n${replyForHistory(before).slice(0, 3000)}`;
+  return askTutor(message, [], tutorId);
 }

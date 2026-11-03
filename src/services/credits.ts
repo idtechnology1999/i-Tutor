@@ -12,13 +12,14 @@ export const FREE_PROMPTS = 5;
 export const PLAN_CREDITS = 300;
 
 /** Keep in step with CREDIT_COST in the backend's lib/quota.ts. */
-export const CREDIT_COST = { chat: 1, explain: 1, hint: 1, board: 2, lesson: 3 } as const;
+export const CREDIT_COST = { chat: 1, explain: 1, hint: 1, similar: 1, board: 2, lesson: 3 } as const;
 export type AiKind = keyof typeof CREDIT_COST;
 
 export const KIND_LABEL: Record<string, string> = {
   chat: 'Tutor chat',
   explain: 'Question explanations',
   hint: 'Exam hints',
+  similar: 'Similar questions',
   board: 'Board explanations',
   lesson: 'Classroom lessons',
 };
