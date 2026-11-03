@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { BadgeCheck, BookOpenCheck, MessageSquareText, PenLine } from 'lucide-react';
 import { publicTeam } from '../../services/team';
 import type { TeamMember } from '../../services/admin';
-import { NIGERIAN_INSTITUTIONS } from '../../data/nigerian-curriculum';
+import type { Institution } from '../../types';
 import { SSCE_CLASSES } from '../../data/courses';
 import { Accent } from '../../cms/text';
 
@@ -198,15 +198,22 @@ export const TeamSection: React.FC<{ id?: string; kicker: string; title: string;
   );
 };
 
-/* The pictures beside each exam service. */
-export const ServiceVisual: React.FC<{ kind: string }> = ({ kind }) => {
-  switch (kind) {
-    case 'schools':
-      return (
-        <div className="lp-svc-card">
-          <p className="lp-svc-card__title">Pick your school</p>
-          <ul className="lp-svc-schools">
-            {NIGERIAN_INSTITUTIONS.slice(0, 5).map((u) => (
+/** The first schools from the full list, which loads only once this card is drawn. */
+const SchoolsCard: React.FC = () => {
+  const [all, setAll] = useState<Institution[] | null>(null);
+  useEffect(() => {
+    let live = true;
+    void import('../../data/institutions').then((m) => live && setAll(m.NIGERIAN_INSTITUTIONS));
+    return () => {
+      live = false;
+    };
+  }, []);
+  return (
+    <div className="lp-svc-card" aria-busy={!all}>
+      <p className="lp-svc-card__title">Pick your school</p>
+      <ul className="lp-svc-schools">
+        {all
+          ? all.slice(0, 5).map((u) => (
               <li key={u.id}>
                 <b>{u.shortName}</b>
                 <span>
@@ -214,11 +221,28 @@ export const ServiceVisual: React.FC<{ kind: string }> = ({ kind }) => {
                   <small>{u.location}</small>
                 </span>
               </li>
+            ))
+          : // Same-sized blank rows while the list loads, so nothing jumps.
+            [0, 1, 2, 3, 4].map((i) => (
+              <li key={i} className="is-loading" aria-hidden>
+                <b>&nbsp;</b>
+                <span>
+                  &nbsp;
+                  <small>&nbsp;</small>
+                </span>
+              </li>
             ))}
-          </ul>
-          <p className="lp-svc-card__more">+ {NIGERIAN_INSTITUTIONS.length - 5} more universities</p>
-        </div>
-      );
+      </ul>
+      {all && <p className="lp-svc-card__more">+ {all.length - 5} more universities</p>}
+    </div>
+  );
+};
+
+/* The pictures beside each exam service. */
+export const ServiceVisual: React.FC<{ kind: string }> = ({ kind }) => {
+  switch (kind) {
+    case 'schools':
+      return <SchoolsCard />;
     case 'classes':
       return (
         <div className="lp-svc-classes">

@@ -1,0 +1,5 @@
+# i-Tutor: every public page may be indexed; the admin and CMS areas may not.
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /cms

@@ -531,7 +531,7 @@ const StepsBlock: R = ({ d, id }) => {
               <li key={index} data-reveal data-reveal-delay={index * 70}>
                 <span className="lp-steps__num">{String(index + 1).padStart(2, '0')}</span>
                 <Icon size={22} aria-hidden />
-                <h4>{str(step.title)}</h4>
+                <h3>{str(step.title)}</h3>
                 <p>{str(step.body)}</p>
               </li>
             );
@@ -645,11 +645,11 @@ const PricingBlock: R = ({ d, id }) => (
             <div className={`lp-plan${featured ? ' lp-plan--featured' : ''}`} key={i} data-reveal data-reveal-delay={i * 80}>
               {featured && str(p.tag) ? (
                 <div className="lp-plan__top">
-                  <h4>{str(p.name)}</h4>
+                  <h3>{str(p.name)}</h3>
                   <span className="lp-plan__tag">{str(p.tag)}</span>
                 </div>
               ) : (
-                <h4>{str(p.name)}</h4>
+                <h3>{str(p.name)}</h3>
               )}
               <p className="lp-plan__price">
                 {str(p.price)} <small>{str(p.period)}</small>

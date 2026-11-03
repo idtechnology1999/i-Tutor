@@ -1,4 +1,5 @@
-import { CMS_SUBJECTS, EXAM_LABEL, SCHOOLS, needsSchool, paperSize } from './cms';
+import { CMS_SUBJECTS, EXAM_LABEL, needsSchool, paperSize } from './cms';
+import { SCHOOLS } from './schools';
 import type { CmsNews, CmsQuestion, CmsSubject, ExamType } from './cms';
 import type { BankScope, ImportPreset, QuestionFilter, Section } from '../components/admin/AdminApp';
 

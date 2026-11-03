@@ -22,6 +22,8 @@ import { isLive } from '../../services/api';
 import { TutorPicker } from './TutorPicker';
 import { PageBanner } from './PageBanner';
 import { tutorById } from '../../data/tutors';
+import { PLAN_CREDITS, creditsPaid, useCredits } from '../../services/credits';
+import { CreditCard as AiCreditCard } from './CreditRing';
 
 interface Props {
   profile: UserProfile;
@@ -54,7 +56,7 @@ const PLANS: Record<PlanId, { name: string; price: number; per: string; note: st
 };
 
 const BENEFITS = [
-  { icon: InfinityIcon, text: 'Unlimited questions to the AI tutor' },
+  { icon: InfinityIcon, text: '300 AI tutor credits every month (practice and past questions unlimited)' },
   { icon: MessageSquareText, text: 'Step-by-step help on every past question' },
   { icon: CalendarCheck, text: 'A personal weekly study plan' },
   { icon: ChartNoAxesColumnIncreasing, text: 'Detailed reports on your weak topics' },
@@ -112,6 +114,9 @@ const CopyButton: React.FC<{ value: string }> = ({ value }) => {
 
 export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor, onGoHome, tutorId, onChooseTutor }) => {
   const isPremium = profile.plan === 'premium';
+  const credits = useCredits();
+  // A Premium student renewing early (e.g. out of AI credits) goes through the normal steps.
+  const [renewing, setRenewing] = useState(false);
   const [step, setStep] = useState<Step>('plan');
   const [plan, setPlan] = useState<PlanId>('quarter');
   const [method, setMethod] = useState<Method>('card');
@@ -158,6 +163,7 @@ export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor
         // Live: the browser is on its way to Paystack; the return is handled below.
         if (isLive) return;
         setReference(ref);
+        creditsPaid(plan === 'quarter' ? 3 : 1);
         onActivated();
         setStep('done');
       })
@@ -182,6 +188,7 @@ export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor
       if (cancelled) return;
       if (result.status === 'success') {
         setPlan(result.plan);
+        creditsPaid(result.plan === 'quarter' ? 3 : 1);
         onActivated();
         setStep('done');
       } else if (result.status === 'pending' && tries > 1) {
@@ -214,7 +221,7 @@ export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor
   };
 
   /* ------------------------------------------------------------ Already on */
-  if (isPremium && step !== 'done') {
+  if (isPremium && step !== 'done' && !renewing) {
     return (
       <div className="pay">
         <div className="pay__card pay__card--center">
@@ -227,10 +234,21 @@ export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor
               ? `${tutorById(tutorId)?.name} is your personal tutor. Switch any time below.`
               : 'Choose your personal tutor — they’ll help you solve every question.'}
           </p>
+          <AiCreditCard credits={credits} />
           <TutorPicker selected={tutorId} onSelect={onChooseTutor} />
           <div className="pay__actions">
             <button type="button" className="ui-btn ui-btn--primary" onClick={onOpenTutor} disabled={!tutorId}>
               <MessageSquareText size={18} aria-hidden /> {tutorById(tutorId) ? `Talk to ${tutorById(tutorId)?.name}` : 'Choose a tutor first'}
+            </button>
+            <button
+              type="button"
+              className="ui-btn ui-btn--ghost"
+              onClick={() => {
+                setPlan('monthly');
+                setRenewing(true);
+              }}
+            >
+              Renew now · {PLAN_CREDITS} more AI credits
             </button>
             <button type="button" className="ui-btn ui-btn--ghost" onClick={onGoHome}>
               Back to home
@@ -295,7 +313,7 @@ export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor
               Unlock your <span>AI tutor</span>
             </>
           }
-          lead="Unlimited questions, step-by-step help on every past question, and voice lessons — from ₦2,500 a month."
+          lead="300 AI tutor credits a month, step-by-step help on every past question, unlimited practice and voice lessons. ₦2,500 a month."
         />
       )}
       <div className="pay__steps" aria-label="Progress">
@@ -317,7 +335,7 @@ export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor
           <section className="pay__card">
             <h2>Choose your plan</h2>
             <p className="pay__lead">
-              Free accounts get 5 tutor questions a day. Premium gives you unlimited help.
+              Free accounts get 5 AI prompts to try the tutor. Premium gives you 300 AI credits every month.
             </p>
 
             <div className="pay__plans" role="radiogroup" aria-label="Choose a plan">

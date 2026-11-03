@@ -5,7 +5,8 @@ import { ArrowRight, AudioLines, BadgeCheck, LockOpen, MessageSquareText, Mic, S
 import { VoiceLesson } from './VoiceLesson';
 import { TutorReply } from './TutorReply';
 import { replyForHistory } from '../../lib/tutor-reply';
-import { FREE_DAILY, readUsed, writeUsed } from '../../lib/tutor-quota';
+import { FREE_PROMPTS, PLAN_CREDITS, canUse, useCredits } from '../../services/credits';
+import { CreditRing } from './CreditRing';
 import type { SolveRequest, TutorPersona } from '../../data/tutors';
 import type { AppView } from '../../lib/router';
 
@@ -54,7 +55,7 @@ const PAGES = {
 const GUIDE: Array<{ test: RegExp; text: string; links: NavLink[] }> = [
   {
     test: /\b(pay|payment|upgrade|premium|price|pricing|cost|subscribe|subscription|card|ussd|transfer|activate)\b/,
-    text: 'To unlock unlimited help from me, go to Premium. Pick a plan (from ₦2,500 a month), then pay with your card, a bank transfer or USSD. It switches on straight away.',
+    text: 'Premium gives you 300 AI credits every month with me, for ₦2,500. Pick a plan, then pay with your card, a bank transfer or USSD. It switches on straight away.',
     links: [PAGES.upgrade],
   },
   {
@@ -159,13 +160,13 @@ export const AITutorDrawer: React.FC<Props> = ({
   const [inputText, setInputText] = useState('');
   const [typing, setTyping] = useState(false);
   const thinking = typing || (Boolean(solve) && seedReply === null);
-  const [used, setUsed] = useState(readUsed);
+  const credits = useCredits();
   // Voice lesson: Premium only; free users see what it is and how to unlock it.
   const [voice, setVoice] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
 
-  const left = Math.max(0, FREE_DAILY - used);
-  const blocked = !isPremium && left === 0;
+  // Out of free prompts or credits: the chat shows how to get more.
+  const blocked = !canUse('chat', credits);
 
   useEffect(() => {
     logRef.current?.scrollTo({
@@ -203,12 +204,6 @@ export const AITutorDrawer: React.FC<Props> = ({
       return;
     }
 
-    if (!isPremium) {
-      const next = used + 1;
-      setUsed(next);
-      writeUsed(next);
-    }
-
     setTyping(true);
     const history = shown.map((m) =>
       m.sender === 'user' ? { role: 'student' as const, text: m.text } : { role: 'tutor' as const, text: replyForHistory(m.text) },
@@ -237,14 +232,20 @@ export const AITutorDrawer: React.FC<Props> = ({
             <strong>{tutor ? `${tutor.name} · your tutor` : 'Ask the tutor'}</strong>
             {isPremium ? (
               <span className="tutor__plan is-premium">
-                <BadgeCheck size={13} aria-hidden /> {tutor ? `${tutor.style} · unlimited` : 'Premium · unlimited'}
+                <BadgeCheck size={13} aria-hidden /> {tutor ? `${tutor.style} · ` : 'Premium · '}
+                {credits ? `${credits.left} credits left` : 'AI credits'}
               </span>
             ) : (
-              <span className="tutor__plan">
-                {left} of {FREE_DAILY} free questions left today
-              </span>
+              <span className="tutor__plan">{credits ? `${credits.left} of ${FREE_PROMPTS} free AI prompts left` : 'Free AI prompts'}</span>
             )}
           </div>
+          <CreditRing
+            credits={credits}
+            onUpgrade={() => {
+              onClose();
+              onUpgrade?.();
+            }}
+          />
           {!voice && (
             <button
               type="button"
@@ -300,12 +301,6 @@ export const AITutorDrawer: React.FC<Props> = ({
           </div>
         )}
 
-        {!voice && !isPremium && !blocked && (
-          <div className="tutor__meter" aria-hidden>
-            <i style={{ width: `${(left / FREE_DAILY) * 100}%` }} />
-          </div>
-        )}
-
         {!voice && (
           <>
             <div className="tutor__log" ref={logRef} aria-live="polite">
@@ -352,8 +347,20 @@ export const AITutorDrawer: React.FC<Props> = ({
                 <span className="tutor__limit-icon">
                   <LockOpen size={20} aria-hidden />
                 </span>
-                <strong>You’ve used today’s 5 free questions</strong>
-                <p>Upgrade to keep asking now, or come back tomorrow for 5 more.</p>
+                {isPremium ? (
+                  <>
+                    <strong>You’ve used this month’s AI credits</strong>
+                    <p>
+                      Renew now for {PLAN_CREDITS} more, or they come back on your renewal date. Practice and past questions stay
+                      unlimited.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <strong>You’ve used your {FREE_PROMPTS} free AI prompts</strong>
+                    <p>Subscribe to keep learning with your tutor: {PLAN_CREDITS} AI credits every month.</p>
+                  </>
+                )}
                 <button
                   type="button"
                   className="ui-btn ui-btn--primary ui-btn--block"
@@ -362,7 +369,7 @@ export const AITutorDrawer: React.FC<Props> = ({
                     onUpgrade?.();
                   }}
                 >
-                  Upgrade · from ₦2,500/month
+                  {isPremium ? `Renew now · ${PLAN_CREDITS} more credits` : 'Subscribe · ₦2,500/month'}
                 </button>
               </div>
             ) : (

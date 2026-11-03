@@ -19,8 +19,8 @@
 
   /* Orange leads; teal is the calm base. Button orange keeps white text readable (4.1:1). */
   --orange: #e8741c;
-  --orange-cta: #d4600c;
-  --orange-cta-hover: #b8510a;
+  --orange-cta: #b8510a;
+  --orange-cta-hover: #9a4307;
   --orange-tint: #fff1e4;
   --orange-ink: #9a4307;
 
@@ -997,7 +997,7 @@ button {
   margin-top: 8px;
   text-align: right;
   font-size: 0.75rem;
-  color: var(--ink-3, #6a7b7a);
+  color: var(--ink-3, #5c6d6c);
 }
 
 /* Phones: the photo, then the text underneath — no carving at this size. */
@@ -1239,7 +1239,7 @@ button {
   font-family: var(--font-sans);
   font-weight: 500;
   font-size: 0.72rem;
-  color: var(--ink-3, #6a7b7a);
+  color: var(--ink-3, #5c6d6c);
 }
 
 .lp-sample__tabs button:hover {
@@ -1366,9 +1366,13 @@ button {
 }
 
 /* Text colours on the dark and the orange panels. */
-.lp-panel--ink .lp-service__lead,
-.lp-panel--orange-solid .lp-service__lead {
+.lp-panel--ink .lp-service__lead {
   color: rgba(255, 255, 255, 0.86);
+}
+
+/* Solid white on orange: anything lighter is too faint to read (WCAG AA). */
+.lp-panel--orange-solid .lp-service__lead {
+  color: #fff;
 }
 
 .lp-panel--ink .lp-service__points li,
@@ -1384,9 +1388,14 @@ button {
   color: #fff;
 }
 
-.lp-panel--ink .lp-service__when,
-.lp-panel--orange-solid .lp-service__when {
+.lp-panel--ink .lp-service__when {
   background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+/* A darker chip on orange keeps white text readable. */
+.lp-panel--orange-solid .lp-service__when {
+  background: rgba(0, 0, 0, 0.16);
   color: #fff;
 }
 
@@ -1463,7 +1472,7 @@ button {
 
 .lp-svc-schools small {
   font-weight: 400;
-  color: var(--ink-3, #6a7b7a);
+  color: var(--ink-3, #5c6d6c);
 }
 
 /* WAEC: the three classes. */
@@ -1618,7 +1627,7 @@ button {
 .lp-svc-steps small {
   font-family: var(--font-sans);
   font-weight: 400;
-  color: var(--ink-3, #6a7b7a);
+  color: var(--ink-3, #5c6d6c);
 }
 
 /* NABTEB: the two exam series. */
@@ -1650,7 +1659,7 @@ button {
 }
 
 .lp-svc-series__item span {
-  color: rgba(255, 255, 255, 0.8);
+  color: #fff;
 }
 
 .lp-svc-series__wide {
@@ -1767,12 +1776,12 @@ button {
 }
 
 .auth-photo__stats dd {
-  color: var(--ink-3, #6a7b7a);
+  color: var(--ink-3, #5c6d6c);
 }
 
 .auth-photo__credit {
   margin-top: 14px;
-  color: var(--ink-3, #6a7b7a);
+  color: var(--ink-3, #5c6d6c);
 }
 
 .auth-photo__badge .lp-hero__score-value {

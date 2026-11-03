@@ -3658,3 +3658,12 @@ body.cbt-active {
   .bl__drawing [pathLength], .bl__drawing text { animation: none; stroke-dashoffset: 0; opacity: 1; }
   .cls__waves i, .bl-ask__wait { animation: none; }
 }
+
+/* Classroom: the picked subject and topic, on the board before the lesson starts */
+.cls__ready { padding-top: 10%; text-align: center; }
+.cls__ready .bl--title { display: inline-block; margin-bottom: 10px; }
+.cls__ready-subject { margin: 0 0 6px; color: #0f7b4f; font-size: 1.6rem; }
+.cls__ready-hint { margin: 0; font-family: var(--font-sans); font-size: 0.95rem; color: #5c6d6c; }
+
+/* While a page's code downloads (first visit to that page) */
+.page-loading { min-height: 60vh; }

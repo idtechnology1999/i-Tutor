@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useCredits } from '../../services/credits';
+import { CreditCard } from './CreditRing';
 import {
   ArrowRight,
   BookOpenCheck,
@@ -106,6 +108,7 @@ export const DashboardView: React.FC<Props> = ({
   const doneCount = TASKS.filter((t) => t.done).length;
   const nextTask = TASKS.find((t) => !t.done);
   const isPremium = profile.plan === 'premium';
+  const credits = useCredits();
 
   return (
     <div className="ui-page dash">
@@ -192,6 +195,8 @@ export const DashboardView: React.FC<Props> = ({
       </section>
 
       {/* ----------------------------------------------------- Quick actions */}
+      <CreditCard credits={credits} onUpgrade={onUpgrade} />
+
       <nav className="dash__actions" aria-label="Quick actions">
         <button type="button" onClick={() => onLaunchCBT()}>
           <span className="dash__action-icon">
@@ -360,7 +365,7 @@ export const DashboardView: React.FC<Props> = ({
           </span>
           <div>
             <strong>Get your own personal AI tutor</strong>
-            <p>They’ll solve any question with you, step by step. Free accounts get 5 tutor questions a day. Premium from ₦2,500 a month.</p>
+            <p>They’ll solve any question with you, step by step. Free accounts get 5 AI prompts to try it. Premium gives you 300 AI credits every month for ₦2,500.</p>
           </div>
           <button type="button" className="ui-btn ui-btn--primary" onClick={onUpgrade}>
             Upgrade

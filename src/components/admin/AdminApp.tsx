@@ -12,6 +12,7 @@ import {
   ScanText,
   ShieldCheck,
   Settings,
+  Sparkles,
   UsersRound,
   UserRoundCog,
   Workflow,
@@ -31,6 +32,7 @@ import { AdminAuto } from './AdminAuto';
 import { AdminUsers } from './AdminUsers';
 import { AdminTeam } from './AdminTeam';
 import { AdminAdmins } from './AdminAdmins';
+import { AdminAiUsage } from './AdminAiUsage';
 import { AdminAuth, AdminChangePassword } from './AdminAuth';
 import { adminLogout, currentAdminAccount } from '../../services/admin-auth';
 import type { AdminAccount } from '../../services/admin-auth';
@@ -48,6 +50,7 @@ export type Section =
   | 'news'
   | 'cms'
   | 'users'
+  | 'ai'
   | 'team'
   | 'admins'
   | 'settings';
@@ -88,6 +91,7 @@ const NAV: Array<{ id: Section; label: string; icon: typeof LayoutDashboard }> =
   // Website pages: opens the CMS (/cms), its own full-screen area.
   { id: 'cms', label: 'CMS', icon: LayoutTemplate },
   { id: 'users', label: 'Users', icon: UsersRound },
+  { id: 'ai', label: 'AI usage', icon: Sparkles },
   { id: 'team', label: 'Team', icon: UserRoundCog },
   { id: 'admins', label: 'Admins', icon: ShieldCheck },
   { id: 'settings', label: 'Settings', icon: Settings },
@@ -104,6 +108,7 @@ const SECTION_PATH: Record<Section, string> = {
   news: '/admin/news',
   cms: '/cms',
   users: '/admin/users',
+  ai: '/admin/ai-usage',
   team: '/admin/team',
   admins: '/admin/admins',
   settings: '/admin/settings',
@@ -287,6 +292,7 @@ export const AdminApp: React.FC<{
         {section === 'courses' && <AdminCourses nav={nav} />}
         {section === 'news' && <AdminNews nav={nav} />}
         {section === 'users' && <AdminUsers nav={nav} mode={mode} />}
+        {section === 'ai' && <AdminAiUsage nav={nav} />}
         {section === 'team' && <AdminTeam nav={nav} />}
         {section === 'admins' && account && isSuper && <AdminAdmins nav={nav} me={account} />}
         {section === 'settings' && <AdminSettings nav={nav} mode={mode} />}

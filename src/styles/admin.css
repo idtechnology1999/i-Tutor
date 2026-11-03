@@ -2440,7 +2440,7 @@
 
 .adm-users__stats svg {
   grid-row: span 2;
-  color: #d4600c;
+  color: #b8510a;
 }
 
 .adm-users__stats b {
@@ -2465,7 +2465,7 @@
   left: 14px;
   top: 50%;
   transform: translateY(-50%);
-  color: #6a7b7a;
+  color: #5c6d6c;
   pointer-events: none;
 }
 
@@ -2511,7 +2511,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #6a7b7a;
+  color: #5c6d6c;
 }
 
 .adm-users__who {
@@ -2549,7 +2549,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #6a7b7a;
+  color: #5c6d6c;
 }
 
 .adm-users__ok {
@@ -2587,12 +2587,12 @@
 }
 
 .adm-users__plan.is-premium {
-  color: #d4600c;
+  color: #b8510a;
 }
 
 .adm-users__plan small {
   font-weight: 400;
-  color: #6a7b7a;
+  color: #5c6d6c;
 }
 
 @media (max-width: 860px) {
@@ -2781,7 +2781,7 @@
 .adm-admins__who small {
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #6a7b7a;
+  color: #5c6d6c;
 }
 
 .adm-admins__you {
@@ -2806,12 +2806,12 @@
 }
 
 .adm-admins__role.is-superadmin {
-  background: #d4600c;
+  background: #b8510a;
   color: #fff;
 }
 
 .adm-admins__status small {
-  color: #6a7b7a;
+  color: #5c6d6c;
 }
 
 .adm-admins__actions {
@@ -3088,4 +3088,31 @@
     position: static;
     max-height: 320px;
   }
+}
+
+/* Admin → AI usage */
+.ai-usage__stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 18px; }
+.ai-usage__stats .ui-card { display: grid; gap: 4px; padding: 16px 18px; }
+.ai-usage__stats small { color: var(--ink-3, #5c6d6c); font-size: 0.85rem; }
+.ai-usage__stats strong { font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+.ai-usage__stats em { font-style: normal; font-size: 0.8rem; color: var(--ink-3, #5c6d6c); }
+.ai-usage__table td, .ai-usage__table th { font-variant-numeric: tabular-nums; }
+
+/* Past questions: a visible Edit button on every row */
+.adm-table--edit .adm-table__head,
+.adm-table--edit .adm-row {
+  grid-template-columns: 48px minmax(0, 1fr) 120px 72px 120px 84px;
+}
+.adm-row__edit { min-height: 34px; padding: 0 12px; font-size: 0.85rem; gap: 6px; justify-self: end; }
+.adm-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (max-width: 640px) {
+  .adm-table--edit .adm-row {
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    grid-template-areas:
+      'check main main'
+      'check meta status'
+      'check edit edit';
+  }
+  .adm-row__edit { grid-area: edit; justify-self: start; margin-top: 6px; }
 }

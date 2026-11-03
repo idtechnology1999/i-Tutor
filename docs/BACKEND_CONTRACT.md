@@ -220,3 +220,19 @@ request bodies of at least 13 MB (nginx: `client_max_body_size`).
 | Admin import | Pattern matcher (`basicParse`) for "1. … A. … Answer: C" papers | §7 |
 | i-Auto | Rule-based planner (`planLocally`) | §7 |
 | Student emails | Logged in Activity only | §7 |
+
+## 9. AI allowance (credits)
+
+| Who | Allowance |
+|---|---|
+| Free | 5 AI prompts for life (any AI job counts as 1). They never renew. |
+| Premium | Credits bought with the plan: 300 (monthly), 900 (quarterly). Added on top when renewing early; lost when the plan ends. |
+
+Credit prices (backend `lib/quota.ts`, frontend `services/credits.ts`; keep in step): chat 1, question explanation 1, exam hint 1, board explanation 2, classroom lesson 3. Saved explanations (`Explanation` collection) and voice are free. The sign-up admission check is not charged.
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/api/me/credits` | `{ plan, left, total, renewsAt, breakdown: [{ kind, uses, credits }] }` for the progress ring |
+| GET | `/api/admin/ai-usage?days=30` | Admin: real AI cost from Gemini's token counts (`AiCall` collection), by kind, in naira |
+
+Any AI endpoint answers **402** with a message when the allowance is used up; a failed AI job gives its credit back. `POST /api/tutor/explain` may return `{ reply, saved: true }` when served from a saved explanation (free). Prices for the admin bill: `AI_PRICE_INPUT_PER_M`, `AI_PRICE_OUTPUT_PER_M`, `NAIRA_PER_DOLLAR`.

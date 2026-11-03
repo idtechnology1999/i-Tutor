@@ -57,7 +57,7 @@ export const ProfileView: React.FC<Props> = ({ profile, onUpdateProfile, onUpgra
               'Free'
             )}
           </strong>
-          <p>{isPremium ? 'Unlimited AI tutor help.' : '5 AI tutor questions a day.'}</p>
+          <p>{isPremium ? '300 AI tutor credits every month.' : '5 free AI tutor prompts to try it.'}</p>
         </div>
         {!isPremium && (
           <button type="button" className="ui-btn ui-btn--primary" onClick={onUpgrade}>

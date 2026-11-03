@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CircleAlert, Plus, Trash2, X } from 'lucide-react';
-import { CMS_SUBJECTS, EXAM_LABEL, EXAM_TYPES, SCHOOLS, needsSchool } from '../../lib/cms';
+import { CMS_SUBJECTS, EXAM_LABEL, EXAM_TYPES, needsSchool } from '../../lib/cms';
+import { SCHOOLS } from '../../lib/schools';
 import type { CmsQuestion, QuestionDraft } from '../../lib/cms';
 import { publishProblems } from '../../lib/question-rules';
 import { jambTopics } from '../../data/jamb-syllabus';

@@ -1,11 +1,12 @@
 import { api, demoDelay, isLive } from './api';
+import { spendAi } from './credits';
 import { hintSteps, solveSteps, tutorById } from '../data/tutors';
 import type { SolveRequest } from '../data/tutors';
 
 /* AI tutor: free chat, and explaining one question (or a hint mid-exam).
    The backend calls the AI model with the student's tutor style; the key
    never reaches the browser. Free-plan limits must be enforced there too —
-   the browser count in lib/tutor-quota is only for display. */
+   services/credits only keeps a copy of the allowance for display. */
 
 export interface ChatTurn {
   role: 'student' | 'tutor';
@@ -89,16 +90,18 @@ const demoReply = (query: string) => {
 
 /** One chat message to the tutor; resolves with the tutor's reply. */
 export async function askTutor(message: string, history: ChatTurn[], tutorId?: string): Promise<string> {
-  if (!isLive) {
-    await demoDelay(900);
-    return demoReply(message);
-  }
-  const data = await api<{ reply: string }>('/api/tutor/chat', {
-    method: 'POST',
-    body: { message, history, tutorId },
-    timeout: 60_000,
+  return spendAi('chat', async () => {
+    if (!isLive) {
+      await demoDelay(900);
+      return demoReply(message);
+    }
+    const data = await api<{ reply: string }>('/api/tutor/chat', {
+      method: 'POST',
+      body: { message, history, tutorId },
+      timeout: 60_000,
+    });
+    return data.reply;
   });
-  return data.reply;
 }
 
 /** Demo explanation, available immediately (no network). */
@@ -107,11 +110,14 @@ export const demoExplain = (req: SolveRequest, tutorId?: string) =>
 
 /** Step-by-step explanation of one question, or a hint (no answer) mid-exam. */
 export async function explainQuestion(req: SolveRequest, tutorId?: string): Promise<string> {
-  if (!isLive) return demoExplain(req, tutorId);
-  const data = await api<{ reply: string }>('/api/tutor/explain', {
-    method: 'POST',
-    body: { ...req, tutorId },
-    timeout: 60_000,
+  if (!isLive) return spendAi(req.mode === 'hint' ? 'hint' : 'explain', async () => demoExplain(req, tutorId));
+  // Saved explanations come back free; the server decides, then the ring refreshes.
+  return spendAi(req.mode === 'hint' ? 'hint' : 'explain', async () => {
+    const data = await api<{ reply: string }>('/api/tutor/explain', {
+      method: 'POST',
+      body: { ...req, tutorId },
+      timeout: 60_000,
+    });
+    return data.reply;
   });
-  return data.reply;
 }

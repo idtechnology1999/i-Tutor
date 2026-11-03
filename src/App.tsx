@@ -1,22 +1,10 @@
-import { useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import type { DiagnosticQuestion, UserProfile } from './types';
 import { Navbar } from './components/web/Navbar';
 import { initMotion } from './lib/motion';
 import { useRouter, pathForView, isAccountFlowView, isAppView } from './lib/router';
 import type { AppView } from './lib/router';
 import { HomePageView } from './components/web/HomePageView';
-import { DashboardView } from './components/web/DashboardView';
-import { CBTExamView } from './components/web/CBTExamView';
-import { SyllabusView } from './components/web/SyllabusView';
-import { ProfileView } from './components/web/ProfileView';
-import { UpgradeView } from './components/web/UpgradeView';
-import { AITutorDrawer } from './components/web/AITutorDrawer';
-import { RegistrationFlow } from './components/screens/web/RegistrationFlow';
-import { AdminApp } from './components/admin/AdminApp';
-import { CourseView } from './components/web/CourseView';
-import { PostUtmeView } from './components/web/PostUtmeView';
-import { ClassroomView } from './components/web/ClassroomView';
-import { CmsPageView } from './components/web/CmsPageView';
 import { CmsContext } from './cms/read';
 import type { CmsEnv } from './cms/read';
 import { syncQuestions } from './lib/cms';
@@ -26,8 +14,26 @@ import { loadProfile, saveProfile } from './services/profile';
 import { isLive } from './services/api';
 import { examsOf, subjectsFor } from './lib/student-exams';
 import { logOut } from './services/auth';
-import { FREE_DAILY, readUsed, writeUsed } from './lib/tutor-quota';
+import { canUse, setCreditsPlan } from './services/credits';
 import type { SolveRequest } from './data/tutors';
+
+/* Each page's code downloads when it's first opened, so the homepage (what
+   most visitors see first) loads quickly on slow mobile data. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- any props, kept exact through M[K]
+const page = <K extends string, M extends Record<K, React.ComponentType<any>>>(load: () => Promise<M>, name: K) =>
+  lazy(() => load().then((m) => ({ default: m[name] })));
+const DashboardView = page(() => import('./components/web/DashboardView'), 'DashboardView');
+const CBTExamView = page(() => import('./components/web/CBTExamView'), 'CBTExamView');
+const SyllabusView = page(() => import('./components/web/SyllabusView'), 'SyllabusView');
+const ProfileView = page(() => import('./components/web/ProfileView'), 'ProfileView');
+const UpgradeView = page(() => import('./components/web/UpgradeView'), 'UpgradeView');
+const AITutorDrawer = page(() => import('./components/web/AITutorDrawer'), 'AITutorDrawer');
+const RegistrationFlow = page(() => import('./components/screens/web/RegistrationFlow'), 'RegistrationFlow');
+const AdminApp = page(() => import('./components/admin/AdminApp'), 'AdminApp');
+const CourseView = page(() => import('./components/web/CourseView'), 'CourseView');
+const PostUtmeView = page(() => import('./components/web/PostUtmeView'), 'PostUtmeView');
+const ClassroomView = page(() => import('./components/web/ClassroomView'), 'ClassroomView');
+const CmsPageView = page(() => import('./components/web/CmsPageView'), 'CmsPageView');
 
 const PLAN_KEY = 'itutor-plan';
 const TUTOR_KEY = 'itutor-tutor';
@@ -105,6 +111,9 @@ export function App() {
   // non-empty.
   const [hasAccount, setHasAccount] = useState(false);
   const [isTutorOpen, setIsTutorOpen] = useState(false);
+  // The tutor drawer's code is fetched on first open and kept after that.
+  const [tutorLoaded, setTutorLoaded] = useState(false);
+  if (isTutorOpen && !tutorLoaded) setTutorLoaded(true);
   // Subject the student tapped before opening the exam (pre-selected in setup).
   const [examSubject, setExamSubject] = useState<DiagnosticQuestion['subject'] | undefined>();
   const [examCourse, setExamCourse] = useState<{ name: string; subjects: string[]; exam?: string; school?: string } | undefined>();
@@ -115,18 +124,17 @@ export function App() {
   const goTo = (view: AppView) => navigate(pathForView(view));
   const openTutor = () => setIsTutorOpen(true);
   const isPremium = profile.plan === 'premium';
+  // The AI allowance ring follows the plan (and the account signed in).
+  useEffect(() => {
+    setCreditsPlan(isPremium);
+  }, [isPremium, profile.phoneOrEmail]);
   const tutor = isPremium ? tutorById(profile.tutorId) : undefined;
   // "Solve this with my tutor": Premium opens a fresh session on that question.
   const [solve, setSolve] = useState<{ req?: SolveRequest; n: number } | null>(null);
-  // Free students can ask too; each one uses one of today's free questions.
+  // Free students can ask too, from their 5 free prompts; the server takes the allowance.
   const solveWithTutor = (req: SolveRequest) => {
-    let allowed = true;
-    if (!isPremium) {
-      const used = readUsed();
-      allowed = used < FREE_DAILY;
-      if (allowed) writeUsed(used + 1);
-    }
-    // When the free questions are used up the tutor opens on the upgrade prompt.
+    // With nothing left the tutor opens on the subscribe / renew prompt instead.
+    const allowed = canUse(req.mode === 'hint' ? 'hint' : 'explain');
     setSolve((prev) => (allowed ? { req, n: (prev?.n ?? 0) + 1 } : { n: (prev?.n ?? 0) + 1 }));
     setIsTutorOpen(true);
   };
@@ -244,7 +252,12 @@ export function App() {
     },
   };
 
-  if (isAdmin) return <AdminApp path={path} navigate={navigate} onExit={() => goTo('home')} />;
+  if (isAdmin)
+    return (
+      <Suspense fallback={<div className="page-loading" aria-busy="true" />}>
+        <AdminApp path={path} navigate={navigate} onExit={() => goTo('home')} />
+      </Suspense>
+    );
 
   return (
     <div className="app-container">
@@ -260,6 +273,7 @@ export function App() {
 
       <CmsContext.Provider value={cmsEnv}>
       <main>
+        <Suspense fallback={<div className="page-loading" aria-busy="true" />}>
         {isCbt && (
           <CBTExamView
             onSolve={solveWithTutor}
@@ -378,9 +392,13 @@ export function App() {
             onFinish={() => goTo('dashboard')}
           />
         )}
+        </Suspense>
       </main>
       </CmsContext.Provider>
 
+      {/* Its code loads the first time it opens, then it stays (keeping the chat). */}
+      {tutorLoaded && (
+      <Suspense fallback={null}>
       <AITutorDrawer
         key={solve?.n ?? 0}
         solve={solve?.req}
@@ -392,6 +410,8 @@ export function App() {
         studentName={profile.fullName.split(' ')[0]}
         onNavigate={(view) => (view === 'cbt' ? launchExam() : goTo(view))}
       />
+      </Suspense>
+      )}
 
       {!isCbt && activeView !== 'home' && activeView !== 'page' && (
         <footer className="app-footer">

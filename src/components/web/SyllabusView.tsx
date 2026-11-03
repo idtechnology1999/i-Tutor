@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { BadgeCheck, Check, ChevronLeft, ChevronRight, MessageSquareText, RotateCcw, Search, X } from 'lucide-react';
-import { EXAM_FULL_NAME, EXAM_LABEL, EXAM_TYPES, SCHOOLS, needsSchool, useCms } from '../../lib/cms';
+import { EXAM_FULL_NAME, EXAM_LABEL, EXAM_TYPES, needsSchool, useCms } from '../../lib/cms';
+import { SCHOOLS } from '../../lib/schools';
 import type { ExamType } from '../../lib/cms';
 import type { SolveRequest } from '../../data/tutors';
 

@@ -43,7 +43,7 @@ const NewsReader: React.FC<{ item: NewsItem; onClose: () => void }> = ({ item, o
         onClick={(e) => e.stopPropagation()}
       >
         <div className="news-reader__media">
-          <img src={item.image} alt={item.imageAlt} width={1280} height={960} />
+          <img src={item.image} alt={item.imageAlt} width={1280} height={960} loading="lazy" decoding="async" />
           <button type="button" className="news-reader__close" onClick={onClose} aria-label="Close article">
             <X size={20} aria-hidden />
           </button>

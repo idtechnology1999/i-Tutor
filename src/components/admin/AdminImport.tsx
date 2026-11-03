@@ -11,7 +11,8 @@ import {
   Upload,
   X,
 } from 'lucide-react';
-import { CMS_SUBJECTS, EXAM_LABEL, EXAM_TYPES, SCHOOLS, cms, needsSchool, paperSize, questionKey, takenExams, useCms } from '../../lib/cms';
+import { CMS_SUBJECTS, EXAM_LABEL, EXAM_TYPES, cms, needsSchool, paperSize, questionKey, takenExams, useCms } from '../../lib/cms';
+import { SCHOOLS } from '../../lib/schools';
 import type { CmsSubject, ExamType, QuestionDraft } from '../../lib/cms';
 import { organiseWithAI } from '../../lib/question-import';
 import type { ImportResult, ParsedQuestion } from '../../lib/question-import';

@@ -670,3 +670,71 @@
     animation: none;
   }
 }
+
+/* =============================================================================
+   AI allowance ring (components/web/CreditRing.tsx): what's left of the free
+   prompts or the month's credits. Green, then orange under 25%, red under 10%.
+   ============================================================================= */
+
+.credit-ring {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  --ring: var(--ok);
+}
+.credit-ring.is-warn { --ring: var(--orange); }
+.credit-ring.is-low { --ring: var(--bad); }
+.credit-ring svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.credit-ring__track { fill: none; stroke: var(--rule); }
+.credit-ring__bar {
+  fill: none;
+  stroke: var(--ring);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 600ms var(--spring, ease), stroke 300ms;
+}
+.credit-ring__inner { position: relative; display: grid; justify-items: center; line-height: 1; }
+.credit-ring__inner b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.credit-ring__inner small { margin-top: 4px; font-size: 0.8rem; color: var(--ink-3); }
+
+.credit-mini { position: relative; flex: none; }
+.credit-mini__btn { display: grid; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; }
+.credit-mini__btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.credit-mini .credit-ring__inner b { font-size: 0.75rem; }
+.credit-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  width: min(300px, calc(100vw - 32px));
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 18px 40px -18px rgba(11, 31, 30, 0.4);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  text-align: left;
+  animation: msg-in 260ms var(--spring, ease) both;
+}
+.credit-pop p { margin: 0; color: var(--ink-2); }
+.credit-pop__list { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.credit-pop__list li { display: flex; justify-content: space-between; gap: 10px; }
+.credit-pop__list b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.credit-pop__prices { font-size: 0.8rem; color: var(--ink-3) !important; }
+
+.credit-card { display: flex; align-items: center; gap: 22px; margin: 0 0 18px; padding: 20px 22px; }
+.credit-card .credit-ring__inner b { font-size: 2rem; font-family: var(--font-display); }
+.credit-card__text { display: grid; gap: 6px; min-width: 0; flex: 1; }
+.credit-card__text h3 { margin: 0; font-size: 1.25rem; }
+.credit-card__eyebrow { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 0.8rem; font-weight: 600; color: var(--brand); text-transform: uppercase; letter-spacing: 0.04em; }
+.credit-card__note { margin: 0; color: var(--ink-2); font-size: 0.95rem; }
+.credit-card .credit-pop__list { max-width: 360px; font-size: 0.9rem; }
+.credit-card .ui-btn { justify-self: start; width: auto; }
+
+@media (max-width: 560px) {
+  .credit-card { flex-direction: column; align-items: flex-start; }
+}

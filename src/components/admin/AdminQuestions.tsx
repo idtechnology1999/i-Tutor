@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Plus, ScanText, Search, Trash2 } from 'lucide-react';
-import { CMS_SUBJECTS, EXAM_FULL_NAME, EXAM_LABEL, EXAM_TYPES, SCHOOLS, cms, needsSchool, paperSize, useCms } from '../../lib/cms';
+import { Pencil, Plus, ScanText, Search, Trash2 } from 'lucide-react';
+import { CMS_SUBJECTS, EXAM_FULL_NAME, EXAM_LABEL, EXAM_TYPES, cms, needsSchool, paperSize, useCms } from '../../lib/cms';
+import { SCHOOLS } from '../../lib/schools';
 import type { CmsQuestion, CmsSubject, QuestionDraft } from '../../lib/cms';
 import type { AdminNav, BankScope, QuestionFilter } from './AdminApp';
 import { PageHead, StatusChip } from './AdminApp';
@@ -279,7 +280,7 @@ export const AdminQuestions: React.FC<{
           )}
         </div>
       ) : (
-        <div className="adm-table" role="table" aria-label="Questions">
+        <div className="adm-table adm-table--edit" role="table" aria-label="Questions">
           <div className="adm-table__head" role="row">
             <label className="adm-check">
               <input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all" />
@@ -288,6 +289,7 @@ export const AdminQuestions: React.FC<{
             <span role="columnheader">Subject</span>
             <span role="columnheader">Answer</span>
             <span role="columnheader">Status</span>
+            <span role="columnheader" className="adm-sr">Edit</span>
           </div>
           {list.map((q) => (
             <div key={q.id} role="row" className={`adm-row${selected.has(q.id) ? ' is-selected' : ''}`}>
@@ -307,6 +309,10 @@ export const AdminQuestions: React.FC<{
               <span className="adm-row__subject">{q.subject}</span>
               <span className={`adm-answer${q.correctAnswer ? '' : ' is-missing'}`}>{q.correctAnswer || '—'}</span>
               <StatusChip status={q.status} review={q.needsReview} />
+              {/* Change the wording, options, answer, year or topic, e.g. to replace a test question with the real one. */}
+              <button type="button" className="adm-btn adm-row__edit" onClick={() => setEditing(q)} aria-label="Edit this question">
+                <Pencil size={15} aria-hidden /> Edit
+              </button>
             </div>
           ))}
         </div>

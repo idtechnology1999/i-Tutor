@@ -14,7 +14,7 @@
 
   --ink: #0b1f1e;
   --ink-2: #3d4f4e;
-  --ink-3: #6a7b7a;
+  --ink-3: #5c6d6c;
   --brand: #0e3b3a;
   --brand-2: #145351;
   --brand-tint: #e6f0ef;
@@ -1149,7 +1149,7 @@
   margin-top: 8px;
 }
 
-.lp-steps h4 {
+.lp-steps h3 {
   font-size: 1.125rem;
   font-weight: 600;
   letter-spacing: -0.015em;
@@ -1280,7 +1280,7 @@
   align-items: center;
 }
 
-.lp-plan h4 {
+.lp-plan h3 {
   font-size: 1.125rem;
   font-weight: 600;
 }
@@ -1504,7 +1504,7 @@
   border-radius: 99px;
 }
 
-.lp-footer h4 {
+.lp-footer h3 {
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--ink);
@@ -1981,3 +1981,6 @@
   display: inline-flex;
   white-space: nowrap;
 }
+
+/* Homepage schools card while the list loads */
+.lp-svc-schools li.is-loading { opacity: 0.35; }

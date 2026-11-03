@@ -8,7 +8,6 @@ import { api, isLive } from '../services/api';
 import type { CourseExam, FacultySet } from '../data/courses';
 
 export type { FacultySet };
-import { NIGERIAN_INSTITUTIONS } from '../data/nigerian-curriculum';
 
 /* -----------------------------------------------------------------------------
    Content store for the admin CMS and the student pages.
@@ -60,9 +59,6 @@ export const EXAM_LABEL: Record<ExamType, string> = {
   Practice: 'Practice',
 };
 
-/** Post-UTME papers belong to a school. Short name is the stored value. */
-export const SCHOOLS = NIGERIAN_INSTITUTIONS.map((i) => ({ id: i.shortName, name: i.name }));
-export const schoolName = (id?: string) => SCHOOLS.find((s) => s.id === id)?.name ?? id ?? '';
 export const needsSchool = (exam: string) => exam === 'Post-UTME';
 
 export const EXAM_FULL_NAME: Record<ExamType, string> = {

@@ -51,7 +51,7 @@ export const SiteFooter: React.FC = () => (
         </div>
         {FOOTER_COLUMNS.map((column) => (
           <nav key={column.heading} aria-label={column.heading}>
-            <h4>{column.heading}</h4>
+            <h3>{column.heading}</h3>
             <ul>
               {column.items.map((item) => (
                 <li key={item.label}>

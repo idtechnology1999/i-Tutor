@@ -25,11 +25,14 @@ import type { Recogniser } from '../../lib/speech';
 import type { UserProfile } from '../../types';
 import type { TutorPersona } from '../../data/tutors';
 import { SYLLABUS, syllabusSubject } from '../../data/syllabus';
-import { getLesson } from '../../services/classroom';
+import { explainOnBoard, getLesson } from '../../services/classroom';
+import type { ExplainHow } from '../../services/classroom';
 import { askTutor } from '../../services/tutor';
 import { isLive } from '../../services/api';
 import type { BoardLine, Lesson } from '../../data/syllabus';
-import { FREE_DAILY, readUsed, writeUsed } from '../../lib/tutor-quota';
+import { FREE_PROMPTS, OUT_OF_CREDITS, OUT_OF_FREE, canUse, isOutOfCredits, useCredits } from '../../services/credits';
+import type { AiKind } from '../../services/credits';
+import { CreditRing } from './CreditRing';
 import { boardContext, captionOf, checkLine, lenOf } from '../../lib/board';
 import { replyForHistory, replyForSpeech } from '../../lib/tutor-reply';
 import { BoardItem, InkLayer } from './ClassBoard';
@@ -129,6 +132,7 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
   const [listening, setListening] = useState(false);
   /** Waiting for the AI: a lesson being prepared, or an answer to a question. */
   const [busy, setBusy] = useState<'' | 'lesson' | 'answer'>('');
+  const credits = useCredits();
   const recRef = useRef<Recogniser | null>(null);
   const heardRef = useRef('');
   const hasMic = recogniserCtor() !== null;
@@ -317,17 +321,18 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
     write(l.steps[i].board, true);
   };
 
+  /** Enough AI allowance for this job? If not, say how to get more. The server takes it. */
+  const spend = (kind: AiKind) => {
+    if (canUse(kind, credits)) return true;
+    say(isPremium ? OUT_OF_CREDITS : OUT_OF_FREE, { upgrade: true });
+    return false;
+  };
+  /** An AI job failed: out of allowance gets the upgrade button, anything else an apology. */
+  const failed = (sorry: string) => (err: Error) =>
+    isOutOfCredits(err) ? say(err.message, { upgrade: true }) : say(`${sorry} ${err.message}`);
+
   const startLesson = (subj: string, top: string) => {
-    if (!isPremium) {
-      const used = readUsed();
-      if (used >= FREE_DAILY) {
-        say(`You’ve used today’s ${FREE_DAILY} free lessons and questions. Premium gives you unlimited lessons with ${tutor?.name ?? 'your own tutor'}.`, {
-          upgrade: true,
-        });
-        return;
-      }
-      writeUsed(used + 1);
-    }
+    if (!spend('lesson')) return;
     setSubject(subj);
     if ((SYLLABUS[subj] ?? []).includes(top)) setTopic(top);
     setBusy('lesson');
@@ -340,17 +345,17 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
         setReached(0);
         teachStep(l, 0);
       })
-      .catch((err: Error) => say(`I couldn’t prepare that lesson just now. ${err.message}`))
+      .catch(failed('I couldn’t prepare that lesson just now.'))
       .finally(() => setBusy(''));
   };
 
   /** A real question: the AI answers it, knowing what's on the board. */
-  const answer = (question: string, about?: string) => {
+  const answer = (question: string) => {
+    if (!spend('chat')) return;
     const board = boardContext([...pen.written, ...pen.pending]);
     const context =
       `I'm in my classroom ${lesson ? `learning "${lesson.topic}" (${lesson.subject})` : `studying ${subject}`}.` +
       (board ? `\nOn the board right now:\n${board}` : '') +
-      (about ? `\nI tapped this part of the board: ${about}` : '') +
       `\n\nMy question: ${question}`;
     // The last few messages, so "and why?" makes sense. The welcome line is skipped.
     const history = chat
@@ -361,24 +366,51 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
     setCaption('Let me think about that…');
     askTutor(context, history, tutor?.id)
       .then((reply) => say(reply))
-      .catch((err: Error) => say(`Sorry, I couldn’t answer that just now. ${err.message}`))
+      .catch(failed('Sorry, I couldn’t answer that just now.'))
       .finally(() => setBusy(''));
   };
 
-  /** Tap a line, pick what you want: the teacher highlights it and explains. */
+  /** The teacher explains part of the board by writing on the board, under the lesson. */
+  const explainHere = (how: ExplainHow, about: string, request?: string) => {
+    if (!lesson || busy) return;
+    // A typed request is already in the chat; a tapped one is added here.
+    if (request) setChat((prev) => [...prev, { who: 'you', text: request }]);
+    if (!spend('board')) return;
+    setBusy('answer');
+    setCaption('Let me write that on the board…');
+    explainOnBoard(
+      { subject: lesson.subject, topic: lesson.topic, how, about, board: boardContext([...pen.written, ...pen.pending]) },
+      tutor?.id,
+    )
+      .then((x) => {
+        say(x.say);
+        write(x.board);
+      })
+      .catch(failed('I couldn’t write that out just now.'))
+      .finally(() => setBusy(''));
+  };
+
+  /** Tap a line, pick what you want: the teacher highlights it and explains it on the board. */
   const askAbout = (i: number, how: (typeof LINE_ACTIONS)[number]['id']) => {
     const l = pen.written[i];
     if (!l) return;
     setMenu(null);
     setFocus(i);
-    const what = l.kind === 'diagram' ? `the diagram “${l.text}”` : `“${l.text}”`;
-    const ask = {
-      explain: `Explain ${what} more simply, step by step.`,
-      why: `Why is ${what} so? Show me where it comes from.`,
-      example: `Give me another worked example like ${what}.`,
-    }[how];
-    setChat((prev) => [...prev, { who: 'you', text: ask }]);
-    answer(ask, l.tex ?? l.text);
+    const label = LINE_ACTIONS.find((a) => a.id === how)!.label;
+    const about = l.kind === 'diagram' ? `the diagram “${l.text}”` : (l.tex ?? l.text);
+    explainHere(how, about, `${label} “${l.text}”`);
+  };
+
+  /** Picking another subject or topic sets up exactly that lesson. */
+  const pickLesson = (subj: string, top: string) => {
+    setSubject(subj);
+    setTopic(top);
+    if (lesson && (lesson.subject !== subj || lesson.topic !== top)) {
+      setLesson(null);
+      setStep(0);
+      setReached(0);
+      wipe();
+    }
   };
 
   const next = () => {
@@ -442,6 +474,10 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
     const choice = t.match(/^(?:(?:option|answer|it'?s|it is)\s+)?\(?([a-f])\)?[.!]?$/);
     if (choice && waitingFor >= 0) return pick(waitingFor, choice[1].toUpperCase());
     if (/\b(clear|wipe|erase|clean)\b/.test(t)) return clearBoard();
+    // "Explain it another way": a fresh explanation of this step, on the board.
+    if (lesson && /\b(another way|different way|explain (it|that|this) again)\b/.test(t)) {
+      return explainHere('again', boardContext(lesson.steps[step].board));
+    }
     if (/\b(repeat|again|slower|didn.?t (get|understand))\b/.test(t)) return repeat();
     if (/\b(test me|quiz|question me|check me)\b/.test(t)) return testMe();
     if (/\b(pause|wait|hold on|stop)\b/.test(t) && writing) return togglePause(true);
@@ -490,23 +526,21 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
           <p className="cls__eyebrow">
             <GraduationCap size={16} aria-hidden /> My classroom
           </p>
-          <h1>{lesson ? lesson.topic : 'Your personal classroom'}</h1>
+          <h1>{lesson ? lesson.topic : topic}</h1>
         </div>
         <div className="cls__pickers">
           <select
             className="cls__select"
             value={subject}
-            onChange={(e) => {
-              setSubject(e.target.value);
-              setTopic(SYLLABUS[e.target.value][0]);
-            }}
+            onChange={(e) => pickLesson(e.target.value, SYLLABUS[e.target.value][0])}
+            disabled={busy === 'lesson'}
             aria-label="Subject"
           >
             {subjects.map((s) => (
               <option key={s}>{s}</option>
             ))}
           </select>
-          <select className="cls__select" value={topic} onChange={(e) => setTopic(e.target.value)} aria-label="Topic">
+          <select className="cls__select" value={topic} onChange={(e) => pickLesson(subject, e.target.value)} disabled={busy === 'lesson'} aria-label="Topic">
             {(SYLLABUS[subject] ?? []).map((t) => (
               <option key={t}>{t}</option>
             ))}
@@ -539,7 +573,19 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
 
           <div className={`cls__board${showCaption ? ' has-caption' : ''}${inking ? ' is-inking' : ''}`} ref={boardRef}>
             <div className="cls__sheet">
-              {!shown.length && <p className="cls__empty">{busy === 'lesson' ? 'Preparing your lesson…' : 'The board is clear.'}</p>}
+              {!shown.length &&
+                (busy === 'lesson' ? (
+                  <p className="cls__empty">Preparing your lesson on {topic}…</p>
+                ) : (
+                  // What's picked is what gets taught: it's on the board before the lesson starts.
+                  <div className="cls__ready">
+                    <p className="cls__ready-subject">{subject}</p>
+                    <p className="bl bl--title">{lesson?.topic ?? topic}</p>
+                    <p className="cls__ready-hint">
+                      {lesson ? 'Board cleared. Press Next step or Repeat to carry on.' : 'Press Start lesson and I’ll teach you exactly this.'}
+                    </p>
+                  </div>
+                ))}
               {shown.map((l, i) => {
                 const isCurrent = i === pen.written.length;
                 return (
@@ -658,8 +704,17 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
             )}
             <div>
               <strong>{teacher}</strong>
-              <small>{isPremium ? 'Unlimited lessons' : `Free: ${FREE_DAILY} lessons or questions a day`}</small>
+              <small>
+                {credits
+                  ? isPremium
+                    ? `${credits.left} AI credits left · a lesson uses 3`
+                    : `${credits.left} of ${FREE_PROMPTS} free AI prompts left`
+                  : isPremium
+                    ? 'Premium'
+                    : `${FREE_PROMPTS} free AI prompts`}
+              </small>
             </div>
+            <CreditRing credits={credits} onUpgrade={onUpgrade} />
           </header>
           <div className="cls__log" ref={chatRef} aria-live="polite">
             {chat.map((c, i) => (
@@ -667,7 +722,7 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
                 {c.who === 'teacher' ? <TutorReply text={c.text} stepwise={i === lastTeacher} /> : <p>{c.text}</p>}
                 {c.upgrade && (
                   <button type="button" className="ui-btn ui-btn--primary" onClick={onUpgrade}>
-                    Upgrade
+                    {isPremium ? 'Renew now' : 'Subscribe'}
                   </button>
                 )}
               </div>
