@@ -11,7 +11,7 @@ import {
   Upload,
   X,
 } from 'lucide-react';
-import { CMS_SUBJECTS, EXAM_LABEL, EXAM_TYPES, cms, needsSchool, paperSize, questionKey, takenExams, useCms } from '../../lib/cms';
+import { CMS_SUBJECTS, EXAM_LABEL, EXAM_TYPES, cms, needsSchool, paperQuestions, paperSize, questionKey, takenExams, useCms } from '../../lib/cms';
 import { SCHOOLS } from '../../lib/schools';
 import type { CmsSubject, ExamType, QuestionDraft } from '../../lib/cms';
 import { organiseWithAI } from '../../lib/question-import';
@@ -79,7 +79,16 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
   const bySchool = needsSchool(examType);
   const schoolTag = bySchool ? school : '';
   const examName = bySchool && school ? `${school} ${EXAM_LABEL[examType]}` : EXAM_LABEL[examType];
-  const existing = paperSize(questions, subject, examType, yearNum, schoolTag);
+  // Replacing (from Past questions): the paper's current questions go once the new ones are saved.
+  // Only while this is still that paper: picking another year or subject here never replaces it.
+  const replacing =
+    Boolean(preset?.replace) &&
+    preset?.subject === subject &&
+    preset?.exam === examType &&
+    preset?.year === yearNum &&
+    (bySchool ? preset?.school : '') === schoolTag;
+  const oldPaper = paperQuestions(questions, subject, examType, yearNum, schoolTag);
+  const existing = replacing ? 0 : oldPaper.length;
   const takenHere = takenExams(questions, subject, yearNum, schoolTag);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -184,7 +193,9 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
 
   const save = (publishReady: boolean) => {
     const readyKeys = new Set(ready.map((r) => r.key));
-    const seen = new Set(questions.filter((q) => q.subject === subject).map((q) => questionKey(q.question)));
+    // The paper being replaced doesn't count: its questions may come back in the real paper.
+    const replacedIds = new Set(replacing ? oldPaper.map((q) => q.id) : []);
+    const seen = new Set(questions.filter((q) => q.subject === subject && !replacedIds.has(q.id)).map((q) => questionKey(q.question)));
     const fresh = chosen.filter((it) => {
       const k = questionKey(it.question);
       if (!k || seen.has(k)) return false;
@@ -194,10 +205,9 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
     const skipped = chosen.length - fresh.length;
     const drafts = fresh.map((it) => toDraft(it, publishReady && readyKeys.has(it.key)));
     const published = drafts.filter((d) => d.status === 'published').length;
-    cms.addQuestions(
-      drafts,
-      `Imported ${drafts.length} ${subject} question${drafts.length === 1 ? '' : 's'}${published ? ` (${published} published)` : ''}.`,
-    );
+    const label = `Imported ${drafts.length} ${subject} question${drafts.length === 1 ? '' : 's'}${published ? ` (${published} published)` : ''}.`;
+    if (replacing) cms.replacePaper([...replacedIds], drafts, `Replaced ${examName} ${subject} ${yearNum}: ${label}`);
+    else cms.addQuestions(drafts, label);
     setSummary({ published, drafts: drafts.length - published, skipped });
     setStage('done');
   };
@@ -436,7 +446,7 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
   return (
     <div className="adm-page">
       <PageHead
-        title={preset ? `Add ${examName} ${subject} past questions` : 'Import with AI'}
+        title={preset ? `${replacing ? 'Replace' : 'Add'} ${examName} ${subject}${yearNum ? ` ${yearNum}` : ''} past questions` : 'Import with AI'}
         sub="Paste the paper or upload it. The AI sorts it into questions, options, answers and explanations for you to check."
         actions={
           preset ? (
@@ -451,6 +461,13 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
           ) : undefined
         }
       />
+
+      {replacing && oldPaper.length > 0 && (
+        <div className="adm-note is-warn" role="status">
+          You’re replacing {examName} {subject} {yearNum}. Its {oldPaper.length} current question{oldPaper.length === 1 ? '' : 's'} will be removed when
+          you save the new ones. If you leave without saving, nothing changes.
+        </div>
+      )}
 
       {existing > 0 && (
         <div className="adm-note is-warn" role="alert">

@@ -6,6 +6,7 @@ import { useRouter, pathForView, isAccountFlowView, isAppView } from './lib/rout
 import type { AppView } from './lib/router';
 import { HomePageView } from './components/web/HomePageView';
 import { CmsContext } from './cms/read';
+import { CreditWarning } from './components/web/CreditWarning';
 import type { CmsEnv } from './cms/read';
 import { syncQuestions } from './lib/cms';
 import type { ExamType } from './lib/cms';
@@ -395,6 +396,9 @@ export function App() {
         </Suspense>
       </main>
       </CmsContext.Provider>
+
+      {/* Running-low notice for the AI allowance; not during a timed exam. */}
+      {!isCbt && <CreditWarning onUpgrade={() => goTo('upgrade')} />}
 
       {/* Its code loads the first time it opens, then it stays (keeping the chat). */}
       {tutorLoaded && (

@@ -343,7 +343,7 @@ export const EXAM_SUBJECTS = ['English', 'Mathematics', 'Physics', 'Chemistry'];
 /* -------------------------------------------------- One paper per year */
 
 /** A paper is one subject + exam + year. Each may only be added once. */
-export const paperSize = (
+export const paperQuestions = (
   questions: CmsQuestion[],
   subject: string,
   examType: ExamType,
@@ -351,7 +351,7 @@ export const paperSize = (
   school = '',
 ) =>
   year === null
-    ? 0
+    ? []
     : questions.filter(
         (q) =>
           q.subject === subject &&
@@ -359,7 +359,9 @@ export const paperSize = (
           q.year === year &&
           // Post-UTME papers are per school.
           (!needsSchool(examType) || (q.school ?? '') === school),
-      ).length;
+      );
+
+export const paperSize = (...args: Parameters<typeof paperQuestions>) => paperQuestions(...args).length;
 
 /** Exam types that already have a paper for this subject and year. */
 export const takenExams = (questions: CmsQuestion[], subject: string, year: number | null, school = '') =>
@@ -393,6 +395,24 @@ export const cms = {
         ),
       );
     }
+    return added.length;
+  },
+
+  /** Swaps a paper's questions for new ones (e.g. test questions for the real
+      paper). Live, the old ones are deleted on the server before the new ones
+      are sent, so a question kept word for word isn't refused as a duplicate. */
+  replacePaper(oldIds: number[], drafts: QuestionDraft[], label: string) {
+    const stamp = now();
+    const old = new Set(oldIds);
+    const added = drafts.map((d) => ({ ...d, id: nextId(), createdAt: stamp, updatedAt: stamp }));
+    commit({ ...state, questions: [...added, ...state.questions.filter((q) => !old.has(q.id))] }, label);
+    if (!isLive) return added.length;
+    const temp = new Set(added.map((q) => q.id));
+    remote(
+      (oldIds.length ? api('/api/admin/questions', { method: 'DELETE', body: { ids: oldIds } }) : Promise.resolve())
+        .then(() => (drafts.length ? api<CmsQuestion[]>('/api/admin/questions', { method: 'POST', body: drafts, timeout: 60_000 }) : []))
+        .then((rows) => commit({ ...state, questions: [...rows, ...state.questions.filter((q) => !temp.has(q.id))] })),
+    );
     return added.length;
   },
 

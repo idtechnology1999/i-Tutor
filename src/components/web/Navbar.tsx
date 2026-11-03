@@ -17,6 +17,8 @@ import type { AppView } from '../../lib/router';
 import { pathForView, isAppView } from '../../lib/router';
 import { useScrollDirection, useSheetDrag } from '../../lib/ui';
 import { BrandMark } from './BrandMark';
+import { creditLevel, useCredits } from '../../services/credits';
+import type { Credits } from '../../services/credits';
 
 interface Props {
   activeView: AppView;
@@ -72,6 +74,20 @@ const RouteLink: React.FC<{
   </a>
 );
 
+/** The profile circle doubles as the AI allowance ring: what's left, in the
+    same green / orange / red as the ring in the tutor. */
+const AvatarRing: React.FC<{ credits: Credits }> = ({ credits }) => {
+  const r = 22;
+  const length = 2 * Math.PI * r;
+  const share = credits.total ? Math.min(1, credits.left / credits.total) : 0;
+  return (
+    <svg className={`avatar-ring is-${creditLevel(credits)}`} viewBox="0 0 50 50" aria-hidden>
+      <circle className="avatar-ring__track" cx="25" cy="25" r={r} />
+      <circle className="avatar-ring__bar" cx="25" cy="25" r={r} strokeDasharray={length} strokeDashoffset={length * (1 - share)} />
+    </svg>
+  );
+};
+
 export const Navbar: React.FC<Props> = ({
   activeView,
   onChangeView,
@@ -88,6 +104,12 @@ export const Navbar: React.FC<Props> = ({
   const { atTop } = useScrollDirection();
   const closeMenu = useCallback(() => setMenuOpen(false), []);
   const initial = profile.fullName.charAt(0).toUpperCase() || 'A';
+  const credits = useCredits();
+  const creditNote = credits
+    ? credits.plan === 'premium'
+      ? `, ${credits.left} of ${credits.total} AI credits left`
+      : `, ${credits.left} of ${credits.total} free AI prompts left`
+    : '';
 
   useSheetDrag(sheetRef, menuOpen, closeMenu);
 
@@ -168,7 +190,10 @@ export const Navbar: React.FC<Props> = ({
                 active={activeView === 'setup'}
                 className="site-nav__avatar site-nav__desk"
               >
-                <span aria-label="My profile">{initial}</span>
+                {credits && <AvatarRing credits={credits} />}
+                <span aria-label={`My profile${creditNote}`} title={`My profile${creditNote}`}>
+                  {initial}
+                </span>
               </RouteLink>
             </div>
           </div>

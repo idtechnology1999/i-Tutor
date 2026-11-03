@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pencil, Plus, ScanText, Search, Trash2 } from 'lucide-react';
+import { Pencil, Plus, RefreshCw, ScanText, Search, Trash2 } from 'lucide-react';
 import { CMS_SUBJECTS, EXAM_FULL_NAME, EXAM_LABEL, EXAM_TYPES, cms, needsSchool, paperSize, useCms } from '../../lib/cms';
 import { SCHOOLS } from '../../lib/schools';
 import type { CmsQuestion, CmsSubject, QuestionDraft } from '../../lib/cms';
@@ -218,9 +218,27 @@ export const AdminQuestions: React.FC<{
           </button>
         </div>
         {existing > 0 && (
-          <p className="adm-muted">
-            This paper is already in the bank. Each exam’s paper can be added once per year — edit its questions below.
-          </p>
+          <div className="adm-replace">
+            <p className="adm-muted">
+              This paper is already in the bank ({existing} question{existing === 1 ? '' : 's'}). Edit a question with its <b>Edit</b> button
+              below, or replace the whole paper, e.g. to swap test questions for the real ones.
+            </p>
+            <button
+              type="button"
+              className="adm-btn"
+              onClick={() => {
+                if (
+                  !window.confirm(
+                    `Replace ${label}? You’ll add the real paper next. The ${existing} question${existing === 1 ? '' : 's'} there now are removed only when you save the new ones.`,
+                  )
+                )
+                  return;
+                nav.go('import', { preset: { exam, school, subject: subject as CmsSubject, year, replace: true } });
+              }}
+            >
+              <RefreshCw size={16} aria-hidden /> Replace this paper
+            </button>
+          </div>
         )}
       </section>
 

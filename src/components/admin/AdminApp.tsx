@@ -73,6 +73,8 @@ export interface ImportPreset {
   year: number | null;
   /** Pre-filled request for the AI, e.g. "Set 40 questions on animal production". */
   request?: string;
+  /** The paper already exists: the questions saved here replace it. */
+  replace?: boolean;
 }
 
 export interface AdminNav {

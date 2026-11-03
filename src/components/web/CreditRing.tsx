@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Sparkles } from 'lucide-react';
-import { CREDIT_COST, FREE_PROMPTS, KIND_LABEL, PLAN_CREDITS } from '../../services/credits';
+import { CREDIT_COST, FREE_PROMPTS, KIND_LABEL, PLAN_CREDITS, creditLevel } from '../../services/credits';
 import type { Credits } from '../../services/credits';
 
 /* The AI allowance as a ring: what's left out of the total. Green while
@@ -9,8 +9,8 @@ import type { Credits } from '../../services/credits';
    the dashboard's. */
 
 const tone = (c: Credits) => {
-  const share = c.total ? c.left / c.total : 0;
-  return share <= 0.1 ? 'is-low' : share <= 0.25 ? 'is-warn' : 'is-ok';
+  const level = creditLevel(c);
+  return level === 'ok' ? 'is-ok' : level === 'warn' ? 'is-warn' : 'is-low';
 };
 
 const date = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '');

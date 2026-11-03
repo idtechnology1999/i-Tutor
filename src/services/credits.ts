@@ -36,6 +36,7 @@ let state: Credits | null = null;
 const listeners = new Set<() => void>();
 const emit = (next: Credits) => {
   state = next;
+  checkWarning(next);
   listeners.forEach((l) => l());
 };
 const subscribe = (l: () => void) => {
@@ -163,6 +164,70 @@ export async function spendAi<T>(kind: AiKind, work: () => Promise<T>): Promise<
     emit(demoState());
     throw error;
   }
+}
+
+/** How full the allowance is: the ring's colour and the warnings follow this.
+    Low is 10% or less left, warn is 25% or less. */
+export type CreditLevel = 'ok' | 'warn' | 'low' | 'empty';
+export const creditLevel = (c: Credits): CreditLevel => {
+  if (c.left <= 0) return 'empty';
+  const share = c.total ? c.left / c.total : 0;
+  return share <= 0.1 ? 'low' : share <= 0.25 ? 'warn' : 'ok';
+};
+
+/* ------------------------------------------------------- Running low */
+
+/* A one-time notice when the ring turns orange (25% left) and again when it
+   turns red (10% left): once per paid period on Premium, once ever on Free,
+   remembered in this browser. At zero the tutor itself says what to do. */
+
+export interface CreditNotice {
+  level: 'warn' | 'low';
+  text: string;
+}
+
+const WARNED_KEY = 'itutor-credit-warned';
+const RANK: Record<CreditLevel, number> = { ok: 0, warn: 1, low: 2, empty: 3 };
+let notice: CreditNotice | null = null;
+
+/** Each paid period gets its own warnings; renewing starts them afresh. */
+const periodOf = (c: Credits) => (c.plan === 'premium' ? `premium:${c.renewsAt ?? ''}` : 'free');
+
+const warnedRank = (period: string) => {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(WARNED_KEY) ?? '{}') as { period?: string; rank?: number };
+    return saved.period === period ? (saved.rank ?? 0) : 0;
+  } catch {
+    return 0;
+  }
+};
+
+const noticeText = (c: Credits, level: 'warn' | 'low') => {
+  if (c.plan === 'free') return `You have ${c.left} free AI prompt${c.left === 1 ? '' : 's'} left. Subscribe for ${PLAN_CREDITS} AI credits a month.`;
+  return level === 'low'
+    ? `Only ${c.left} AI credits left. Renew now so your tutor doesn’t stop.`
+    : `You have ${c.left} AI credits left this month. Renew now for ${PLAN_CREDITS} more.`;
+};
+
+function checkWarning(c: Credits) {
+  const level = creditLevel(c);
+  if (level !== 'warn' && level !== 'low') return;
+  const period = periodOf(c);
+  if (warnedRank(period) >= RANK[level]) return;
+  try {
+    window.localStorage.setItem(WARNED_KEY, JSON.stringify({ period, rank: RANK[level] }));
+  } catch {
+    /* storage blocked: the notice may show again next visit */
+  }
+  notice = { level, text: noticeText(c, level) };
+}
+
+/** The running-low notice to show, if any. */
+export const useCreditNotice = () => useSyncExternalStore(subscribe, () => notice, () => notice);
+
+export function dismissCreditNotice() {
+  notice = null;
+  listeners.forEach((l) => l());
 }
 
 /** The allowance, kept up to date. */

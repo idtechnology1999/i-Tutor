@@ -3116,3 +3116,7 @@
   }
   .adm-row__edit { grid-area: edit; justify-self: start; margin-top: 6px; }
 }
+
+/* Past questions: replace a paper that's already in the bank */
+.adm-replace { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.adm-replace .adm-muted { margin: 0; flex: 1 1 320px; }
