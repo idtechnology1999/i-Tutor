@@ -662,3 +662,14 @@
     margin: 4px 0 0;
   }
 }
+
+/* Past questions: Exam → (School) → Year, in order, in the top bar */
+.pq-cbt__picks { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; }
+.pq-cbt__picks .pq-cbt__exam select { min-width: 120px; }
+.pq-cbt__exam select:disabled { opacity: 0.55; cursor: default; }
+
+@media (max-width: 720px) {
+  .pq-cbt__picks { grid-column: 1 / -1; grid-row: 2; }
+  .pq-cbt__picks .pq-cbt__exam { flex: 1 1 140px; }
+  .pq-cbt__picks .pq-cbt__exam select { width: 100%; min-width: 0; }
+}

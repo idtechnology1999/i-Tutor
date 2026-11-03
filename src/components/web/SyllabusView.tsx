@@ -50,19 +50,20 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initia
   const published = questions.filter((q) => q.status === 'published');
   const bySchool = needsSchool(exam);
   const inExam = published.filter((q) => q.examType === exam && (!bySchool || !school || q.school === school));
+  // Exam, then (Post-UTME) school, then year: the year applies to every subject.
+  const years = [...new Set(inExam.map((q) => q.year).filter((y): y is number => y !== null))].sort((a, b) => b - a);
+  const perYear = (y: number) => inExam.filter((q) => q.year === y).length;
+  const inYear = year === null ? inExam : inExam.filter((q) => q.year === year);
   // Only what the student registered for; exams without their own list show everything.
   const subjects = subjectsFor?.(exam) ?? [...new Set([...CORE_SUBJECTS, ...inExam.map((q) => q.subject)])];
   const subject = subjects.includes(selectedSubject) ? selectedSubject : (subjects[0] ?? '');
-  const inSubject = inExam.filter((q) => q.subject === subject);
-  const years = [...new Set(inSubject.map((q) => q.year).filter((y): y is number => y !== null))].sort((a, b) => b - a);
+  const inSubject = inYear.filter((q) => q.subject === subject);
   const query = searchQuery.trim().toLowerCase();
-  const list = inSubject.filter((q) => {
-    if (year !== null && q.year !== year) return false;
-    return !query || q.question.toLowerCase().includes(query) || q.topic.toLowerCase().includes(query);
-  });
+  const list = inSubject.filter((q) => !query || q.question.toLowerCase().includes(query) || q.topic.toLowerCase().includes(query));
   const at = Math.min(index, Math.max(list.length - 1, 0));
   const q = list[at];
   const examName = bySchool && school ? `${school} ${EXAM_LABEL[exam]}` : EXAM_LABEL[exam];
+  const paperName = `${examName}${year ? ` ${year}` : ''}`;
 
   const triedIds = Object.keys(tried).map(Number);
   const rightCount = triedIds.filter((id) => published.find((x) => x.id === id)?.correctAnswer === tried[id]).length;
@@ -74,9 +75,9 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initia
     setYear(null);
     restart();
   };
+  // The chosen year stays when switching subject: "WAEC 2023" for every subject.
   const pickSubject = (s: string) => {
     setSelectedSubject(s);
-    setYear(null);
     restart();
   };
   const answer = (label: string) => q && tried[q.id] === undefined && setTried((t) => ({ ...t, [q.id]: label }));
@@ -125,21 +126,65 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initia
     <div className="jamb pq-cbt">
       <header className="jamb__top pq-cbt__top">
         <div className="jamb__brand">
-          <strong>{examName} past questions</strong>
+          <strong>{paperName} past questions</strong>
           <span>i-Tutor CBT · practice mode, no timer</span>
         </div>
-        {examTabs.length > 1 && (
+        <div className="pq-cbt__picks">
+          {examTabs.length > 1 && (
+            <label className="pq-cbt__exam">
+              <small>1 · Exam</small>
+              <select value={exam} onChange={(e) => pickExam(e.target.value as ExamType)} aria-label="Exam">
+                {examTabs.map((t) => (
+                  <option key={t} value={t} title={EXAM_FULL_NAME[t]}>
+                    {EXAM_LABEL[t]}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {bySchool && (
+            <label className="pq-cbt__exam">
+              <small>{examTabs.length > 1 ? '2 · ' : ''}School</small>
+              <select
+                value={school}
+                onChange={(e) => {
+                  setSchool(e.target.value);
+                  setYear(null);
+                  restart();
+                }}
+                aria-label="School"
+              >
+                <option value="">All schools</option>
+                {SCHOOLS.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.id}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <label className="pq-cbt__exam">
-            <small>Exam</small>
-            <select value={exam} onChange={(e) => pickExam(e.target.value as ExamType)} aria-label="Exam">
-              {examTabs.map((t) => (
-                <option key={t} value={t} title={EXAM_FULL_NAME[t]}>
-                  {EXAM_LABEL[t]}
+            <small>
+              {examTabs.length > 1 ? `${bySchool ? 3 : 2} · ` : ''}Year
+            </small>
+            <select
+              value={year ?? ''}
+              onChange={(e) => {
+                setYear(e.target.value ? Number(e.target.value) : null);
+                restart();
+              }}
+              aria-label="Year"
+              disabled={!years.length}
+            >
+              <option value="">{years.length ? `All years (${inExam.length})` : 'No years yet'}</option>
+              {years.map((y) => (
+                <option key={y} value={y}>
+                  {y} ({perYear(y)})
                 </option>
               ))}
             </select>
           </label>
-        )}
+        </div>
         <div className="jamb__time pq-cbt__score" aria-label="Your score">
           <small>Score</small>
           <strong>
@@ -150,7 +195,7 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initia
 
       <nav className="jamb__subjects pq-cbt__bar" aria-label="Subjects">
         {subjects.map((s) => {
-          const qs = inExam.filter((x) => x.subject === s);
+          const qs = inYear.filter((x) => x.subject === s);
           return (
             <button key={s} type="button" className={s === subject ? 'is-on' : ''} onClick={() => pickSubject(s)} aria-current={s === subject ? 'true' : undefined}>
               {s}
@@ -161,24 +206,6 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initia
           );
         })}
         <span className="jamb__tools pq-cbt__tools">
-          {bySchool && (
-            <select
-              value={school}
-              onChange={(e) => {
-                setSchool(e.target.value);
-                setYear(null);
-                restart();
-              }}
-              aria-label="School"
-            >
-              <option value="">All schools</option>
-              {SCHOOLS.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.id}
-                </option>
-              ))}
-            </select>
-          )}
           <label className="pq-cbt__search">
             <Search size={16} aria-hidden />
             <input
@@ -189,24 +216,9 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initia
                 restart();
               }}
               placeholder={`Search ${subject}`}
-              aria-label={`Search ${examName} ${subject} questions`}
+              aria-label={`Search ${paperName} ${subject} questions`}
             />
           </label>
-          <select
-            value={year ?? ''}
-            onChange={(e) => {
-              setYear(e.target.value ? Number(e.target.value) : null);
-              restart();
-            }}
-            aria-label="Year"
-          >
-            <option value="">All years</option>
-            {years.map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </select>
         </span>
       </nav>
 
@@ -216,8 +228,8 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initia
             <strong>No questions here yet</strong>
             <p>
               {query
-                ? `Nothing in ${examName} ${subject} matches “${searchQuery}”. Try another word.`
-                : `${examName} ${subject} questions are coming soon. Try another subject${examTabs.length > 1 ? ' or exam' : ''}.`}
+                ? `Nothing in ${paperName} ${subject} matches “${searchQuery}”. Try another word.`
+                : `${paperName} ${subject} questions are coming soon. Try another subject${year ? ', another year' : ''}${examTabs.length > 1 ? ' or exam' : ''}.`}
             </p>
           </section>
         ) : (
