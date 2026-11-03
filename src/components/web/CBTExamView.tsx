@@ -261,6 +261,19 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
     writeSession({ key: sessionKey, paper, answers, subject, index, deadline, submitted: finished, recorded: recorded.current });
   }, [paper, answers, subject, index, deadline, finished, total, sessionKey]);
 
+  // Mid-exam, the browser's or phone's Back button asks first too: an extra
+  // /exam entry in the history means Back lands here, and the question appears.
+  useEffect(() => {
+    if (!running || finished) return;
+    window.history.pushState({ examGuard: true }, '', window.location.href);
+    const onBack = () => {
+      window.history.pushState({ examGuard: true }, '', window.location.href);
+      setConfirm('exit');
+    };
+    window.addEventListener('popstate', onBack);
+    return () => window.removeEventListener('popstate', onBack);
+  }, [running, finished]);
+
   // Mid-exam, the browser asks before a refresh or closing the tab.
   useEffect(() => {
     if (!running || finished) return;
@@ -369,9 +382,15 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
   return (
     <div className="jamb">
       <header className="jamb__top">
-        <div className="jamb__brand">
-          <strong>{paper.title}</strong>
-          <span>i-Tutor CBT</span>
+        <div className="jamb__brand jamb__brand--exit">
+          {/* The way back, where people look for it; it asks first, like the real CBT. */}
+          <button type="button" className="jamb__leave" onClick={() => setConfirm('exit')} aria-label="Exit the exam">
+            <ArrowLeft size={18} aria-hidden /> <span>Exit</span>
+          </button>
+          <div>
+            <strong>{paper.title}</strong>
+            <span>i-Tutor CBT</span>
+          </div>
         </div>
         <div className="jamb__candidate">
           <span className="jamb__photo" aria-hidden>
@@ -525,8 +544,8 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
               </>
             ) : (
               <>
-                <h2>Leave the exam?</h2>
-                <p>Your answers won’t be saved.</p>
+                <h2>Are you sure you want to leave the exam?</h2>
+                <p>Your answers so far will be lost, and the exam won’t count.</p>
                 <div className="ui-dialog__actions">
                   <button type="button" className="ui-btn ui-btn--ghost" onClick={() => setConfirm(null)}>
                     Stay

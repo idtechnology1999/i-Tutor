@@ -703,3 +703,29 @@
   .pq-cbt__tools .pq-cbt__mode button { flex: 1; }
   .pq-cbt__submit { margin-left: 0; width: 100%; justify-content: center; }
 }
+
+/* Exam: Exit at the left of the top bar, always in view (it asks first). */
+.jamb__brand--exit { flex-direction: row; align-items: center; gap: 14px; }
+.jamb__brand--exit > div { display: flex; flex-direction: column; min-width: 0; }
+.jamb__brand--exit strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jamb__leave {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 8px;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.jamb__leave:hover { background: rgba(255, 255, 255, 0.12); }
+@media (max-width: 720px) {
+  .jamb__leave { padding: 0 10px; }
+  .jamb__leave span { display: none; }
+}
