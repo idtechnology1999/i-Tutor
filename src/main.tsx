@@ -14,6 +14,7 @@ import './styles/admin.css'
 import './styles/courses.css'
 import './styles/theme.css'
 import './styles/cms.css'
+import './styles/exam-review.css'
 import App from './App.tsx'
 
 createRoot(document.getElementById('root')!).render(

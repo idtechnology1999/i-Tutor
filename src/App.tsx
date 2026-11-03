@@ -290,6 +290,7 @@ export function App() {
               goTo('dashboard');
             }}
             onOpenTutor={openTutor}
+            onUpgrade={() => goTo('upgrade')}
           />
         )}
 

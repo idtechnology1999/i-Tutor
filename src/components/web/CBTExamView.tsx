@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Calculator, Check, ChevronDown, ChevronLeft, ChevronRight, MessageSquareText, RotateCcw, X } from 'lucide-react';
+import { ArrowLeft, Calculator, ChevronLeft, ChevronRight, MessageSquareText, X } from 'lucide-react';
 import type { DiagnosticQuestion, UserProfile } from '../../types';
 import { ExamCalculator } from './ExamCalculator';
 import { CMS_SUBJECTS, PRACTICE, toExamQuestion, useCms, useQuestionsReady } from '../../lib/cms';
 import type { CmsQuestion } from '../../lib/cms';
 import { recordResult } from '../../lib/progress';
 import type { SolveRequest } from '../../data/tutors';
+import { tutorById } from '../../data/tutors';
+import { ExamReview } from './ExamReview';
 
 /* The CBT, laid out like JAMB's: candidate bar with the clock, one button per
    subject, radio-button options, a numbered question grid, and Previous /
@@ -29,6 +31,8 @@ interface Props {
   onSolve?: (req: SolveRequest) => void;
   solveLabel?: string;
   askLabel?: string;
+  /** Out of AI credits while reviewing: go and get more. */
+  onUpgrade?: () => void;
 }
 
 /** JAMB: English has 60 questions, every other subject 40, all in 2 hours (40 seconds each). */
@@ -138,7 +142,7 @@ const clock = (secs: number) => {
   return `${h ? `${h}:` : ''}${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 };
 
-export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, presetSubject, presetCourse, onSolve, solveLabel, askLabel }) => {
+export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, presetCourse, onSolve, askLabel, onUpgrade }) => {
   const { questions: bank } = useCms();
   const ready = useQuestionsReady();
   // The paper is drawn once, when the bank is ready, so it doesn't reshuffle mid-exam.
@@ -150,7 +154,6 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
   const [submitted, setSubmitted] = useState(false);
   const [confirm, setConfirm] = useState<null | 'submit' | 'exit'>(null);
   const [showCalculator, setShowCalculator] = useState(false);
-  const [openReview, setOpenReview] = useState<number | null>(null);
 
   const start = () => {
     const next = buildPaper(bank, profile, presetSubject, presetCourse);
@@ -161,7 +164,6 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
     setTimeLeft(next.seconds);
     setSubmitted(false);
     setConfirm(null);
-    setOpenReview(null);
   };
 
   useEffect(() => {
@@ -254,136 +256,24 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, onOpenTutor, pre
   /* ----------------------------------------------------------------- Results */
   if (finished) {
     const correct = paper.questions.filter((q) => answers[q.id] === q.correctAnswer).length;
-    const pct = Math.round((correct / total) * 100);
-    const estimate = Math.round((pct / 100) * 400);
+    const full = !paper.practice && paper.subjects.length === 4;
     return (
-      <div className="ui-page exam-result">
-        <section className="ui-card exam-result__hero">
-          <span className="exam-result__badge">
-            <Check size={28} aria-hidden />
-          </span>
-          <h1>{timeLeft <= 0 && !submitted ? 'Time up' : 'Exam submitted'}</h1>
-          <p>
-            {paper.title} · {profile.fullName.split(' ')[0]}
-          </p>
-          <div className="exam-result__stats">
-            <div>
-              <strong>
-                {correct}/{total}
-              </strong>
-              <span>Correct</span>
-            </div>
-            <div>
-              <strong>{pct}%</strong>
-              <span>Score</span>
-            </div>
-            {!paper.practice && paper.subjects.length === 4 && (
-              <div className="is-key">
-                <strong>{estimate}</strong>
-                <span>Out of 400</span>
-              </div>
-            )}
-          </div>
-          {paper.subjects.length > 1 && (
-            <ul className="jamb-breakdown">
-              {paper.subjects.map((s) => {
-                const qs = paper.questions.filter((q) => q.subject === s);
-                const right = qs.filter((q) => answers[q.id] === q.correctAnswer).length;
-                return (
-                  <li key={s}>
-                    <span>{s}</span>
-                    <b>
-                      {right}/{qs.length}
-                    </b>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          <div className="exam-result__actions">
-            <button type="button" className="ui-btn ui-btn--primary ui-btn--lg" onClick={onExit}>
-              Back to dashboard
-            </button>
-            <button
-              type="button"
-              className="ui-btn ui-btn--ghost ui-btn--lg"
-              onClick={() => {
-                recorded.current = false;
-                start();
-              }}
-            >
-              <RotateCcw size={18} aria-hidden /> New set of questions
-            </button>
-          </div>
-        </section>
-
-        <section className="ui-card exam-review">
-          <h2>Check your answers</h2>
-          <p className="exam-review__sub">Tap a question to see the right answer and why.</p>
-          <ol>
-            {paper.questions.map((q, i) => {
-              const yours = answers[q.id];
-              const right = yours === q.correctAnswer;
-              const open = openReview === q.id;
-              const text = (label?: string) => q.options.find((o) => o.label === label)?.text;
-              return (
-                <li key={q.id} className={`exam-review__item ${right ? 'is-right' : 'is-wrong'}${open ? ' is-open' : ''}`}>
-                  <button type="button" onClick={() => setOpenReview(open ? null : q.id)} aria-expanded={open}>
-                    <span className="exam-review__mark" aria-hidden>
-                      {right ? <Check size={14} /> : <X size={14} />}
-                    </span>
-                    <span className="exam-review__q">
-                      <small>
-                        {i + 1}. {q.subject}
-                        {q.topic && q.topic !== 'General' ? ` · ${q.topic}` : ''}
-                      </small>
-                      {q.question}
-                    </span>
-                    <ChevronDown size={18} className="exam-review__chev" aria-hidden />
-                  </button>
-                  {open && (
-                    <div className="exam-review__body">
-                      <p>
-                        <b>Your answer:</b> {yours ? `${yours}. ${text(yours)}` : 'Not answered'}
-                      </p>
-                      {!right && (
-                        <p>
-                          <b>Right answer:</b> {q.correctAnswer}. {text(q.correctAnswer)}
-                        </p>
-                      )}
-                      {q.explanation && <p className="exam-review__why">{q.explanation}</p>}
-                      {onSolve ? (
-                        <button
-                          type="button"
-                          className="ui-link"
-                          onClick={() =>
-                            onSolve({
-                              subject: q.subject,
-                              question: q.question,
-                              options: q.options,
-                              correctAnswer: q.correctAnswer,
-                              explanation: q.explanation,
-                              yourAnswer: yours,
-                            })
-                          }
-                        >
-                          <MessageSquareText size={16} aria-hidden /> {solveLabel ?? 'Solve with my tutor'}
-                        </button>
-                      ) : (
-                        onOpenTutor && (
-                          <button type="button" className="ui-link" onClick={onOpenTutor}>
-                            <MessageSquareText size={16} aria-hidden /> Still confused? Ask the tutor
-                          </button>
-                        )
-                      )}
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ol>
-        </section>
-      </div>
+      <ExamReview
+        title={paper.title}
+        questions={paper.questions}
+        subjects={paper.subjects}
+        answers={answers}
+        firstName={profile.fullName.split(' ')[0] || 'there'}
+        timeUp={timeLeft <= 0 && !submitted}
+        estimate={full ? Math.round((correct / total) * 400) : undefined}
+        tutor={profile.plan === 'premium' ? tutorById(profile.tutorId) : undefined}
+        onExit={onExit}
+        onRetake={() => {
+          recorded.current = false;
+          start();
+        }}
+        onUpgrade={onUpgrade}
+      />
     );
   }
 
