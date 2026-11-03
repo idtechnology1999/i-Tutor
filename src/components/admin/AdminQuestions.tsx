@@ -6,6 +6,7 @@ import type { CmsQuestion, CmsSubject, QuestionDraft } from '../../lib/cms';
 import type { AdminNav, BankScope, QuestionFilter } from './AdminApp';
 import { PageHead, StatusChip } from './AdminApp';
 import { QuestionEditor } from './QuestionEditor';
+import { ConfirmDelete } from '../cms/ConfirmDelete';
 import { blankQuestion, publishProblems } from '../../lib/question-rules';
 
 const FILTERS: Array<{ id: QuestionFilter; label: string }> = [
@@ -30,6 +31,8 @@ export const AdminQuestions: React.FC<{
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [editing, setEditing] = useState<CmsQuestion | 'new' | null>(null);
+  // Replacing a paper deletes its questions: the super admin password comes first.
+  const [askReplace, setAskReplace] = useState(false);
 
   const { exam, school, subject, year } = scope;
   const bySchool = needsSchool(exam);
@@ -226,15 +229,7 @@ export const AdminQuestions: React.FC<{
             <button
               type="button"
               className="adm-btn"
-              onClick={() => {
-                if (
-                  !window.confirm(
-                    `Replace ${label}? You’ll add the real paper next. The ${existing} question${existing === 1 ? '' : 's'} there now are removed only when you save the new ones, with the super admin password.`,
-                  )
-                )
-                  return;
-                nav.go('import', { preset: { exam, school, subject: subject as CmsSubject, year, replace: true } });
-              }}
+              onClick={() => setAskReplace(true)}
             >
               <RefreshCw size={16} aria-hidden /> Replace this paper
             </button>
@@ -380,6 +375,20 @@ export const AdminQuestions: React.FC<{
                 }
               : undefined
           }
+        />
+      )}
+
+      {askReplace && (
+        <ConfirmDelete
+          title={`Replace ${label}`}
+          message={`You’ll add the real paper next. The ${existing} question${existing === 1 ? '' : 's'} there now are deleted for good when you save the new ones. If you leave without saving, nothing changes.`}
+          action="Continue"
+          onConfirm={async (password) => {
+            await cms.checkSuperPassword(password);
+            setAskReplace(false);
+            nav.go('import', { preset: { exam, school, subject: subject as CmsSubject, year, replace: true, password } });
+          }}
+          onClose={() => setAskReplace(false)}
         />
       )}
     </div>

@@ -75,6 +75,8 @@ export interface ImportPreset {
   request?: string;
   /** The paper already exists: the questions saved here replace it. */
   replace?: boolean;
+  /** The super admin password, already checked; kept in memory only, for the save. */
+  password?: string;
 }
 
 export interface AdminNav {

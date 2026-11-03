@@ -398,6 +398,12 @@ export const cms = {
     return added.length;
   },
 
+  /** Checks the super admin password before a paper replacement starts. */
+  async checkSuperPassword(password: string) {
+    if (!password) throw new Error('Enter the super admin password to confirm.');
+    if (isLive) await api('/api/admin/questions/replace/check', { method: 'POST', body: { password } });
+  },
+
   /** Swaps a paper's questions for new ones (e.g. test questions for the real
       paper). The old ones are deleted for good, so the server needs the super
       admin's password, and the bank only changes once the server agrees.

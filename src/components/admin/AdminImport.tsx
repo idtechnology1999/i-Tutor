@@ -217,7 +217,16 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
     const label = `Imported ${drafts.length} ${subject} question${drafts.length === 1 ? '' : 's'}${published ? ` (${published} published)` : ''}.`;
     // Replacing deletes the old questions for good: it waits for the super admin password.
     if (replacing) {
-      setPendingReplace({ ids: [...replacedIds], drafts, label: `Replaced ${examName} ${subject} ${yearNum}: ${label}`, published, skipped });
+      const pending = { ids: [...replacedIds], drafts, label: `Replaced ${examName} ${subject} ${yearNum}: ${label}`, published, skipped };
+      // Checked already when Replace was tapped; ask again only if that no longer works.
+      if (!preset?.password) return setPendingReplace(pending);
+      cms
+        .replacePaper(pending.ids, pending.drafts, pending.label, preset.password)
+        .then(() => {
+          setSummary({ published, drafts: drafts.length - published, skipped });
+          setStage('done');
+        })
+        .catch(() => setPendingReplace(pending));
       return;
     }
     cms.addQuestions(drafts, label);
