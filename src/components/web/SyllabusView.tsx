@@ -52,8 +52,10 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initia
   const inExam = published.filter((q) => q.examType === exam && (!bySchool || !school || q.school === school));
   // Exam, then (Post-UTME) school, then year: the year applies to every subject.
   const years = [...new Set(inExam.map((q) => q.year).filter((y): y is number => y !== null))].sort((a, b) => b - a);
-  const perYear = (y: number) => inExam.filter((q) => q.year === y).length;
-  const inYear = year === null ? inExam : inExam.filter((q) => q.year === year);
+  // Always one year at a time (the latest unless one is picked), so one paper
+  // is never mixed with another. Exams with no years yet show what there is.
+  const shownYear = year !== null && years.includes(year) ? year : (years[0] ?? null);
+  const inYear = shownYear === null ? inExam : inExam.filter((q) => q.year === shownYear);
   // Only what the student registered for; exams without their own list show everything.
   const subjects = subjectsFor?.(exam) ?? [...new Set([...CORE_SUBJECTS, ...inExam.map((q) => q.subject)])];
   const subject = subjects.includes(selectedSubject) ? selectedSubject : (subjects[0] ?? '');
@@ -63,7 +65,7 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initia
   const at = Math.min(index, Math.max(list.length - 1, 0));
   const q = list[at];
   const examName = bySchool && school ? `${school} ${EXAM_LABEL[exam]}` : EXAM_LABEL[exam];
-  const paperName = `${examName}${year ? ` ${year}` : ''}`;
+  const paperName = `${examName}${shownYear ? ` ${shownYear}` : ''}`;
 
   const triedIds = Object.keys(tried).map(Number);
   const rightCount = triedIds.filter((id) => published.find((x) => x.id === id)?.correctAnswer === tried[id]).length;
@@ -168,18 +170,18 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initia
               {examTabs.length > 1 ? `${bySchool ? 3 : 2} · ` : ''}Year
             </small>
             <select
-              value={year ?? ''}
+              value={shownYear ?? ''}
               onChange={(e) => {
-                setYear(e.target.value ? Number(e.target.value) : null);
+                setYear(Number(e.target.value));
                 restart();
               }}
               aria-label="Year"
               disabled={!years.length}
             >
-              <option value="">{years.length ? `All years (${inExam.length})` : 'No years yet'}</option>
+              {!years.length && <option value="">No years yet</option>}
               {years.map((y) => (
                 <option key={y} value={y}>
-                  {y} ({perYear(y)})
+                  {y}
                 </option>
               ))}
             </select>
@@ -229,7 +231,7 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initia
             <p>
               {query
                 ? `Nothing in ${paperName} ${subject} matches “${searchQuery}”. Try another word.`
-                : `${paperName} ${subject} questions are coming soon. Try another subject${year ? ', another year' : ''}${examTabs.length > 1 ? ' or exam' : ''}.`}
+                : `${paperName} ${subject} questions are coming soon. Try another subject${years.length > 1 ? ', another year' : ''}${examTabs.length > 1 ? ' or exam' : ''}.`}
             </p>
           </section>
         ) : (
