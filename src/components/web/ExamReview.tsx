@@ -1,11 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, ChevronsRight, GraduationCap, Repeat, RotateCcw, Sparkles, ThumbsUp, X } from 'lucide-react';
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, GraduationCap, RotateCcw, X } from 'lucide-react';
 import type { DiagnosticQuestion } from '../../types';
 import type { TutorPersona } from '../../data/tutors';
-import { explainQuestion, explainSimpler, similarQuestion } from '../../services/tutor';
-import type { SimilarQuestion } from '../../services/tutor';
-import { isOutOfCredits } from '../../services/credits';
-import { TutorReply } from './TutorReply';
+import { useTutorThreads } from '../../lib/useTutorThreads';
+import { TutorAvatar, TutorThread } from './TutorThread';
 
 /* After an exam: the result, then the student's tutor goes through the paper
    with them one question at a time — the missed ones first — and explains
@@ -27,17 +25,12 @@ interface Props {
   onExit: () => void;
   onRetake: () => void;
   onUpgrade?: () => void;
+  /** Button words: the exam leaves for the dashboard, past questions go back to the questions. */
+  backLabel?: string;
+  retakeLabel?: string;
+  /** The small heading over the title. */
+  eyebrow?: string;
 }
-
-/** One question's conversation with the tutor: explanations, the student's
-    answers to "Did that make sense?", and practice questions. */
-type Turn =
-  | { kind: 'ai'; text: string }
-  | { kind: 'tutor'; text: string }
-  | { kind: 'student'; text: string }
-  | { kind: 'similar'; item: SimilarQuestion; picked?: string }
-  | { kind: 'loading'; text: string }
-  | { kind: 'error'; text: string; out: boolean };
 
 const ScoreRing: React.FC<{ pct: number }> = ({ pct }) => {
   const r = 52;
@@ -57,7 +50,22 @@ const ScoreRing: React.FC<{ pct: number }> = ({ pct }) => {
   );
 };
 
-export const ExamReview: React.FC<Props> = ({ title, questions, subjects, answers, firstName, timeUp, estimate, tutor, onExit, onRetake, onUpgrade }) => {
+export const ExamReview: React.FC<Props> = ({
+  title,
+  questions,
+  subjects,
+  answers,
+  firstName,
+  timeUp,
+  estimate,
+  tutor,
+  onExit,
+  onRetake,
+  onUpgrade,
+  backLabel = 'Back to dashboard',
+  retakeLabel = 'New set of questions',
+  eyebrow,
+}) => {
   const isRight = (q: DiagnosticQuestion) => answers[q.id] === q.correctAnswer;
   const isSkipped = (q: DiagnosticQuestion) => !answers[q.id];
   const right = questions.filter(isRight);
@@ -68,9 +76,7 @@ export const ExamReview: React.FC<Props> = ({ title, questions, subjects, answer
 
   const [filter, setFilter] = useState<Filter | null>(null);
   const [at, setAt] = useState(0);
-  const [threads, setThreads] = useState<Record<number, Turn[]>>({});
-  /** Questions the student said they understand. */
-  const [settled, setSettled] = useState<Record<number, boolean>>({});
+  const threads = useTutorThreads({ tutor, firstName });
   const cardRef = useRef<HTMLElement>(null);
 
   const lists: Record<Filter, DiagnosticQuestion[]> = {
@@ -92,83 +98,6 @@ export const ExamReview: React.FC<Props> = ({ title, questions, subjects, answer
     setFilter(f);
     setAt(0);
   };
-
-  const request = (item: DiagnosticQuestion) => ({
-    subject: item.subject,
-    question: item.question,
-    options: item.options,
-    correctAnswer: item.correctAnswer,
-    explanation: item.explanation,
-    yourAnswer: answers[item.id],
-    topic: item.topic,
-  });
-  const name = tutor?.name ?? 'Your tutor';
-
-  const add = (id: number, ...turns: Turn[]) => setThreads((t) => ({ ...t, [id]: [...(t[id] ?? []), ...turns] }));
-  /** Shows "working…" while the AI answers, then the answer (or what went wrong) in its place. */
-  const run = (id: number, working: string, work: Promise<Turn>) => {
-    add(id, { kind: 'loading', text: working });
-    const settle = (turn: Turn) =>
-      setThreads((t) => {
-        const list = [...(t[id] ?? [])];
-        const i = list.map((x) => x.kind).lastIndexOf('loading');
-        if (i >= 0) list[i] = turn;
-        return { ...t, [id]: list };
-      });
-    work.then(settle).catch((err: Error) => settle({ kind: 'error', text: err.message, out: isOutOfCredits(err) }));
-  };
-
-  const explain = (item: DiagnosticQuestion) =>
-    run(item.id, `${name} is working it through…`, explainQuestion(request(item), tutor?.id).then((text): Turn => ({ kind: 'ai', text })));
-
-  const understood = (item: DiagnosticQuestion) => {
-    add(
-      item.id,
-      { kind: 'student', text: 'Yes, I understand.' },
-      { kind: 'tutor', text: `Great, ${firstName}! You’ve got it. Tap “Next question” when you’re ready, or try a similar one to be sure.` },
-    );
-    setSettled((x) => ({ ...x, [item.id]: true }));
-  };
-
-  const simpler = (item: DiagnosticQuestion) => {
-    const before = [...(threads[item.id] ?? [])].reverse().find((x) => x.kind === 'ai');
-    add(
-      item.id,
-      { kind: 'student', text: 'No, I don’t understand.' },
-      { kind: 'tutor', text: 'No problem, thank you for telling me! I’ll explain it more simply, step by step, so you understand.' },
-    );
-    setSettled((x) => ({ ...x, [item.id]: false }));
-    run(
-      item.id,
-      `${name} is finding a simpler way…`,
-      explainSimpler(request(item), before?.kind === 'ai' ? before.text : '', tutor?.id).then((text): Turn => ({ kind: 'ai', text })),
-    );
-  };
-
-  const similar = (item: DiagnosticQuestion) => {
-    add(
-      item.id,
-      { kind: 'student', text: 'Give me a similar question.' },
-      { kind: 'tutor', text: 'Here’s one like it. Try it yourself first, then I’ll show you the working.' },
-    );
-    setSettled((x) => ({ ...x, [item.id]: false }));
-    run(
-      item.id,
-      `${name} is writing a question for you…`,
-      similarQuestion(request(item), tutor?.id).then((sq): Turn => ({ kind: 'similar', item: sq })),
-    );
-  };
-
-  /** Skip: no answer needed, straight on to the next question (no AI, no credits). */
-  const skip = (item: DiagnosticQuestion) => {
-    setSettled((x) => ({ ...x, [item.id]: true }));
-    // A practice question left unanswered is put away.
-    setThreads((t) => ({ ...t, [item.id]: (t[item.id] ?? []).filter((x) => !(x.kind === 'similar' && !x.picked)) }));
-    if (pos < list.length - 1) setAt(pos + 1);
-  };
-
-  const pickSimilar = (id: number, index: number, label: string) =>
-    setThreads((t) => ({ ...t, [id]: (t[id] ?? []).map((x, i) => (i === index && x.kind === 'similar' ? { ...x, picked: label } : x)) }));
 
   const optionText = (item: DiagnosticQuestion, label?: string) => item.options.find((o) => o.label === label)?.text ?? '';
 
@@ -195,24 +124,16 @@ export const ExamReview: React.FC<Props> = ({ title, questions, subjects, answer
     { id: 'all', label: 'All', n: questions.length },
   ];
 
-  const thread = q ? (threads[q.id] ?? []) : [];
-  const last = thread[thread.length - 1];
-  const busy = last?.kind === 'loading';
-  const hasAi = thread.some((x) => x.kind === 'ai');
-  // "Did that make sense?" after every explanation and every answered practice question.
-  const asking =
-    !!q && !settled[q.id] && !busy && (last?.kind === 'ai' || (last?.kind === 'similar' && !!last.picked) || (last?.kind === 'error' && hasAi));
-
   return (
     <div className="ui-page xr">
       {/* The site menu is hidden on /exam: this bar is the way out, and stays in view while scrolling. */}
       <nav className="xr-bar" aria-label="Leave the review">
         <button type="button" className="xr-bar__back" onClick={onExit}>
-          <ArrowLeft size={18} aria-hidden /> Back to dashboard
+          <ArrowLeft size={18} aria-hidden /> {backLabel}
         </button>
         <span className="xr-bar__title">{title}</span>
         <button type="button" className="xr-bar__again" onClick={onRetake}>
-          <RotateCcw size={16} aria-hidden /> <span>New set of questions</span>
+          <RotateCcw size={16} aria-hidden /> <span>{retakeLabel}</span>
         </button>
       </nav>
 
@@ -220,7 +141,7 @@ export const ExamReview: React.FC<Props> = ({ title, questions, subjects, answer
       <section className="ui-card xr-hero">
         <ScoreRing pct={pct} />
         <div className="xr-hero__text">
-          <p className="xr-hero__eyebrow">{timeUp ? 'Time up' : 'Exam submitted'}</p>
+          <p className="xr-hero__eyebrow">{eyebrow ?? (timeUp ? 'Time up' : 'Exam submitted')}</p>
           <h1>{title}</h1>
           <div className="xr-hero__stats">
             <span className="is-right">
@@ -346,9 +267,7 @@ export const ExamReview: React.FC<Props> = ({ title, questions, subjects, answer
               </ul>
 
               <div className="xr-say">
-                <span className={`tutor-avatar${tutor ? ` tutor-avatar--${tutor.id}` : ''}`} aria-hidden>
-                  {tutor ? tutor.name.charAt(0) : <GraduationCap size={16} />}
-                </span>
+                <TutorAvatar tutor={tutor} />
                 <p>{opener(q)}</p>
               </div>
 
@@ -364,125 +283,15 @@ export const ExamReview: React.FC<Props> = ({ title, questions, subjects, answer
                 </div>
               )}
 
-              {!hasAi && !busy && (
-                <button type="button" className="ui-btn ui-btn--primary xr-explain" onClick={() => explain(q)}>
-                  <Sparkles size={18} aria-hidden /> Explain step by step with {tutor?.name ?? 'AI'}
-                </button>
-              )}
-
-              {thread.map((turn, i) => {
-                const latest = i === thread.length - 1;
-                switch (turn.kind) {
-                  case 'ai':
-                    return (
-                      <div key={i} className="xr-ai">
-                        <TutorReply text={turn.text} stepwise={latest} />
-                      </div>
-                    );
-                  case 'tutor':
-                    return (
-                      <div key={i} className="xr-say">
-                        <span className={`tutor-avatar${tutor ? ` tutor-avatar--${tutor.id}` : ''}`} aria-hidden>
-                          {tutor ? tutor.name.charAt(0) : <GraduationCap size={16} />}
-                        </span>
-                        <p>{turn.text}</p>
-                      </div>
-                    );
-                  case 'student':
-                    return (
-                      <p key={i} className="xr-me">
-                        {turn.text}
-                      </p>
-                    );
-                  case 'loading':
-                    return (
-                      <p key={i} className="xr-thinking" role="status">
-                        <i />
-                        <i />
-                        <i /> {turn.text}
-                      </p>
-                    );
-                  case 'error':
-                    return (
-                      <div key={i} className="xr-ai-error" role="alert">
-                        <p>{turn.text}</p>
-                        {turn.out && onUpgrade && (
-                          <button type="button" className="ui-btn ui-btn--primary" onClick={onUpgrade}>
-                            Get more AI credits
-                          </button>
-                        )}
-                      </div>
-                    );
-                  case 'similar': {
-                    const sq = turn.item;
-                    const picked = turn.picked;
-                    return (
-                      <div key={i} className="xr-sim">
-                        <strong className="xr-sim__label">Practice question</strong>
-                        <p className="xr-question">{sq.question}</p>
-                        <div className="xr-sim__opts" role="group" aria-label="Your answer">
-                          {sq.options.map((o) => {
-                            const state = !picked ? '' : o.label === sq.answer ? ' is-key' : o.label === picked ? ' is-mine' : ' is-dim';
-                            return (
-                              <button
-                                key={o.label}
-                                type="button"
-                                className={`xr-sim__opt${state}`}
-                                disabled={!!picked}
-                                onClick={() => pickSimilar(q.id, i, o.label)}
-                              >
-                                <b>{o.label}</b> {o.text}
-                              </button>
-                            );
-                          })}
-                        </div>
-                        {!picked && (
-                          <button type="button" className="xr-sim__skip" onClick={() => skip(q)}>
-                            Skip this one <ChevronsRight size={15} aria-hidden />
-                          </button>
-                        )}
-                        {picked && (
-                          <>
-                            <p className={`xr-sim__result ${picked === sq.answer ? 'is-right' : 'is-wrong'}`}>
-                              {picked === sq.answer ? `Correct, ${firstName}! Well done.` : `Not quite. The answer is ${sq.answer}. Here’s the working:`}
-                            </p>
-                            <div className="xr-ai">
-                              <TutorReply text={sq.why} stepwise={latest} />
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    );
-                  }
-                }
-              })}
-
-              {asking && (
-                <div className="xr-check">
-                  <strong>Did that make sense?</strong>
-                  <div className="xr-check__btns">
-                    <button type="button" className="xr-check__yes" onClick={() => understood(q)}>
-                      <ThumbsUp size={16} aria-hidden /> Yes, I understand
-                    </button>
-                    <button type="button" className="xr-check__no" onClick={() => simpler(q)}>
-                      <X size={16} aria-hidden /> No, explain it more simply
-                    </button>
-                    <button type="button" className="xr-check__more" onClick={() => similar(q)}>
-                      <Repeat size={16} aria-hidden /> Give me a similar question
-                    </button>
-                    <button type="button" className="xr-check__skip" onClick={() => skip(q)}>
-                      <ChevronsRight size={16} aria-hidden /> Skip
-                    </button>
-                  </div>
-                </div>
-              )}
-              {settled[q.id] && !busy && (
-                <div className="xr-check xr-check--done">
-                  <button type="button" className="xr-check__more" onClick={() => similar(q)}>
-                    <Repeat size={16} aria-hidden /> Try a similar question
-                  </button>
-                </div>
-              )}
+              <TutorThread
+                item={q}
+                yourAnswer={answers[q.id]}
+                threads={threads}
+                tutor={tutor}
+                firstName={firstName}
+                onUpgrade={onUpgrade}
+                onSkip={() => pos < list.length - 1 && setAt(pos + 1)}
+              />
 
               <div className="xr-nav">
                 <button type="button" className="ui-btn ui-btn--ghost" onClick={() => setAt(pos - 1)} disabled={pos === 0}>
@@ -506,10 +315,10 @@ export const ExamReview: React.FC<Props> = ({ title, questions, subjects, answer
 
       <div className="xr-actions">
         <button type="button" className="ui-btn ui-btn--ghost" onClick={onExit}>
-          <ArrowLeft size={18} aria-hidden /> Back to dashboard
+          <ArrowLeft size={18} aria-hidden /> {backLabel}
         </button>
         <button type="button" className="ui-btn ui-btn--ghost" onClick={onRetake}>
-          <RotateCcw size={18} aria-hidden /> New set of questions
+          <RotateCcw size={18} aria-hidden /> {retakeLabel}
         </button>
       </div>
     </div>

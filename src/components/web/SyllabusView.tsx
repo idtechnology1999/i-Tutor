@@ -1,13 +1,29 @@
 import React, { useEffect, useState } from 'react';
-import { BadgeCheck, Check, ChevronLeft, ChevronRight, MessageSquareText, RotateCcw, Search, X } from 'lucide-react';
+import { BadgeCheck, Check, ChevronLeft, ChevronRight, ClipboardCheck, MessageSquareText, RotateCcw, Search, Sparkles, X } from 'lucide-react';
 import { EXAM_FULL_NAME, EXAM_LABEL, EXAM_TYPES, needsSchool, useCms } from '../../lib/cms';
 import { SCHOOLS } from '../../lib/schools';
 import type { ExamType } from '../../lib/cms';
-import type { SolveRequest } from '../../data/tutors';
+import type { SolveRequest, TutorPersona } from '../../data/tutors';
+import { useTutorThreads } from '../../lib/useTutorThreads';
+import { TutorThread } from './TutorThread';
+import { ExamReview } from './ExamReview';
 
 /* Past questions, laid out like the CBT room (/exam): one question at a time,
-   subject buttons along the top and a numbered grid. Picking an answer shows
-   straight away whether it's right, and why. */
+   subject buttons along the top and a numbered grid. Two ways to check:
+   - During: picking an answer shows straight away whether it's right, and the
+     tutor explains it right under the question (TutorThread).
+   - After: pick answers freely, then Submit & review for the tutor-led review
+     used after a practice exam (ExamReview). */
+
+type CheckMode = 'during' | 'after';
+const MODE_KEY = 'itutor-pq-check';
+const savedMode = (): CheckMode => {
+  try {
+    return window.localStorage.getItem(MODE_KEY) === 'after' ? 'after' : 'during';
+  } catch {
+    return 'during';
+  }
+};
 
 interface Props {
   onOpenTutor?: () => void;
@@ -23,12 +39,17 @@ interface Props {
   solveLabel?: string;
   /** Label for the Ask button on every question ("Ask AI" / "Ask Tobi"). */
   askLabel?: string;
+  /** Premium: the student's own tutor, who explains on the page. */
+  tutor?: TutorPersona;
+  firstName?: string;
+  /** Out of AI credits: go and get more. */
+  onUpgrade?: () => void;
 }
 
 // Always offered, even before questions exist, so the layout stays familiar.
 const CORE_SUBJECTS = ['English', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Economics'];
 
-export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initialSchool, exams, subjectsFor, onSolve, solveLabel, askLabel }) => {
+export const SyllabusView: React.FC<Props> = ({ initialExam, initialSchool, exams, subjectsFor, solveLabel, askLabel, tutor, firstName = 'there', onUpgrade }) => {
   // Only the student's own exams (JAMB first); everything if none chosen yet.
   const examTabs = exams?.length ? EXAM_TYPES.filter((t) => exams.includes(t)) : EXAM_TYPES;
   const [exam, setExam] = useState<ExamType>(
@@ -44,8 +65,14 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initia
   const [year, setYear] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [index, setIndex] = useState(0);
-  // The option the student tried for each question.
+  // The option the student tried for each question (During).
   const [tried, setTried] = useState<Record<number, string>>({});
+  // After: answers kept to themselves until Submit & review.
+  const [mode, setMode] = useState<CheckMode>(savedMode);
+  const [picks, setPicks] = useState<Record<number, string>>({});
+  const [reviewing, setReviewing] = useState(false);
+  const threads = useTutorThreads({ tutor, firstName });
+  const after = mode === 'after';
 
   const published = questions.filter((q) => q.status === 'published');
   const bySchool = needsSchool(exam);
@@ -82,14 +109,30 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initia
     setSelectedSubject(s);
     restart();
   };
-  const answer = (label: string) => q && tried[q.id] === undefined && setTried((t) => ({ ...t, [q.id]: label }));
-  const tryAgain = () =>
-    q &&
+  const answer = (label: string) => {
+    if (!q) return;
+    // After: any option, changeable until Submit & review. During: one try, then the result.
+    if (after) setPicks((x) => ({ ...x, [q.id]: label }));
+    else if (tried[q.id] === undefined) setTried((t) => ({ ...t, [q.id]: label }));
+  };
+  const tryAgain = () => {
+    if (!q) return;
+    threads.reset(q.id);
     setTried((t) => {
       const next = { ...t };
       delete next[q.id];
       return next;
     });
+  };
+  const switchMode = (m: CheckMode) => {
+    setMode(m);
+    setReviewing(false);
+    try {
+      window.localStorage.setItem(MODE_KEY, m);
+    } catch {
+      /* not remembered when storage is blocked */
+    }
+  };
   const go = (i: number) => setIndex(Math.max(0, Math.min(list.length - 1, i)));
 
   // Same keys as the CBT room: A–D answer, N next, P previous.
@@ -108,20 +151,41 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initia
     return () => window.removeEventListener('keydown', onKey);
   });
 
-  const solve = () =>
-    q &&
-    onSolve?.({
-      subject: q.subject,
-      question: q.question,
-      options: q.options,
-      correctAnswer: q.correctAnswer,
-      explanation: q.explanation,
-      yourAnswer: tried[q.id],
-      topic: q.topic,
-    });
+  /** The tutor explains this question here, under it (not in the side panel). */
+  const solve = () => q && threads.thread(q.id).length === 0 && threads.explain(q, tried[q.id]);
 
-  const pick = q ? tried[q.id] : undefined;
-  const answered = pick !== undefined;
+  const pick = q ? (after ? picks[q.id] : tried[q.id]) : undefined;
+  // After: nothing is marked until the review.
+  const answered = !after && pick !== undefined;
+  const pickedHere = list.filter((x) => picks[x.id]).length;
+
+  if (reviewing) {
+    return (
+      <ExamReview
+        title={`${paperName} ${subject} past questions`}
+        questions={list}
+        subjects={[subject]}
+        answers={picks}
+        firstName={firstName}
+        timeUp={false}
+        tutor={tutor}
+        eyebrow="Your answers"
+        backLabel="Back to questions"
+        retakeLabel="Try these again"
+        onExit={() => setReviewing(false)}
+        onRetake={() => {
+          setPicks((x) => {
+            const next = { ...x };
+            for (const item of list) delete next[item.id];
+            return next;
+          });
+          setReviewing(false);
+          restart();
+        }}
+        onUpgrade={onUpgrade}
+      />
+    );
+  }
   const right = q ? pick === q.correctAnswer : false;
 
   return (
@@ -129,7 +193,7 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initia
       <header className="jamb__top pq-cbt__top">
         <div className="jamb__brand">
           <strong>{paperName} past questions</strong>
-          <span>i-Tutor CBT · practice mode, no timer</span>
+          <span>i-Tutor CBT · {after ? 'check your answers at the end' : 'see each answer as you go'}, no timer</span>
         </div>
         <div className="pq-cbt__picks">
           {examTabs.length > 1 && (
@@ -187,11 +251,9 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initia
             </select>
           </label>
         </div>
-        <div className="jamb__time pq-cbt__score" aria-label="Your score">
-          <small>Score</small>
-          <strong>
-            {rightCount}/{triedIds.length}
-          </strong>
+        <div className="jamb__time pq-cbt__score" aria-label={after ? 'Answered' : 'Your score'}>
+          <small>{after ? 'Answered' : 'Score'}</small>
+          <strong>{after ? `${pickedHere}/${list.length}` : `${rightCount}/${triedIds.length}`}</strong>
         </div>
       </header>
 
@@ -202,12 +264,21 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initia
             <button key={s} type="button" className={s === subject ? 'is-on' : ''} onClick={() => pickSubject(s)} aria-current={s === subject ? 'true' : undefined}>
               {s}
               <small>
-                {qs.filter((x) => tried[x.id] !== undefined).length}/{qs.length}
+                {qs.filter((x) => (after ? picks[x.id] : tried[x.id]) !== undefined).length}/{qs.length}
               </small>
             </button>
           );
         })}
         <span className="jamb__tools pq-cbt__tools">
+          <span className="pq-cbt__mode" role="group" aria-label="When to check answers">
+            <small>Check answers</small>
+            <button type="button" className={!after ? 'is-on' : ''} aria-pressed={!after} onClick={() => switchMode('during')}>
+              During
+            </button>
+            <button type="button" className={after ? 'is-on' : ''} aria-pressed={after} onClick={() => switchMode('after')}>
+              After
+            </button>
+          </span>
           <label className="pq-cbt__search">
             <Search size={16} aria-hidden />
             <input
@@ -245,8 +316,9 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initia
                   {q.topic ? ` · ${q.topic}` : ''}
                 </span>
               </h2>
-              {onSolve && (
-                <button type="button" className="jamb__hint" onClick={() => solve()}>
+              {/* After: no help mid-way, the tutor comes in the review. */}
+              {!after && (
+                <button type="button" className="jamb__hint" onClick={solve}>
                   <MessageSquareText size={15} aria-hidden /> {askLabel ?? 'Ask AI'}
                 </button>
               )}
@@ -260,7 +332,7 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initia
                 const isKey = o.label === q.correctAnswer;
                 const state = !answered ? '' : isKey ? ' is-right' : isPick ? ' is-wrong' : ' is-dim';
                 return (
-                  <label key={o.label} className={`jamb__option pq-cbt__option${state}`}>
+                  <label key={o.label} className={`jamb__option pq-cbt__option${state}${after && isPick ? ' is-on' : ''}`}>
                     <input type="radio" name={`pq${q.id}`} checked={isPick} disabled={answered} onChange={() => answer(o.label)} />
                     <b>{o.label}.</b>
                     <span>{o.text}</span>
@@ -279,18 +351,28 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initia
                   <button type="button" className="ui-link" onClick={tryAgain}>
                     <RotateCcw size={16} aria-hidden /> Try again
                   </button>
-                  {onSolve ? (
-                    <button type="button" className="ui-link" onClick={() => solve()}>
-                      <MessageSquareText size={16} aria-hidden /> {solveLabel ?? 'Solve with my tutor'}
+                  {threads.thread(q.id).length === 0 && (
+                    <button type="button" className="ui-link" onClick={solve}>
+                      <Sparkles size={16} aria-hidden /> {solveLabel ?? 'Explain step by step'}
                     </button>
-                  ) : (
-                    onOpenTutor && (
-                      <button type="button" className="ui-link" onClick={onOpenTutor}>
-                        <MessageSquareText size={16} aria-hidden /> Ask the tutor
-                      </button>
-                    )
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* The tutor's conversation, right here under the question. */}
+            {!after && threads.thread(q.id).length > 0 && (
+              <div className="pq-cbt__tutor">
+                <TutorThread
+                  item={q}
+                  yourAnswer={tried[q.id]}
+                  threads={threads}
+                  tutor={tutor}
+                  firstName={firstName}
+                  hideStart
+                  onUpgrade={onUpgrade}
+                  onSkip={() => go(at + 1)}
+                />
               </div>
             )}
           </section>
@@ -305,19 +387,25 @@ export const SyllabusView: React.FC<Props> = ({ onOpenTutor, initialExam, initia
               <button type="button" className="jamb__btn" onClick={() => go(at + 1)} disabled={at >= list.length - 1}>
                 Next <ChevronRight size={18} aria-hidden />
               </button>
+              {after && (
+                <button type="button" className="jamb__btn pq-cbt__submit" onClick={() => setReviewing(true)} disabled={!pickedHere}>
+                  <ClipboardCheck size={18} aria-hidden /> Submit &amp; review ({pickedHere}/{list.length})
+                </button>
+              )}
             </div>
 
             <div className="jamb__grid" role="group" aria-label={`${subject} questions`}>
               {list.map((x, i) => {
-                const t = tried[x.id];
-                const mark = t === undefined ? '' : t === x.correctAnswer ? ' is-right' : ' is-wrong';
+                const t = after ? picks[x.id] : tried[x.id];
+                // After: only "answered", never right or wrong, until the review.
+                const mark = t === undefined ? '' : after ? ' is-done' : t === x.correctAnswer ? ' is-right' : ' is-wrong';
                 return (
                   <button
                     key={x.id}
                     type="button"
                     className={`${i === at ? 'is-current' : ''}${mark}`}
                     onClick={() => go(i)}
-                    aria-label={`Question ${i + 1}${mark ? (mark === ' is-right' ? ', right' : ', wrong') : ''}`}
+                    aria-label={`Question ${i + 1}${mark === ' is-right' ? ', right' : mark === ' is-wrong' ? ', wrong' : mark ? ', answered' : ''}`}
                   >
                     {i + 1}
                   </button>

@@ -673,3 +673,33 @@
   .pq-cbt__picks .pq-cbt__exam { flex: 1 1 140px; }
   .pq-cbt__picks .pq-cbt__exam select { width: 100%; min-width: 0; }
 }
+
+/* Past questions: check answers During / After, and the tutor on the page */
+.pq-cbt__mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line-strong);
+  border-radius: 99px;
+  background: var(--white);
+}
+.pq-cbt__mode small { padding: 0 8px 0 10px; font-size: 0.75rem; font-weight: 600; color: var(--slate-500); }
+.pq-cbt__tools .pq-cbt__mode button {
+  min-height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 99px;
+  background: transparent;
+  font-size: 0.85rem;
+}
+.pq-cbt__tools .pq-cbt__mode button.is-on { background: var(--teal-900); color: var(--white); }
+.pq-cbt__submit { margin-left: auto; background: var(--teal-900) !important; color: var(--white) !important; }
+.pq-cbt__submit:disabled { opacity: 0.45; }
+.pq-cbt__tutor { display: grid; gap: 14px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+
+@media (max-width: 720px) {
+  .pq-cbt__mode { width: 100%; justify-content: space-between; }
+  .pq-cbt__tools .pq-cbt__mode button { flex: 1; }
+  .pq-cbt__submit { margin-left: 0; width: 100%; justify-content: center; }
+}

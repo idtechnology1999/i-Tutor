@@ -328,6 +328,9 @@ export function App() {
             initialSchool={pq.school}
             exams={examsOf(profile)}
             subjectsFor={(exam) => subjectsFor(profile, exam)}
+            tutor={tutor}
+            firstName={profile.fullName.split(' ')[0] || 'there'}
+            onUpgrade={() => goTo('upgrade')}
           />
         )}
 
