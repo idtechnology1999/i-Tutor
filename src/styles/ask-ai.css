@@ -798,11 +798,13 @@
 /* The header's profile circle as the AI allowance ring (Navbar AvatarRing) */
 .site-nav__avatar { position: relative; overflow: visible; }
 .avatar-ring {
+  /* Centred on the 40px circle itself, whatever the header's layout does. */
   position: absolute;
-  inset: -5px;
-  width: calc(100% + 10px);
-  height: calc(100% + 10px);
-  transform: rotate(-90deg);
+  top: 50%;
+  left: 50%;
+  width: 46px;
+  height: 46px;
+  transform: translate(-50%, -50%) rotate(-90deg);
   pointer-events: none;
   --ring: var(--ok);
 }

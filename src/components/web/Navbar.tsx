@@ -77,13 +77,15 @@ const RouteLink: React.FC<{
 /** The profile circle doubles as the AI allowance ring: what's left, in the
     same green / orange / red as the ring in the tutor. */
 const AvatarRing: React.FC<{ credits: Credits }> = ({ credits }) => {
-  const r = 22;
+  // 46px box, 3px stroke on radius 21.5: the ring's inside edge is exactly
+  // the 40px profile circle, so the two sit flush.
+  const r = 21.5;
   const length = 2 * Math.PI * r;
   const share = credits.total ? Math.min(1, credits.left / credits.total) : 0;
   return (
-    <svg className={`avatar-ring is-${creditLevel(credits)}`} viewBox="0 0 50 50" aria-hidden>
-      <circle className="avatar-ring__track" cx="25" cy="25" r={r} />
-      <circle className="avatar-ring__bar" cx="25" cy="25" r={r} strokeDasharray={length} strokeDashoffset={length * (1 - share)} />
+    <svg className={`avatar-ring is-${creditLevel(credits)}`} width="46" height="46" viewBox="0 0 46 46" aria-hidden>
+      <circle className="avatar-ring__track" cx="23" cy="23" r={r} />
+      <circle className="avatar-ring__bar" cx="23" cy="23" r={r} strokeDasharray={length} strokeDashoffset={length * (1 - share)} />
     </svg>
   );
 };
