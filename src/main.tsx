@@ -16,6 +16,9 @@ import './styles/theme.css'
 import './styles/cms.css'
 import './styles/exam-review.css'
 import App from './App.tsx'
+import { reportErrors } from './lib/report-errors'
+
+reportErrors()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
