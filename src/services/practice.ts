@@ -284,3 +284,41 @@ export function useExamCounts(exam: RealExam): (subject: string) => number {
     return row ? row.past + row.practice : 0;
   };
 }
+
+/* --------------------------------------------- Admin: AI answer double-check */
+
+export interface AnswerVerdict {
+  id: string;
+  ok: boolean;
+  checkerAnswer: string;
+  note: string;
+}
+
+/** A second AI solves each question without its answer (backend ai/verify.ts). Null when it can't run (demo mode or no AI). */
+export async function checkAnswers(
+  items: Array<{ id: string; subject: string; question: string; options: Array<{ label: string; text: string }>; answer: string }>,
+): Promise<AnswerVerdict[] | null> {
+  if (!isLive || !items.length) return null;
+  const out: AnswerVerdict[] = [];
+  for (let i = 0; i < items.length; i += 20) {
+    out.push(...(await api<AnswerVerdict[]>('/api/admin/verify-answers', { method: 'POST', body: { questions: items.slice(i, i + 20) }, timeout: 120_000 })));
+  }
+  return out;
+}
+
+/** Marks AI-written drafts: the ones the checker agrees with are cleared, the rest keep a note saying why to look. */
+export async function doubleCheckDrafts<T extends Pick<QuestionDraft, 'subject' | 'question' | 'options' | 'correctAnswer' | 'needsReview' | 'reviewNote'>>(
+  drafts: T[],
+): Promise<T[]> {
+  const verdicts = await checkAnswers(
+    drafts.map((d, i) => ({ id: String(i), subject: d.subject, question: d.question, options: d.options, answer: d.correctAnswer })),
+  ).catch(() => null);
+  if (!verdicts) return drafts;
+  return drafts.map((d, i) => {
+    const v = verdicts.find((x) => x.id === String(i));
+    if (!v) return d;
+    return v.ok
+      ? { ...d, needsReview: false, reviewNote: 'Answer double-checked by a second AI.' }
+      : { ...d, needsReview: true, reviewNote: `Check this one: ${v.note}` };
+  });
+}

@@ -3,6 +3,7 @@ import type { CmsQuestion, CmsSubject, QuestionDraft } from './cms';
 import { syllabusTopics } from '../data/waec-syllabus';
 import type { SyllabusChoice } from '../data/waec-syllabus';
 import { examInfo, isBySchool } from './exams';
+import { doubleCheckDrafts } from '../services/practice';
 import { organiseWithAI } from './question-import';
 
 /** How each exam is named to the AI ('' = questions that suit every exam). */
@@ -111,7 +112,7 @@ export async function writePracticeQuestions(opts: {
       });
       if (res.engine !== 'ai') throw new Error(res.fallbackReason ?? 'The AI isn’t connected, so it can’t write questions.');
       const names = batch.map((b) => b.topic);
-      const drafts: QuestionDraft[] = res.questions
+      const fresh: QuestionDraft[] = res.questions
         .filter((q) => {
           const k = questionKey(q.question);
           if (!k || seen.has(k)) return false;
@@ -135,6 +136,8 @@ export async function writePracticeQuestions(opts: {
           needsReview: true,
           reviewNote: q.reviewNote || 'AI-written — check the answer, then publish.',
         }));
+      // A second AI solves each one without the answer; only disagreements stay flagged for review.
+      const drafts = await doubleCheckDrafts(fresh);
       const label = `AI wrote ${drafts.length} ${subject} practice questions (${names.join(', ')}).`;
       if (drafts.length) await (opts.save ?? ((d, l) => cms.addQuestions(d, l)))(drafts, label);
       written += drafts.length;

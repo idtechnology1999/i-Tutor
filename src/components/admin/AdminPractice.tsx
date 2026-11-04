@@ -13,6 +13,7 @@ import type { Recogniser } from '../../lib/speech';
 import {
   addPractice,
   deletePractice,
+  doubleCheckDrafts,
   getPracticeSettings,
   listPractice,
   practiceSummary,
@@ -499,6 +500,31 @@ export const AdminPractice: React.FC<{ nav: AdminNav }> = ({ nav }) => {
     );
   };
 
+  // A second AI solves the selected questions without their answers; disagreements are flagged for review.
+  const [checking, setChecking] = useState(false);
+  const bulkCheck = async () => {
+    const chosen = rows.filter((q) => selected.has(q.id) && q.correctAnswer);
+    if (!chosen.length) return nav.notify('Choose questions that have an answer to check.');
+    setChecking(true);
+    try {
+      const checked = await doubleCheckDrafts(chosen);
+      if (checked === chosen) return nav.notify('Answers can only be checked on the live site, with the AI switched on.');
+      await Promise.all(checked.map((q) => updatePractice(q.id, { needsReview: q.needsReview, reviewNote: q.reviewNote })));
+      const flagged = checked.filter((q) => q.needsReview).length;
+      nav.notify(
+        flagged
+          ? `Checked ${checked.length}: ${flagged} need${flagged === 1 ? 's' : ''} a look (marked “needs review”, with the reason).`
+          : `Checked ${checked.length}: the second AI agrees with every answer.`,
+      );
+    } catch (e) {
+      nav.notify((e as Error).message);
+    } finally {
+      setChecking(false);
+      setSelected(new Set());
+      reload();
+    }
+  };
+
   const from = data && data.total ? (data.page - 1) * PAGE + 1 : 0;
   const to = data ? Math.min(data.page * PAGE, data.total) : 0;
 
@@ -826,6 +852,9 @@ export const AdminPractice: React.FC<{ nav: AdminNav }> = ({ nav }) => {
           <strong>{selected.size} selected</strong>
           <button type="button" className="adm-btn adm-btn--primary" onClick={bulkPublish}>
             Publish
+          </button>
+          <button type="button" className="adm-btn" onClick={() => void bulkCheck()} disabled={checking} title="A second AI solves them without the answers">
+            {checking ? <LoaderCircle size={16} className="adm-spin" aria-hidden /> : <CheckSquare size={16} aria-hidden />} {checking ? 'Checking…' : 'Double-check answers'}
           </button>
           <button type="button" className="adm-btn" onClick={() => void change(setPracticeStatus([...selected], 'draft'), 'Moved to drafts.')}>
             Move to drafts
