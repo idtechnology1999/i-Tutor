@@ -3341,3 +3341,16 @@
 .adm-px__import { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; margin: -8px 0 20px; padding: 14px 18px; border: 1px dashed var(--rule); border-radius: 16px; }
 .adm-px__import strong { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); }
 .adm-px__import p { margin: 4px 0 0; font-size: 0.88rem; max-width: 70ch; }
+
+/* Sidebar: the menu scrolls on its own, so "Sign out" at the bottom is always
+   on screen, however many sections there are or however short the window. */
+@media (min-width: 901px) {
+  .adm-side { overflow: hidden; }
+  .adm-side__nav { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin: 0 -6px; padding: 0 6px; }
+  .adm-side__foot { margin-top: 0; flex: none; padding-top: 10px; border-top: 1px solid var(--rule); }
+}
+@media (min-width: 901px) and (max-height: 820px) {
+  .adm-side { gap: 12px; padding-top: 14px; padding-bottom: 14px; }
+  .adm-side__item { min-height: 36px; }
+  .adm-side__foot .adm-mode { margin-bottom: 4px; }
+}
