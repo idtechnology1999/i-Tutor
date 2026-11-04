@@ -217,10 +217,11 @@ export interface PracticeSet {
   past: number;
 }
 
-/** A fresh random practice set for one exam and subject (never the same twice). */
-export async function getPracticeSet(exam: RealExam, subject: string, size?: number): Promise<PracticeSet> {
+/** A fresh random practice set for one exam and subject (never the same twice). `from` overrides the exam's setting. */
+export async function getPracticeSet(exam: RealExam, subject: string, size?: number, from?: Source): Promise<PracticeSet> {
   if (!isLive) {
-    const s = demoSettings().find((x) => x.exam === exam) ?? defaults(exam);
+    const saved = demoSettings().find((x) => x.exam === exam) ?? defaults(exam);
+    const s = from ? { ...saved, source: from } : saved;
     const total = size ?? s.size;
     const live = localQuestions().filter((q) => q.status === 'published' && q.subject === subject);
     const practicePool = live.filter((q) => q.examType === PRACTICE && (!q.target || q.target === exam));
@@ -234,7 +235,7 @@ export async function getPracticeSet(exam: RealExam, subject: string, size?: num
       practice = [...practice, ...spread(practicePool.filter((q) => !practice.includes(q)), total - past.length - practice.length)];
     return { questions: shuffle([...practice, ...past]), practice: practice.length, past: past.length };
   }
-  const params = new URLSearchParams({ exam, subject, ...(size ? { size: String(size) } : {}) });
+  const params = new URLSearchParams({ exam, subject, ...(size ? { size: String(size) } : {}), ...(from ? { from } : {}) });
   return api<PracticeSet>(`/api/practice/set?${params}`);
 }
 
