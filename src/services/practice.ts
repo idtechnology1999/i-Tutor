@@ -219,12 +219,14 @@ export interface PracticeSet {
 }
 
 /** A fresh random practice set for one exam and subject (never the same twice). `from` overrides the exam's setting. */
-export async function getPracticeSet(exam: RealExam, subject: string, size?: number, from?: Source): Promise<PracticeSet> {
+export async function getPracticeSet(exam: RealExam, subject: string, size?: number, from?: Source, topic?: string): Promise<PracticeSet> {
   if (!isLive) {
     const saved = demoSettings().find((x) => x.exam === exam) ?? defaults(exam);
     const s = from ? { ...saved, source: from } : saved;
     const total = size ?? s.size;
-    const live = localQuestions().filter((q) => q.status === 'published' && q.subject === subject);
+    const live = localQuestions().filter(
+      (q) => q.status === 'published' && q.subject === subject && (!topic || q.topic.trim().toLowerCase() === topic.trim().toLowerCase()),
+    );
     const practicePool = live.filter((q) => q.examType === PRACTICE && (!q.target || q.target === exam));
     const pastPool = live.filter((q) => q.examType === exam);
     const wantPast = s.source === 'past' ? total : s.source === 'practice' ? 0 : Math.round((total * s.pastShare) / 100);
@@ -236,7 +238,7 @@ export async function getPracticeSet(exam: RealExam, subject: string, size?: num
       practice = [...practice, ...spread(practicePool.filter((q) => !practice.includes(q)), total - past.length - practice.length)];
     return { questions: shuffle([...practice, ...past]), practice: practice.length, past: past.length };
   }
-  const params = new URLSearchParams({ exam, subject, ...(size ? { size: String(size) } : {}), ...(from ? { from } : {}) });
+  const params = new URLSearchParams({ exam, subject, ...(size ? { size: String(size) } : {}), ...(from ? { from } : {}), ...(topic ? { topic } : {}) });
   return api<PracticeSet>(`/api/practice/set?${params}`);
 }
 

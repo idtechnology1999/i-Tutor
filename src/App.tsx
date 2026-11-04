@@ -161,8 +161,11 @@ export function App() {
       /* not persisted when storage is blocked */
     }
   };
-  const launchExam = (subject?: DiagnosticQuestion['subject']) => {
+  // Weak-topic practice: one subject, one topic.
+  const [examTopic, setExamTopic] = useState<string | undefined>();
+  const launchExam = (subject?: DiagnosticQuestion['subject'], topic?: string) => {
     setExamSubject(subject);
+    setExamTopic(subject ? topic : undefined);
     setExamCourse(undefined);
     goTo('cbt');
   };
@@ -170,6 +173,7 @@ export function App() {
   const [pq, setPq] = useState<{ exam?: ExamType; school?: string }>({});
   const launchCourseExam = (course: { name: string; subjects: string[]; exam?: string; school?: string }) => {
     setExamSubject(undefined);
+    setExamTopic(undefined);
     setExamCourse(course);
     goTo('cbt');
   };
@@ -293,9 +297,10 @@ export function App() {
             onSolve={solveWithTutor}
             solveLabel={solveLabel}
             askLabel={askLabel}
-            key={examCourse ? `${examCourse.exam ?? 'UTME'}-${examCourse.school ?? ''}-${examCourse.name}` : (examSubject ?? 'any')}
+            key={examCourse ? `${examCourse.exam ?? 'UTME'}-${examCourse.school ?? ''}-${examCourse.name}` : `${examSubject ?? 'any'}-${examTopic ?? ''}`}
             profile={profile}
             presetSubject={examSubject}
+            presetTopic={examTopic}
             presetCourse={examCourse}
             onExit={() => {
               setExamSubject(undefined);

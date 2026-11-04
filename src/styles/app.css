@@ -3667,3 +3667,34 @@ body.cbt-active {
 
 /* While a page's code downloads (first visit to that page) */
 .page-loading { min-height: 60vh; }
+
+/* Dashboard: weak-topic practice and the predictor hint */
+.dash__weak {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid #f1d3b0;
+  border-radius: 12px;
+  background: #fff6ec;
+  color: var(--text, #0b1f1e);
+  font: inherit;
+  font-size: 0.88rem;
+  text-align: left;
+  cursor: pointer;
+}
+.dash__weak:hover { border-color: #e2a35c; }
+.dash__weak svg { margin-left: auto; flex: none; }
+.dash__hint { margin: 8px 0 0; font-size: 0.85rem; color: var(--text-muted, #5c6d6c); }
+
+/* Profile: daily reminder switch */
+.profile__remind { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.profile__remind p { margin: 4px 0 0; color: var(--text-muted, #5c6d6c); font-size: 0.92rem; }
+.profile__switch { display: inline-flex; align-items: center; gap: 8px; flex: none; border: 0; background: none; font: inherit; font-weight: 700; color: var(--text-muted, #5c6d6c); cursor: pointer; min-height: 44px; }
+.profile__switch i { position: relative; width: 44px; height: 26px; border-radius: 999px; background: #cfd8d7; transition: background 0.15s; }
+.profile__switch i::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); transition: transform 0.15s; }
+.profile__switch.is-on { color: var(--teal-700, #0e3b3a); }
+.profile__switch.is-on i { background: var(--teal-700, #0e3b3a); }
+.profile__switch.is-on i::after { transform: translateX(18px); }

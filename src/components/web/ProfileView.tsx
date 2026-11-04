@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { examsLabel, examsOf } from '../../lib/student-exams';
-import { ArrowLeft, BadgeCheck, GraduationCap, LockOpen, LogOut, PencilLine, Target } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, Bell, GraduationCap, LockOpen, LogOut, PencilLine, Target } from 'lucide-react';
+import { setReminders, useProgress } from '../../services/progress';
 import type { UserProfile } from '../../types';
 import { SetupWizardView } from './SetupWizardView';
 
@@ -15,6 +16,7 @@ interface Props {
 export const ProfileView: React.FC<Props> = ({ profile, onUpdateProfile, onUpgrade, onLogOut }) => {
   const [editing, setEditing] = useState(false);
   const isPremium = profile.plan === 'premium';
+  const progress = useProgress();
 
   if (editing) {
     return (
@@ -107,6 +109,28 @@ export const ProfileView: React.FC<Props> = ({ profile, onUpdateProfile, onUpgra
           ))}
         </ul>
       </section>
+
+      {/* The daily "you haven't practised today" reminder (only for saved, signed-in progress). */}
+      {progress?.synced && (
+        <section className="ui-card profile__remind">
+          <div>
+            <h2 className="profile__h2">
+              <Bell size={18} aria-hidden /> Daily reminder
+            </h2>
+            <p>An evening reminder on days you haven’t practised yet{progress.streak.current > 1 ? `, to keep your ${progress.streak.current}-day streak` : ''}.</p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={progress.remindersOn !== false}
+            className={`profile__switch${progress.remindersOn !== false ? ' is-on' : ''}`}
+            onClick={() => void setReminders(progress.remindersOn === false)}
+          >
+            <i aria-hidden />
+            <span>{progress.remindersOn !== false ? 'On' : 'Off'}</span>
+          </button>
+        </section>
+      )}
 
       <button type="button" className="ui-btn ui-btn--ghost profile__logout" onClick={onLogOut}>
         <LogOut size={18} aria-hidden /> Log out

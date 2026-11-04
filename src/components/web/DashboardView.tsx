@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useCredits } from '../../services/credits';
 import { CreditCard } from './CreditRing';
 import {
@@ -17,7 +17,7 @@ import {
 import type { DiagnosticQuestion, UserProfile } from '../../types';
 import { useCms } from '../../lib/cms';
 import { JAMB_SUBJECTS, findInstitution } from '../../data/nigerian-curriculum';
-import { masteryOf, readProgress } from '../../lib/progress';
+import { refreshProgress, useProgress } from '../../services/progress';
 import type { ExamType } from '../../lib/cms';
 import type { StudentExam } from '../../types';
 import { SCHOOL_CERT_EXAMS, defaultExam, examsOf, subjectsFor } from '../../lib/student-exams';
@@ -31,7 +31,8 @@ type Subject = DiagnosticQuestion['subject'];
 
 interface Props {
   profile: UserProfile;
-  onLaunchCBT: (subject?: Subject) => void;
+  /** Start a practice exam; with a topic, 20 questions on just that topic. */
+  onLaunchCBT: (subject?: Subject, topic?: string) => void;
   onOpenSyllabus: () => void;
   onOpenTutor: () => void;
   onUpgrade: () => void;
@@ -86,7 +87,15 @@ export const DashboardView: React.FC<Props> = ({
     'English',
     ...profile.selectedSubjects.map((s) => (s === 'English Language' ? 'English' : s)).filter((s) => s !== 'English'),
   ].slice(0, 4);
-  const progress = readProgress();
+  // Progress saved on the account (or this browser when signed out): scores,
+  // weak topics, streak and the predicted JAMB score.
+  const summary = useProgress();
+  useEffect(() => {
+    void refreshProgress();
+  }, []);
+  const subjectSummary = (s: string) => summary?.subjects.find((x) => x.subject === s);
+  const streak = summary?.streak;
+  const prediction = summary?.prediction;
   const subjectLabel = (s: string) => (s === 'English' ? 'Use of English' : (JAMB_SUBJECTS.find((j) => j.name === s)?.label ?? s));
   // The school picked at registration sets the student's Post-UTME.
   const school = findInstitution(profile.targetInstitution);
@@ -95,7 +104,9 @@ export const DashboardView: React.FC<Props> = ({
     : [];
   const schoolSubjects = [...new Set(schoolQs.map((q) => q.subject))];
   const firstName = profile.fullName.split(' ')[0] || 'there';
-  const projected = Math.round(160 + (profile.diagnosticScore / 100) * 200);
+  // The predicted score once each subject has enough answers; until then the starting test's estimate.
+  const predicted = prediction?.score ?? null;
+  const projected = predicted ?? Math.round(160 + (profile.diagnosticScore / 100) * 200);
   const gap = profile.targetScore - projected;
   const doneCount = TASKS.filter((t) => t.done).length;
   const nextTask = TASKS.find((t) => !t.done);
@@ -111,7 +122,10 @@ export const DashboardView: React.FC<Props> = ({
         focus="60% 12%"
         eyebrow={
           <>
-            <Flame size={15} aria-hidden /> 4-day streak
+            <Flame size={15} aria-hidden />{' '}
+            {streak?.current
+              ? `${streak.current}-day streak${streak.today ? '' : ' · practise today to keep it'}`
+              : 'Start your streak today'}
           </>
         }
         title={
@@ -230,7 +244,11 @@ export const DashboardView: React.FC<Props> = ({
             <div>
               <span className="dash__big">{projected}</span>
               <span className="dash__of">/ 400</span>
-              <p>Likely score today</p>
+              <p>
+                {predicted !== null && prediction
+                  ? `At this rate (about ${prediction.low}–${prediction.high})`
+                  : 'Estimate from your starting test'}
+              </p>
             </div>
             <div className="dash__goal">
               <span className="dash__big dash__big--muted">{profile.targetScore}</span>
@@ -246,6 +264,11 @@ export const DashboardView: React.FC<Props> = ({
               ? `${gap} more marks to reach your goal for ${profile.targetCourse}.`
               : `You’re above your goal for ${profile.targetCourse}. Keep it up.`}
           </p>
+          {prediction && predicted === null && (
+            <p className="dash__hint">
+              Answer at least 10 questions in {prediction.needMore.map(subjectLabel).join(', ')} to see your predicted JAMB score from your practice.
+            </p>
+          )}
         </section>
 
         {/* ---------------------------------------------------- Subjects */}
@@ -253,9 +276,10 @@ export const DashboardView: React.FC<Props> = ({
           <h3>My subjects</h3>
           <ul>
             {mySubjects.map((s) => {
-              const p = progress[s];
-              const mastery = masteryOf(p);
+              const p = subjectSummary(s);
+              const mastery = p?.accuracy ?? null;
               const l = mastery === null ? null : level(mastery);
+              const weak = p?.weakTopic ? p.topics.find((t) => t.topic === p.weakTopic) : undefined;
               return (
                 <li key={s}>
                   <div className="dash__subj-top">
@@ -266,15 +290,17 @@ export const DashboardView: React.FC<Props> = ({
                     <i style={{ width: `${mastery ?? 0}%` }} />
                   </div>
                   <div className="dash__subj-foot">
-                    <span>
-                      {mastery === null
-                        ? 'No practice yet'
-                        : `${mastery}% · ${p?.weakTopic ? `work on: ${p.weakTopic}` : `${p?.answered ?? 0} questions answered`}`}
-                    </span>
+                    <span>{mastery === null ? 'No practice yet' : `${mastery}% · ${p?.answered ?? 0} questions answered`}</span>
                     <button type="button" onClick={() => onLaunchCBT(s)}>
                       Practise <ArrowRight size={14} aria-hidden />
                     </button>
                   </div>
+                  {/* Weak-topic practice: the topic they miss most. */}
+                  {weak && (
+                    <button type="button" className="dash__weak" onClick={() => onLaunchCBT(s, weak.topic)}>
+                      You got {weak.correct} of {weak.total} in <b>{weak.topic}</b>. Practise 20 on it <ArrowRight size={14} aria-hidden />
+                    </button>
+                  )}
                 </li>
               );
             })}

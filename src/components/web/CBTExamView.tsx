@@ -8,6 +8,7 @@ import { recordResult } from '../../lib/progress';
 import type { SolveRequest } from '../../data/tutors';
 import { tutorById } from '../../data/tutors';
 import { ExamReview } from './ExamReview';
+import { saveAttempt } from '../../services/progress';
 import { getPracticeSet } from '../../services/practice';
 import type { RealExam } from '../../services/practice';
 import { defaultExam, examsOf } from '../../lib/student-exams';
@@ -29,6 +30,8 @@ interface Props {
   onOpenTutor?: () => void;
   /** Practise one subject. */
   presetSubject?: DiagnosticQuestion['subject'];
+  /** With presetSubject: just this topic (weak-topic practice from the dashboard). */
+  presetTopic?: string;
   /** Course or Post-UTME practice: its subjects, exam and school. */
   presetCourse?: { name: string; subjects: string[]; exam?: string; school?: string };
   /** "Solve with my tutor" (Premium) in the answer review. */
@@ -42,6 +45,8 @@ interface Props {
 /** JAMB: English has 60 questions, every other subject 40, all in 2 hours (40 seconds each). */
 const perSubject = (subject: string) => (subject === 'English' ? 60 : 40);
 const SECONDS_EACH = 40;
+/** Questions in a weak-topic practice set. */
+const TOPIC_SET = 20;
 const MOCK_SECONDS = 2 * 60 * 60;
 
 const bankName = (s: string) => (s === 'English Language' || s === 'Use of English' ? 'English' : s);
@@ -146,6 +151,15 @@ const practiceExam = (profile: UserProfile): RealExam => {
   return (exams.includes('UTME') ? 'UTME' : (exams.find((e) => !isBySchool(e)) ?? defaultExam())) as RealExam;
 };
 
+/** Weak-topic practice: 20 questions on one topic of one subject (new ones first). */
+async function buildTopicPaper(profile: UserProfile, subject: string, topic: string): Promise<Paper> {
+  const first = bankName(subject);
+  const set = await getPracticeSet(practiceExam(profile), first, TOPIC_SET, undefined, topic);
+  const questions = set.questions.map(toExamQuestion);
+  if (!questions.length) throw new Error('No questions on that topic yet.');
+  return { title: `${first}: ${topic}`, subjects: [first], questions, seconds: questions.length * SECONDS_EACH, note: '', practice: true };
+}
+
 /**
  * "Practise a subject": a fresh random set for each subject from the server
  * (the mix of practice and past questions, and the set size, are chosen per
@@ -239,7 +253,7 @@ const clearSession = () => {
 };
 const secondsUntil = (deadline: number) => Math.max(0, Math.round((deadline - Date.now()) / 1000));
 
-export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, presetCourse, onSolve, askLabel, onUpgrade }) => {
+export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, presetTopic, presetCourse, onSolve, askLabel, onUpgrade }) => {
   const { questions: bank } = useCms();
   const ready = useQuestionsReady();
   // The paper is drawn once, when the bank is ready, so it doesn't reshuffle mid-exam.
@@ -254,13 +268,14 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
   const [deadline, setDeadline] = useState(0);
   // Save the result once, for the dashboard.
   const recorded = useRef(false);
-  const sessionKey = JSON.stringify([presetSubject ?? '', presetCourse?.name ?? '', presetCourse?.exam ?? '', presetCourse?.school ?? '']);
+  const sessionKey = JSON.stringify([presetSubject ?? '', presetCourse?.name ?? '', presetCourse?.exam ?? '', presetCourse?.school ?? '', presetTopic ?? '']);
 
   const start = async () => {
     setPaper(null);
     let next = buildPaper(bank, profile, presetSubject, presetCourse);
     // Practice sets come fresh from the server; the questions already here stand in if it can't be reached.
-    if (presetSubject) next = await buildPracticePaper(profile, presetSubject).catch(() => next);
+    if (presetSubject && presetTopic) next = await buildTopicPaper(profile, presetSubject, presetTopic).catch(() => next);
+    else if (presetSubject) next = await buildPracticePaper(profile, presetSubject).catch(() => next);
     // The UTME mock keeps JAMB's format (English 60, others 40).
     else if (!presetCourse) next = await drawPaper(next, 'UTME', perSubject, MOCK_SECONDS);
     // An exam's practice (WAEC, NECO, a course…) follows that exam's settings.
@@ -360,7 +375,17 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
         };
       }),
     );
-  }, [finished, paper, answers, sessionKey, subject, index, deadline]);
+    // Saved to the student's account too, so progress follows them to any device
+    // (not when nothing was answered, which would only drag their scores down).
+    if (Object.keys(answers).length)
+      void saveAttempt(
+      presetCourse?.exam ?? (presetSubject ? practiceExam(profile) : 'UTME'),
+      paper.title,
+      paper.questions
+        .filter((q) => typeof q.id === 'number')
+        .map((q) => ({ q: Number(q.id), s: q.subject, t: q.topic, ok: answers[q.id] === q.correctAnswer })),
+    );
+  }, [finished, paper, answers, sessionKey, subject, index, deadline, presetCourse, presetSubject, profile]);
 
   const subjectQs = paper?.questions.filter((q) => q.subject === subject) ?? [];
   const question = subjectQs[index];
