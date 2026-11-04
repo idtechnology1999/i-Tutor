@@ -119,6 +119,19 @@ const noteFrom = (instruction: string) =>
     .trim();
 
 const n = (x: number) => x.toLocaleString('en-NG');
+const order = (subject: string) => (CMS_SUBJECTS as readonly string[]).indexOf(subject);
+
+/** Past questions in a set of `size` (rounded as the server rounds it). */
+const pastIn = (s: PracticeSettings, size: number) => (s.source === 'past' ? size : s.source === 'practice' ? 0 : Math.round((size * s.pastShare) / 100));
+
+/** The biggest set a subject is drawn for: JAMB's mock on /exam is English 60, other subjects 40. */
+const biggestSet = (s: PracticeSettings, subject: string) => (s.exam === 'UTME' ? Math.max(s.size, subject === 'English' ? 60 : 40) : s.size);
+
+/** Published practice questions a subject needs so past questions never fill more than their share. */
+const practiceNeeded = (s: PracticeSettings, subject: string) => {
+  const size = biggestSet(s, subject);
+  return size - pastIn(s, size);
+};
 
 /* -------------------------------------------------------------- Settings */
 
@@ -131,8 +144,9 @@ const SettingsCard: React.FC<{
   const dirty = JSON.stringify(draft) !== JSON.stringify(value);
   const set = (patch: Partial<PracticeSettings>) => setDraft((d) => ({ ...d, ...patch }));
 
-  const past = draft.source === 'past' ? draft.size : draft.source === 'practice' ? 0 : Math.round((draft.size * draft.pastShare) / 100);
+  const past = pastIn(draft, draft.size);
   const practice = draft.size - past;
+  const mockLine = (subjects: string, size: number) => `${subjects} ${size} = ${size - pastIn(draft, size)} practice + ${pastIn(draft, size)} past`;
   const name = EXAM_LABEL[draft.exam];
 
   return (
@@ -205,6 +219,11 @@ const SettingsCard: React.FC<{
           Each set of <b>{draft.size}</b>: <b>{practice}</b> from the practice bank + <b>{past}</b> {name} past questions. If one side runs short,
           the other fills the gap. Topics follow the {SYLLABUS_LABEL[draft.syllabus]}.
         </p>
+        {draft.exam === 'UTME' && (
+          <p>
+            The JAMB mock exam on /exam uses the same share in JAMB’s format: {mockLine('English', 60)}; {mockLine('other subjects', 40)}.
+          </p>
+        )}
       </div>
 
       <div className="adm-px__actions">
@@ -538,21 +557,36 @@ export const AdminPractice: React.FC<{ nav: AdminNav }> = ({ nav }) => {
       </label>
 
       {(() => {
-        // Say plainly where students' questions come from while the practice bank is empty.
+        // Where past questions are filling more than their share, because the practice bank is too small.
         if (!target || !setting) return null;
         const row = summary.find((x) => x.subject === subject);
         const live = row?.published ?? 0;
         const past = row?.past ?? 0;
-        if (live > 0) return null;
+        const needed = practiceNeeded(setting, subject);
+        const short = summary
+          .filter((x) => (x.past ?? 0) + x.total > 0 && x.published < practiceNeeded(setting, x.subject))
+          .sort((a, b) => order(a.subject) - order(b.subject));
         return (
-          <p className="adm-px__note">
-            <Info size={16} aria-hidden />
-            {setting.source === 'practice'
-              ? `There are no published ${examName} ${subject} practice questions yet, so students get none here. Write some below, or switch “Questions come from” to Mix or Past questions.`
-              : past
-                ? `The ${examName} ${subject} practice bank is empty, so students’ practice sets use the ${n(past)} ${examName} past questions for now. Practice questions you publish are mixed in automatically.`
-                : `There are no ${examName} ${subject} questions yet, in the practice bank or past papers. Write some practice questions below.`}
-          </p>
+          <>
+            {live < needed && (
+              <p className="adm-px__note">
+                <Info size={16} aria-hidden />
+                {past
+                  ? `A ${examName} ${subject} set needs ${n(needed)} practice questions, and ${n(live)} ${live === 1 ? 'is' : 'are'} published. Until there are more, past questions fill the other ${n(needed - live)}, so students get more past questions than your share.`
+                  : `A ${examName} ${subject} set needs ${n(needed)} practice questions, and ${n(live)} ${live === 1 ? 'is' : 'are'} published. There are no ${examName} ${subject} past questions to fill the gap, so sets will be short until you add more.`}
+              </p>
+            )}
+            {short.length > 0 && (
+              <div className="adm-px__short" aria-label="Subjects that need more practice questions">
+                <span>Need more practice questions:</span>
+                {short.map((x) => (
+                  <button key={x.subject} type="button" className={x.subject === subject ? 'is-on' : ''} onClick={() => pickSubject(x.subject as CmsSubject)}>
+                    {x.subject} <small>{n(x.published)}/{n(practiceNeeded(setting, x.subject))}</small>
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
         );
       })()}
 

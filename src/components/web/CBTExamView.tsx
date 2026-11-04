@@ -130,7 +130,8 @@ function buildPaper(
     .map(toExamQuestion);
   return {
     title: 'UTME mock exam',
-    subjects: subjects.filter((s) => questions.some((q) => q.subject === s)),
+    // All four, even one with nothing here yet: the server may have questions for it (buildMockPaper).
+    subjects,
     questions,
     seconds: Math.min(MOCK_SECONDS, questions.length * SECONDS_EACH),
     note: '',
@@ -166,23 +167,22 @@ async function buildPracticePaper(profile: UserProfile, presetSubject: string): 
   };
 }
 
-/** The mock is past questions first; any subject short of its count is topped up with a practice set. */
-async function topUpMock(paper: Paper): Promise<Paper> {
-  // The mock is a UTME paper, so it draws on the JAMB practice bank.
-  const exam: RealExam = 'UTME';
-  const extra = await Promise.all(
-    paper.subjects.map(async (s) => {
-      const have = paper.questions.filter((q) => q.subject === s);
-      const short = perSubject(s) - have.length;
-      if (short <= 0) return [];
-      // From the practice bank only: its past questions are already in the paper.
-      const set = await getPracticeSet(exam, s, short, 'practice').catch(() => null);
-      const seen = new Set(have.map((q) => q.id));
-      return (set?.questions ?? []).filter((q) => !seen.has(q.id)).slice(0, short).map(toExamQuestion);
-    }),
-  );
-  const questions = paper.subjects.flatMap((s, i) => [...paper.questions.filter((q) => q.subject === s), ...extra[i]!]);
-  return { ...paper, questions, seconds: Math.min(MOCK_SECONDS, questions.length * SECONDS_EACH) };
+/**
+ * The UTME mock in JAMB's format (English 60, other subjects 40), with each
+ * subject drawn fresh by the server in the share set for JAMB in Admin →
+ * Practice questions (e.g. 80% practice bank, 20% past questions); if one
+ * side runs short, the other fills the gap. A subject the server can't
+ * supply keeps the questions already on this device.
+ */
+async function buildMockPaper(paper: Paper): Promise<Paper> {
+  const sets = await Promise.all(paper.subjects.map((s) => getPracticeSet('UTME', s, perSubject(s)).catch(() => null)));
+  const questions = paper.subjects.flatMap((s, i) => {
+    const here = paper.questions.filter((q) => q.subject === s);
+    const drawn = sets[i]?.questions ?? [];
+    return drawn.length >= here.length ? drawn.map(toExamQuestion) : here;
+  });
+  const subjects = paper.subjects.filter((s) => questions.some((q) => q.subject === s));
+  return { ...paper, subjects, questions, seconds: Math.min(MOCK_SECONDS, questions.length * SECONDS_EACH) };
 }
 
 const clock = (secs: number) => {
@@ -260,7 +260,7 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
     let next = buildPaper(bank, profile, presetSubject, presetCourse);
     // Practice sets come fresh from the server; the questions already here stand in if it can't be reached.
     if (presetSubject) next = await buildPracticePaper(profile, presetSubject).catch(() => next);
-    else if (!presetCourse) next = await topUpMock(next);
+    else if (!presetCourse) next = await buildMockPaper(next);
     const end = Date.now() + next.seconds * 1000;
     setPaper(next);
     setSubject(next.subjects[0] ?? '');

@@ -3218,3 +3218,19 @@
   .adm-px__seg { width: 100%; }
   .adm-px__seg button { flex: 1; padding: 0 8px; }
 }
+
+/* Practice: subjects whose practice bank is below the share */
+.adm-px__short { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: -8px 0 20px; font-size: 0.88rem; color: var(--ink-2); }
+.adm-px__short > span { font-weight: 600; margin-right: 2px; }
+.adm-px__short button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--warn, #c77700);
+  border-radius: 999px;
+  background: var(--warn-bg, #fff4e0);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.adm-px__short button.is-on { outline: 2px solid var(--brand); outline-offset: 1px; }
+.adm-px__short small { font-variant-numeric: tabular-nums; color: var(--ink-3); margin-left: 4px; }
