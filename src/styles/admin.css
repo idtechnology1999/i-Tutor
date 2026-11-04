@@ -3336,3 +3336,8 @@
   .xm__actions { width: 100%; justify-content: space-between; }
   .adm-grid-2.xm__grid { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Practice: import a file */
+.adm-px__import { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; margin: -8px 0 20px; padding: 14px 18px; border: 1px dashed var(--rule); border-radius: 16px; }
+.adm-px__import strong { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); }
+.adm-px__import p { margin: 4px 0 0; font-size: 0.88rem; max-width: 70ch; }

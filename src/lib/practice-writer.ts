@@ -26,16 +26,20 @@ const SYLLABUS_NAME: Record<SyllabusChoice, string> = { jamb: 'JAMB', waec: 'WAE
 const BATCH = 20;
 
 /** "quadratic eqn" → the syllabus's own name ("Quadratic equations") when one matches; otherwise as typed. */
+const STOP_WORDS = new Set(['and', 'the', 'for', 'with', 'from', 'into', 'its', 'their', 'other', 'basic', 'simple', 'types']);
+
 export function matchTopic(subject: string, typed: string, syllabus: SyllabusChoice = 'jamb'): string {
   const t = typed.trim().toLowerCase();
   const topics = syllabusTopics(subject, syllabus);
   const exact = topics.find((x) => x.toLowerCase() === t);
   if (exact) return exact;
-  const words = t.split(/[^a-z0-9]+/).filter((w) => w.length > 2);
+  // Joining words ("and", "the"…) match almost every topic, so they don't count.
+  const words = t.split(/[^a-z0-9]+/).filter((w) => w.length > 2 && !STOP_WORDS.has(w));
   const scored = topics
     .map((x) => ({ x, n: words.filter((w) => x.toLowerCase().includes(w.slice(0, Math.max(4, w.length - 2)))).length }))
     .sort((a, b) => b.n - a.n);
-  return scored[0] && scored[0].n > 0 ? scored[0].x : typed.trim();
+  // A syllabus topic only when at least half the meaningful words match; otherwise the topic as written.
+  return scored[0] && words.length && scored[0].n >= Math.ceil(words.length / 2) ? scored[0].x : typed.trim();
 }
 
 /** Spread `count` questions over the topics, then cut into batches of at most 20. */

@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { CheckSquare, ChevronLeft, ChevronRight, Info, LoaderCircle, Mic, Plus, Search, Shuffle, Sparkles, Square, Trash2, X } from 'lucide-react';
+import { CheckSquare, ChevronLeft, ChevronRight, Info, LoaderCircle, Mic, Plus, Search, Shuffle, Sparkles, Square, Trash2, Upload, X } from 'lucide-react';
 import { CMS_SUBJECTS, EXAM_LABEL, PRACTICE } from '../../lib/cms';
 import { isCertLike, useExams } from '../../lib/exams';
 import type { ExamInfo } from '../../lib/exams';
 import type { CmsQuestion, CmsSubject, QuestionDraft } from '../../lib/cms';
 import { SYLLABUS_LABEL, syllabusTopics } from '../../data/waec-syllabus';
 import type { SyllabusChoice } from '../../data/waec-syllabus';
-import { writePracticeQuestions } from '../../lib/practice-writer';
+import { matchTopic, writePracticeQuestions } from '../../lib/practice-writer';
+import { organiseWithAI } from '../../lib/question-import';
 import { publishProblems } from '../../lib/question-rules';
 import { canSpeak, recogniserCtor, speakText } from '../../lib/speech';
 import type { Recogniser } from '../../lib/speech';
@@ -375,6 +376,64 @@ export const AdminPractice: React.FC<{ nav: AdminNav }> = ({ nav }) => {
     reload();
   };
 
+  /* ------------------------------------------------------- Import a file */
+
+  // A document of practice questions (PDF, Word, Excel, text or a photo) read
+  // into this exam and subject as drafts. Answers the AI had to work out are
+  // double-checked by a second AI.
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = useState('');
+  const importFile = async (file: File) => {
+    setImporting(`Reading ${file.name}…`);
+    try {
+      const text = /\.txt$/i.test(file.name) ? await file.text() : '';
+      const result = await organiseWithAI({
+        subject,
+        examType: target || 'UTME',
+        year: null,
+        source: `Imported: ${file.name}`,
+        text,
+        file: text ? null : file,
+      });
+      if (!result.questions.length) {
+        nav.notify('No questions found in that file. Check it has numbered questions with options.');
+        return;
+      }
+      setImporting(`Checking ${result.questions.length} questions…`);
+      const drafts: QuestionDraft[] = result.questions.map((q) => ({
+        subject,
+        examType: PRACTICE,
+        target,
+        year: null,
+        // The syllabus topic it names, or the topic being viewed.
+        topic: matchTopic(subject, q.topic, syllabus) || (viewing !== ALL && viewing !== OTHER ? viewing : q.topic) || '',
+        question: q.question,
+        options: q.options,
+        correctAnswer: q.correctAnswer,
+        explanation: q.explanation,
+        answerSource: q.answerSource,
+        source: `Imported: ${file.name}`.slice(0, 120),
+        status: 'draft',
+        needsReview: q.needsReview,
+        reviewNote: q.reviewNote,
+      }));
+      const fromAi = drafts.filter((d) => d.answerSource === 'ai');
+      const checked = fromAi.length ? await doubleCheckDrafts(fromAi) : [];
+      const ready = drafts.map((d) => (d.answerSource === 'ai' ? (checked[fromAi.indexOf(d)] ?? d) : d));
+      await addPractice(ready, `Imported ${ready.length} ${subject} practice questions from ${file.name}.`);
+      const review = ready.filter((d) => d.needsReview).length;
+      nav.notify(
+        `Imported ${ready.length} ${examName} ${subject} questions as drafts${review ? `; ${review} need${review === 1 ? 's' : ''} a look (marked “needs review”)` : ''}. Check them, then publish.`,
+      );
+      reload();
+    } catch (e) {
+      nav.notify((e as Error).message);
+    } finally {
+      setImporting('');
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
   /* ------------------------------------------------------------ AI writer */
 
   const willWrite = countFrom(instruction, picked.length);
@@ -695,6 +754,31 @@ export const AdminPractice: React.FC<{ nav: AdminNav }> = ({ nav }) => {
           publish. Students only ever see published questions.
         </p>
         {aiError && <p className="adm-users__error">{aiError}</p>}
+      </section>
+
+      <section className="adm-px__import" aria-labelledby="px-import">
+        <div>
+          <strong id="px-import">
+            <Upload size={16} aria-hidden /> Import questions from a file
+          </strong>
+          <p className="adm-muted">
+            PDF, Word, Excel, text or a photo, into {examName} {subject}. An Excel sheet with columns <b>Question · A · B · C · D · Answer · Topic</b> is read
+            exactly. They arrive as drafts to check.
+          </p>
+        </div>
+        <input
+          ref={fileRef}
+          type="file"
+          hidden
+          accept=".pdf,.docx,.xlsx,.txt,image/jpeg,image/png,image/webp"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void importFile(f);
+          }}
+        />
+        <button type="button" className="adm-btn" onClick={() => fileRef.current?.click()} disabled={Boolean(importing)}>
+          {importing ? <LoaderCircle size={16} className="adm-spin" aria-hidden /> : <Upload size={16} aria-hidden />} {importing || 'Choose a file'}
+        </button>
       </section>
 
       <div className="adm-pr">

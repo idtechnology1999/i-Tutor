@@ -21,6 +21,7 @@
    -------------------------------------------------------------------------- */
 
 import { API_BASE, isLive } from '../services/api';
+import { excelRows, isExcel, isWord, officeText, questionsFromRows } from './office-files';
 
 export interface ParsedQuestion {
   number: number;
@@ -38,7 +39,8 @@ export interface ParsedQuestion {
 export interface ImportResult {
   questions: ParsedQuestion[];
   warnings: string[];
-  engine: 'ai' | 'basic';
+  /** 'sheet': an Excel sheet with Question / A–D / Answer columns, read exactly. */
+  engine: 'ai' | 'basic' | 'sheet';
   /** True when the AI wrote new questions on request rather than reading a paper. */
   generated?: boolean;
   /** Why the AI wasn't used, when engine is 'basic'. */
@@ -79,6 +81,17 @@ export async function checkAdmin(): Promise<{ status: 'ok' | 'wrong' | 'offline'
 }
 
 export async function organiseWithAI(req: ImportRequest): Promise<ImportResult> {
+  // Word and Excel: read here (lib/office-files.ts). A sheet laid out as
+  // questions is exact as it is; anything else goes to the AI as text.
+  if (req.file && (isWord(req.file) || isExcel(req.file))) {
+    if (isExcel(req.file)) {
+      const sheet = questionsFromRows(await excelRows(req.file), req.year);
+      if (sheet?.length) return { questions: sheet, warnings: [], engine: 'sheet' };
+    }
+    const text = await officeText(req.file);
+    if (!text.trim()) throw new Error('No text found in that file.');
+    return organiseWithAI({ ...req, text: [req.text, text].filter((t) => t.trim()).join('\n\n'), file: null });
+  }
   let file: { name: string; mediaType: string; data: string } | undefined;
   if (req.file) {
     file = { name: req.file.name, mediaType: req.file.type, data: await toBase64(req.file) };

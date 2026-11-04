@@ -115,8 +115,10 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
       setFile(null);
       return;
     }
-    if (!['application/pdf', 'image/jpeg', 'image/png', 'image/webp'].includes(f.type)) {
-      setError('Use a PDF, a photo (JPG, PNG, WebP) or a .txt file.');
+    // Word and Excel are read in the browser (lib/office-files.ts).
+    const office = /\.(docx|xlsx)$/i.test(f.name);
+    if (!office && !['application/pdf', 'image/jpeg', 'image/png', 'image/webp'].includes(f.type)) {
+      setError('Use a PDF, Word (.docx), Excel (.xlsx), a photo (JPG, PNG, WebP) or a .txt file.');
       return;
     }
     if (f.size > 4 * 1024 * 1024) {
@@ -665,14 +667,14 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
                 <Upload size={20} aria-hidden />
                 <span>
                   <strong>Or upload a file</strong>
-                  <small>PDF, photo of the pages (JPG, PNG) or .txt · drag it here</small>
+                  <small>PDF, Word, Excel, photo of the pages (JPG, PNG) or .txt · drag it here</small>
                 </span>
               </button>
             )}
             <input
               ref={fileInput}
               type="file"
-              accept=".pdf,.txt,image/jpeg,image/png,image/webp"
+              accept=".pdf,.docx,.xlsx,.txt,image/jpeg,image/png,image/webp"
               hidden
               onChange={(e) => {
                 const f = e.target.files?.[0];
