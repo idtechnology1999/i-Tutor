@@ -3120,3 +3120,101 @@
 /* Past questions: replace a paper that's already in the bank */
 .adm-replace { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
 .adm-replace .adm-muted { margin: 0; flex: 1 1 320px; }
+
+/* Practice questions: exam tabs, per-exam settings, filters and pager */
+.adm-px__exams {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.adm-px__exams button {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.adm-px__exams button:hover { border-color: var(--brand); color: var(--brand); }
+.adm-px__exams button.is-on { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+.adm-px__card {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding: 18px;
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+}
+.adm-px__card-head { display: flex; gap: 10px; align-items: flex-start; color: var(--brand); }
+.adm-px__card-head h2 { margin: 0; font-size: 1.05rem; color: var(--ink); }
+.adm-px__card-head p { margin: 4px 0 0; color: var(--ink-3); font-size: 0.9rem; }
+
+.adm-px__row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.adm-px__label { flex: 0 0 190px; font-weight: 600; color: var(--ink-2); font-size: 0.92rem; }
+
+.adm-px__seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  padding: 3px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--mist);
+}
+.adm-px__seg button {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.adm-px__seg button:hover { color: var(--brand); }
+.adm-px__seg button.is-on { background: var(--brand); color: #fff; font-weight: 600; }
+
+.adm-px__slider { display: flex; align-items: center; gap: 12px; flex: 1 1 220px; max-width: 360px; }
+.adm-px__slider input { flex: 1; accent-color: var(--brand); }
+.adm-px__slider b { min-width: 3.5ch; font-variant-numeric: tabular-nums; }
+
+.adm-px__preview { display: grid; gap: 8px; padding: 12px 14px; border-radius: 12px; background: var(--brand-tint); }
+.adm-px__preview p { margin: 0; font-size: 0.9rem; color: var(--ink-2); }
+.adm-px__bar { height: 8px; border-radius: 999px; background: var(--accent, #f0a64a); overflow: hidden; }
+.adm-px__bar i { display: block; height: 100%; background: var(--brand); transition: width 0.2s; }
+
+.adm-px__actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+.adm-px__note {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 0 0 20px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--mist);
+  color: var(--ink-2);
+  font-size: 0.92rem;
+}
+.adm-px__note svg { flex: none; margin-top: 2px; color: var(--brand); }
+
+.adm-px__filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.adm-px__filters .adm-search { flex: 1 1 260px; }
+.adm-px__filters select { flex: 0 0 auto; width: auto; }
+
+.adm-table.is-loading { opacity: 0.6; transition: opacity 0.15s; }
+
+.adm-px__pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px 12px; }
+.adm-px__pager > .adm-muted { margin-right: auto; }
+.adm-px__pageno { font-variant-numeric: tabular-nums; color: var(--ink-2); }
+
+@media (max-width: 640px) {
+  .adm-px__label { flex-basis: 100%; }
+  .adm-px__seg { width: 100%; }
+  .adm-px__seg button { flex: 1; padding: 0 8px; }
+}

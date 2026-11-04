@@ -77,6 +77,8 @@ export interface CmsQuestion {
   id: number;
   subject: CmsSubject;
   examType: ExamType;
+  /** Practice questions only: the exam they're written for (missing = every exam). */
+  target?: string;
   /** Post-UTME only: the school's short name, e.g. "UNILAG". */
   school?: string;
   year: number | null;
@@ -232,6 +234,9 @@ const subscribe = (l: () => void) => {
 
 export const useCms = () => useSyncExternalStore(subscribe, () => state);
 
+/** The questions held in this browser (demo mode's whole bank). */
+export const localQuestions = () => state.questions;
+
 /** False until the live question bank has loaded (always true in demo mode). */
 export const useQuestionsReady = () => useSyncExternalStore(subscribe, () => questionsReady);
 
@@ -253,7 +258,9 @@ let syncScope: 'student' | 'admin' = 'student';
 export function syncQuestions(scope: 'student' | 'admin' = syncScope): Promise<void> {
   if (!isLive) return Promise.resolve();
   syncScope = scope;
-  return api<CmsQuestion[]>(scope === 'admin' ? '/api/admin/questions' : '/api/questions')
+  // The practice bank isn't loaded whole: students get random sets, and
+  // Admin → Practice questions pages through it (services/practice).
+  return api<CmsQuestion[]>(scope === 'admin' ? '/api/admin/questions?bank=past' : '/api/questions')
     .then((rows) => {
       questionsReady = true;
       state = { ...state, questions: rows };

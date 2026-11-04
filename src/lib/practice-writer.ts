@@ -1,7 +1,20 @@
 import { PRACTICE, cms, questionKey } from './cms';
 import type { CmsQuestion, CmsSubject, QuestionDraft } from './cms';
-import { jambTopics } from '../data/jamb-syllabus';
+import { syllabusTopics } from '../data/waec-syllabus';
+import type { SyllabusChoice } from '../data/waec-syllabus';
 import { organiseWithAI } from './question-import';
+
+/** How each exam is named to the AI ('' = questions that suit every exam). */
+const EXAM_STYLE: Record<string, string> = {
+  '': 'JAMB UTME and WAEC/NECO',
+  UTME: 'JAMB UTME',
+  'Post-UTME': 'university Post-UTME screening',
+  WAEC: 'WAEC (WASSCE)',
+  NECO: 'NECO (SSCE)',
+  GCE: 'WAEC/NECO GCE',
+  NABTEB: 'NABTEB',
+};
+const SYLLABUS_NAME: Record<SyllabusChoice, string> = { jamb: 'JAMB', waec: 'WAEC/NECO', both: 'JAMB and WAEC/NECO' };
 
 /* Writes practice questions with the AI, in batches of up to 20, spread over
    syllabus topics. Each batch is saved as drafts as soon as it arrives, so a
@@ -11,9 +24,9 @@ import { organiseWithAI } from './question-import';
 const BATCH = 20;
 
 /** "quadratic eqn" → the syllabus's own name ("Quadratic equations") when one matches; otherwise as typed. */
-export function matchTopic(subject: string, typed: string): string {
+export function matchTopic(subject: string, typed: string, syllabus: SyllabusChoice = 'jamb'): string {
   const t = typed.trim().toLowerCase();
-  const topics = jambTopics(subject);
+  const topics = syllabusTopics(subject, syllabus);
   const exact = topics.find((x) => x.toLowerCase() === t);
   if (exact) return exact;
   const words = t.split(/[^a-z0-9]+/).filter((w) => w.length > 2);
@@ -55,17 +68,26 @@ export interface WriteResult {
 
 export async function writePracticeQuestions(opts: {
   subject: CmsSubject;
-  /** Syllabus topics; empty means the whole JAMB syllabus for the subject. */
+  /** Syllabus topics; empty means the whole syllabus for the subject. */
   topics: string[];
   count: number;
   /** Extra instruction from the admin, e.g. "make them harder". */
   note?: string;
   existing: CmsQuestion[];
+  /** The exam they're written for ('' = every exam; JAMB style when not given). */
+  exam?: string;
+  syllabus?: SyllabusChoice;
+  /** Where each batch is saved (default: the browser's question store). */
+  save?: (drafts: QuestionDraft[], label: string) => void | Promise<void>;
   onProgress?: (written: number, total: number) => void;
 }): Promise<WriteResult> {
   const { subject, count } = opts;
-  const named = opts.topics.map((t) => matchTopic(subject, t)).filter(Boolean);
-  const topics = named.length ? [...new Set(named)] : jambTopics(subject).length ? jambTopics(subject) : ['General'];
+  const syllabus = opts.syllabus ?? 'jamb';
+  const exam = opts.exam ?? 'UTME';
+  const style = EXAM_STYLE[exam] ?? 'JAMB UTME';
+  const named = opts.topics.map((t) => matchTopic(subject, t, syllabus)).filter(Boolean);
+  const all = syllabusTopics(subject, syllabus);
+  const topics = named.length ? [...new Set(named)] : all.length ? all : ['General'];
   const seen = new Set(opts.existing.filter((q) => q.subject === subject).map((q) => questionKey(q.question)));
   let written = 0;
   opts.onProgress?.(0, count);
@@ -76,12 +98,12 @@ export async function writePracticeQuestions(opts: {
     try {
       const res = await organiseWithAI({
         subject,
-        examType: 'UTME',
+        examType: exam && exam !== 'Post-UTME' ? (exam as 'UTME' | 'WAEC' | 'NECO' | 'GCE' | 'NABTEB') : 'UTME',
         year: null,
         source: '',
         text:
-          `Set ${n} JAMB UTME practice questions in ${subject}:\n${lines}\n` +
-          'Use exactly those topic names in the topic field. Match JAMB’s style and difficulty, vary the questions, ' +
+          `Set ${n} ${style} practice questions in ${subject}, following the ${SYLLABUS_NAME[syllabus]} syllabus:\n${lines}\n` +
+          `Use exactly those topic names in the topic field. Match ${style}’s style and difficulty, vary the questions, ` +
           'and give four options A–D with one correct answer.' +
           (opts.note?.trim() ? `\nAlso: ${opts.note.trim()}` : ''),
         file: null,
@@ -98,6 +120,7 @@ export async function writePracticeQuestions(opts: {
         .map((q) => ({
           subject,
           examType: PRACTICE,
+          target: opts.exam ?? '',
           year: null,
           // Keep the syllabus name; a batch with one topic files everything under it.
           topic: names.find((t) => t.toLowerCase() === q.topic.trim().toLowerCase()) ?? (names.length === 1 ? names[0] : q.topic || names[0]),
@@ -111,7 +134,8 @@ export async function writePracticeQuestions(opts: {
           needsReview: true,
           reviewNote: q.reviewNote || 'AI-written — check the answer, then publish.',
         }));
-      if (drafts.length) cms.addQuestions(drafts, `AI wrote ${drafts.length} ${subject} practice questions (${names.join(', ')}).`);
+      const label = `AI wrote ${drafts.length} ${subject} practice questions (${names.join(', ')}).`;
+      if (drafts.length) await (opts.save ?? ((d, l) => cms.addQuestions(d, l)))(drafts, label);
       written += drafts.length;
       opts.onProgress?.(written, count);
     } catch (e) {

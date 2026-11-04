@@ -8,6 +8,9 @@ import { recordResult } from '../../lib/progress';
 import type { SolveRequest } from '../../data/tutors';
 import { tutorById } from '../../data/tutors';
 import { ExamReview } from './ExamReview';
+import { getPracticeSet } from '../../services/practice';
+import type { RealExam } from '../../services/practice';
+import { examsOf } from '../../lib/student-exams';
 
 /* The CBT, laid out like JAMB's: candidate bar with the clock, one button per
    subject, radio-button options, a numbered question grid, and Previous /
@@ -135,6 +138,51 @@ function buildPaper(
   };
 }
 
+/** The exam a student practises for: JAMB if they're sitting it, otherwise their first exam. */
+const practiceExam = (profile: UserProfile): RealExam => {
+  const exams = examsOf(profile) as string[];
+  return (exams.includes('UTME') ? 'UTME' : (exams.find((e) => e !== 'Post-UTME') ?? 'UTME')) as RealExam;
+};
+
+/**
+ * "Practise a subject": a fresh random set for each subject from the server
+ * (the mix of practice and past questions, and the set size, are chosen per
+ * exam in Admin → Practice questions). The tapped subject comes first.
+ */
+async function buildPracticePaper(profile: UserProfile, presetSubject: string): Promise<Paper> {
+  const exam = practiceExam(profile);
+  const first = bankName(presetSubject);
+  const theirs = ['English', ...profile.selectedSubjects.map(bankName).filter((s) => s !== 'English').slice(0, 3)];
+  const sequence = [first, ...theirs.filter((s) => s !== first)];
+  const sets = await Promise.all(sequence.map((s) => getPracticeSet(exam, s)));
+  const questions = sets.flatMap((set) => set.questions.map(toExamQuestion));
+  return {
+    title: `Practice exam · ${first} first`,
+    subjects: sequence.filter((s) => questions.some((q) => q.subject === s)),
+    questions,
+    seconds: questions.length * SECONDS_EACH,
+    note: '',
+    practice: true,
+  };
+}
+
+/** The mock is past questions first; any subject short of its count is topped up with a practice set. */
+async function topUpMock(paper: Paper, profile: UserProfile): Promise<Paper> {
+  const exam = practiceExam(profile);
+  const extra = await Promise.all(
+    paper.subjects.map(async (s) => {
+      const have = paper.questions.filter((q) => q.subject === s);
+      const short = perSubject(s) - have.length;
+      if (short <= 0) return [];
+      const set = await getPracticeSet(exam, s, Math.max(5, short)).catch(() => null);
+      const seen = new Set(have.map((q) => q.id));
+      return (set?.questions ?? []).filter((q) => !seen.has(q.id)).slice(0, short).map(toExamQuestion);
+    }),
+  );
+  const questions = paper.subjects.flatMap((s, i) => [...paper.questions.filter((q) => q.subject === s), ...extra[i]!]);
+  return { ...paper, questions, seconds: Math.min(MOCK_SECONDS, questions.length * SECONDS_EACH) };
+}
+
 const clock = (secs: number) => {
   const h = Math.floor(secs / 3600);
   const m = Math.floor((secs % 3600) / 60);
@@ -205,8 +253,12 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
   const recorded = useRef(false);
   const sessionKey = JSON.stringify([presetSubject ?? '', presetCourse?.name ?? '', presetCourse?.exam ?? '', presetCourse?.school ?? '']);
 
-  const start = () => {
-    const next = buildPaper(bank, profile, presetSubject, presetCourse);
+  const start = async () => {
+    setPaper(null);
+    let next = buildPaper(bank, profile, presetSubject, presetCourse);
+    // Practice sets come fresh from the server; the questions already here stand in if it can't be reached.
+    if (presetSubject) next = await buildPracticePaper(profile, presetSubject).catch(() => next);
+    else if (!presetCourse) next = await topUpMock(next, profile);
     const end = Date.now() + next.seconds * 1000;
     setPaper(next);
     setSubject(next.subjects[0] ?? '');
@@ -234,7 +286,7 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
       recorded.current = saved.recorded;
       return;
     }
-    start();
+    void start();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- drawn once per visit
   }, [ready]);
 
@@ -368,7 +420,7 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
         estimate={full ? Math.round((correct / total) * 400) : undefined}
         tutor={profile.plan === 'premium' ? tutorById(profile.tutorId) : undefined}
         onExit={leave}
-        onRetake={start}
+        onRetake={() => void start()}
         onUpgrade={onUpgrade}
       />
     );
