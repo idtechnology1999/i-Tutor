@@ -3238,50 +3238,63 @@
 .adm-px__exams button.is-off.is-on { color: #fff; }
 .adm-px__exams button small { font-weight: 500; opacity: 0.8; }
 
-/* Settings → Exams */
-.adm-exams { display: grid; gap: 14px; }
-.adm-exams__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.adm-exams__list > li {
+/* Settings → Exams (prefix xm-: courses.css already uses .adm-exams) */
+.xm { display: grid; gap: 16px; }
+.xm__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.xm__head h2 { margin: 0; font-size: 1.15rem; display: flex; align-items: center; gap: 10px; }
+.xm__count { padding: 2px 10px; border-radius: 999px; background: var(--brand-tint); color: var(--brand); font-size: 0.8rem; font-weight: 700; }
+.xm__lead { margin: 4px 0 0; color: var(--ink-3); font-size: 0.92rem; max-width: 60ch; }
+.adm-card .xm__head .adm-btn { align-self: center; }
+
+.xm__list { list-style: none; margin: 0; padding: 0; display: grid; border: 1px solid var(--rule); border-radius: 14px; overflow: hidden; }
+.xm__row { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: #fff; }
+.xm__row + .xm__row { border-top: 1px solid var(--rule); }
+.xm__row.is-off { background: var(--mist); }
+.xm__row--edit { display: block; }
+.xm__order { display: flex; flex-direction: column; gap: 2px; flex: none; }
+.xm__order button { width: 28px; height: 22px; display: grid; place-items: center; border: 0; border-radius: 6px; background: none; color: var(--ink-3); cursor: pointer; }
+.xm__order button:hover:not(:disabled) { background: var(--mist); color: var(--brand); }
+.xm__order button:disabled { opacity: 0.3; cursor: default; }
+.xm__badge {
+  flex: none;
+  width: 44px;
+  height: 44px;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border: 1px solid var(--rule);
-  border-radius: 14px;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--brand-tint);
+  color: var(--brand);
+  font-weight: 800;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
 }
-.adm-exams__list > li.is-off { background: var(--mist); }
-.adm-exams__list > li.is-off .adm-exams__name strong { color: var(--ink-3); }
-.adm-exams__list > li:has(.adm-exams__edit) { display: block; }
-.adm-exams__order { display: flex; flex-direction: column; }
-.adm-exams__order .adm-icon-btn { width: 30px; height: 26px; }
-.adm-exams__name { display: grid; gap: 2px; min-width: 0; }
-.adm-exams__name strong { font-size: 1.02rem; color: var(--ink); }
-.adm-exams__name span { color: var(--ink-2); font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.adm-exams__name small { color: var(--ink-3); font-size: 0.8rem; }
+.xm__row.is-off .xm__badge { background: #e9eeee; color: var(--ink-3); }
+.xm__name { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.xm__name strong { font-size: 1rem; color: var(--ink); }
+.xm__name span { color: var(--ink-3); font-size: 0.88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.xm__tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.xm__tag { padding: 2px 8px; border-radius: 999px; font-size: 0.74rem; font-weight: 600; background: #eef3f3; color: var(--ink-2); }
+.xm__tag--jamb { background: #e6f0ff; color: #234a8c; }
+.xm__tag--cert { background: #eaf6ee; color: #1f6b3a; }
+.xm__tag--school { background: #fff2e0; color: #8a4b00; }
+.xm__tag--off { background: #f1f1f1; color: var(--ink-3); }
+.xm__actions { display: flex; align-items: center; gap: 6px; flex: none; }
 
 .adm-switch {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 40px;
-  padding: 0 12px 0 6px;
-  border: 1px solid var(--rule);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--ink-2);
+  min-height: 36px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--ink-3);
   font: inherit;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 0.85rem;
   cursor: pointer;
 }
-.adm-switch i {
-  position: relative;
-  width: 40px;
-  height: 24px;
-  border-radius: 999px;
-  background: var(--rule-2, #c9d3d2);
-  transition: background 0.15s;
-}
+.adm-switch i { position: relative; flex: none; width: 42px; height: 24px; border-radius: 999px; background: #cfd8d7; transition: background 0.15s; }
 .adm-switch i::after {
   content: '';
   position: absolute;
@@ -3294,26 +3307,32 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
   transition: transform 0.15s;
 }
-.adm-switch.is-on { color: var(--brand); border-color: var(--brand); }
+.adm-switch.is-on { color: var(--brand); }
 .adm-switch.is-on i { background: var(--brand); }
-.adm-switch.is-on i::after { transform: translateX(16px); }
-.adm-switch span { min-width: 2.2em; text-align: left; }
+.adm-switch.is-on i::after { transform: translateX(18px); }
+.adm-switch span { min-width: 2em; text-align: left; }
+.adm-switch:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 8px; }
 
-.adm-exams__edit,
-.adm-exams__add { display: grid; gap: 12px; }
-.adm-exams__add { padding: 16px; border: 1px dashed var(--rule); border-radius: 14px; }
-.adm-exams__add h3 { margin: 0; font-size: 1rem; }
-.adm-exams__kind { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin: 0; padding: 0; border: 0; }
-.adm-exams__kind legend { font-weight: 600; color: var(--ink-2); margin-bottom: 6px; font-size: 0.92rem; }
-.adm-exams__kind label { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border: 1px solid var(--rule); border-radius: 12px; cursor: pointer; }
-.adm-exams__kind label.is-on { border-color: var(--brand); background: var(--brand-tint); }
-.adm-exams__kind input { margin-top: 3px; accent-color: var(--brand); }
-.adm-exams__kind span { display: grid; gap: 2px; }
-.adm-exams__kind small { color: var(--ink-3); }
-.adm-check-row { display: flex; gap: 8px; align-items: center; font-size: 0.92rem; color: var(--ink-2); }
-.adm-check-row input { accent-color: var(--brand); width: 18px; height: 18px; }
+.xm__form { display: grid; gap: 14px; }
+.xm__add { padding: 18px; border: 1px solid var(--brand); border-radius: 14px; background: var(--mist); }
+.xm__add h3 { margin: 0; font-size: 1rem; }
+.xm__kind { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin: 0; padding: 0; border: 0; }
+.xm__kind legend { font-weight: 600; color: var(--ink-2); margin-bottom: 8px; font-size: 0.875rem; padding: 0; }
+.xm__kind label { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--rule); border-radius: 12px; background: #fff; cursor: pointer; }
+.xm__kind label.is-on { border-color: var(--brand); box-shadow: 0 0 0 1px var(--brand); }
+.xm__kind input { margin-top: 3px; accent-color: var(--brand); }
+.xm__kind span { display: grid; gap: 2px; }
+.xm__kind b { font-size: 0.95rem; }
+.xm__kind small { color: var(--ink-3); font-size: 0.82rem; }
+.xm__check { display: flex; gap: 10px; align-items: center; font-size: 0.92rem; color: var(--ink-2); cursor: pointer; }
+.xm__check input { accent-color: var(--brand); width: 18px; height: 18px; flex: none; }
+.xm__buttons { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.adm-card .xm__buttons .adm-btn { align-self: auto; }
 
-@media (max-width: 520px) {
-  .adm-exams__list > li { grid-template-columns: auto minmax(0, 1fr) auto; }
-  .adm-exams__list > li > .adm-link { grid-column: 2; justify-self: start; }
+@media (max-width: 640px) {
+  .xm__row { flex-wrap: wrap; gap: 10px 12px; padding: 12px; }
+  .xm__order { flex-direction: row; order: 5; }
+  .xm__name { flex-basis: calc(100% - 60px); }
+  .xm__actions { width: 100%; justify-content: space-between; }
+  .adm-grid-2.xm__grid { grid-template-columns: minmax(0, 1fr); }
 }

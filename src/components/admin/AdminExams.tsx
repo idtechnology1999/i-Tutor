@@ -100,8 +100,8 @@ const EditRow: React.FC<{ exam: ExamInfo; onDone: () => void; nav: AdminNav }> =
       .finally(() => setBusy(false));
   };
   return (
-    <form className="adm-exams__edit" onSubmit={save}>
-      <div className="adm-grid-2">
+    <form className="xm__form" onSubmit={save}>
+      <div className="adm-grid-2 xm__grid">
         <label className="adm-field">
           <span>Short name</span>
           <input className="adm-input" value={d.label} onChange={(e) => setD({ ...d, label: e.target.value })} maxLength={30} />
@@ -119,7 +119,7 @@ const EditRow: React.FC<{ exam: ExamInfo; onDone: () => void; nav: AdminNav }> =
         <span>When it usually runs</span>
         <input className="adm-input" value={d.when} onChange={(e) => setD({ ...d, when: e.target.value })} maxLength={120} placeholder="e.g. May/June · Nov/Dec" />
       </label>
-      <div className="adm-row-actions">
+      <div className="xm__buttons">
         <button type="button" className="adm-btn" onClick={onDone} disabled={busy}>
           Cancel
         </button>
@@ -182,62 +182,28 @@ export const ExamsCard: React.FC<{ nav: AdminNav }> = ({ nav }) => {
   };
 
   return (
-    <section className="adm-card adm-exams" aria-labelledby="exams-title">
-      <h2 className="adm-card__title" id="exams-title">
-        Exams
-      </h2>
-      <p className="adm-muted">
-        Students only see exams that are <b>on</b>: in registration, their dashboard, past questions, practice and on the homepage. Switch an exam off while you
-        prepare its questions, then on when it’s ready. Admins always see every exam. {on} of {exams.length} on.
-      </p>
+    <section className="adm-card xm" aria-labelledby="exams-title">
+      <header className="xm__head">
+        <div>
+          <h2 id="exams-title">
+            Exams <span className="xm__count">{on} of {exams.length} on</span>
+          </h2>
+          <p className="xm__lead">
+            Students only see exams that are <b>on</b>, in registration, their dashboard, past questions, practice and the homepage. Keep an exam off while you
+            prepare it; you’ll still see it everywhere in admin.
+          </p>
+        </div>
+        {!adding && (
+          <button type="button" className="adm-btn adm-btn--primary" onClick={() => setAdding(true)}>
+            <Plus size={16} aria-hidden /> Add exam
+          </button>
+        )}
+      </header>
 
-      <ul className="adm-exams__list">
-        {exams.map((e, i) => (
-          <li key={e.id} className={e.enabled ? '' : 'is-off'}>
-            {editing === e.id ? (
-              <EditRow exam={e} nav={nav} onDone={() => setEditing(null)} />
-            ) : (
-              <>
-                <div className="adm-exams__order">
-                  <button type="button" className="adm-icon-btn" onClick={() => move(e, -1)} disabled={i === 0} aria-label={`Move ${e.label} up`}>
-                    <ArrowUp size={16} aria-hidden />
-                  </button>
-                  <button type="button" className="adm-icon-btn" onClick={() => move(e, 1)} disabled={i === exams.length - 1} aria-label={`Move ${e.label} down`}>
-                    <ArrowDown size={16} aria-hidden />
-                  </button>
-                </div>
-                <div className="adm-exams__name">
-                  <strong>{e.label}</strong>
-                  <span>{e.name}</span>
-                  <small title={KIND[e.kind].help}>
-                    {KIND[e.kind].label}
-                    {e.builtIn ? '' : ' · added'}
-                  </small>
-                </div>
-                <button type="button" className="adm-link" onClick={() => setEditing(e.id)} aria-label={`Edit ${e.label}`}>
-                  <Pencil size={15} aria-hidden /> Edit
-                </button>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={e.enabled}
-                  aria-label={`${e.label} ${e.enabled ? 'on' : 'off'}`}
-                  className={`adm-switch${e.enabled ? ' is-on' : ''}`}
-                  onClick={() => askSwitch(e)}
-                >
-                  <i aria-hidden />
-                  <span>{e.enabled ? 'On' : 'Off'}</span>
-                </button>
-              </>
-            )}
-          </li>
-        ))}
-      </ul>
-
-      {adding ? (
-        <form className="adm-exams__add" onSubmit={askAdd}>
+      {adding && (
+        <form className="xm__form xm__add" onSubmit={askAdd}>
           <h3>Add an exam</h3>
-          <div className="adm-grid-2">
+          <div className="adm-grid-2 xm__grid">
             <label className="adm-field">
               <span>Short name</span>
               <input className="adm-input" value={draft.label} onChange={(e) => setDraft({ ...draft, label: e.target.value })} placeholder="e.g. JUPEB" maxLength={30} autoFocus />
@@ -261,7 +227,7 @@ export const ExamsCard: React.FC<{ nav: AdminNav }> = ({ nav }) => {
             <span>When it usually runs (optional)</span>
             <input className="adm-input" value={draft.when} onChange={(e) => setDraft({ ...draft, when: e.target.value })} placeholder="e.g. May/June · Nov/Dec" maxLength={120} />
           </label>
-          <fieldset className="adm-exams__kind">
+          <fieldset className="xm__kind">
             <legend>How it works</legend>
             {(['cert', 'jamb'] as const).map((k) => (
               <label key={k} className={draft.kind === k ? 'is-on' : ''}>
@@ -273,11 +239,11 @@ export const ExamsCard: React.FC<{ nav: AdminNav }> = ({ nav }) => {
               </label>
             ))}
           </fieldset>
-          <label className="adm-check-row">
+          <label className="xm__check">
             <input type="checkbox" checked={draft.enabled} onChange={(e) => setDraft({ ...draft, enabled: e.target.checked })} />
             Switch it on straight away (leave off to add its questions first)
           </label>
-          <div className="adm-row-actions">
+          <div className="xm__buttons">
             <button
               type="button"
               className="adm-btn"
@@ -293,11 +259,58 @@ export const ExamsCard: React.FC<{ nav: AdminNav }> = ({ nav }) => {
             </button>
           </div>
         </form>
-      ) : (
-        <button type="button" className="adm-btn" onClick={() => setAdding(true)}>
-          <Plus size={16} aria-hidden /> Add an exam
-        </button>
       )}
+
+      <ul className="xm__list">
+        {exams.map((e, i) =>
+          editing === e.id ? (
+            <li key={e.id} className="xm__row xm__row--edit">
+              <EditRow exam={e} nav={nav} onDone={() => setEditing(null)} />
+            </li>
+          ) : (
+            <li key={e.id} className={`xm__row${e.enabled ? '' : ' is-off'}`}>
+              <div className="xm__order">
+                <button type="button" onClick={() => move(e, -1)} disabled={i === 0} aria-label={`Move ${e.label} up`}>
+                  <ArrowUp size={15} aria-hidden />
+                </button>
+                <button type="button" onClick={() => move(e, 1)} disabled={i === exams.length - 1} aria-label={`Move ${e.label} down`}>
+                  <ArrowDown size={15} aria-hidden />
+                </button>
+              </div>
+              <span className="xm__badge" aria-hidden>
+                {e.label.slice(0, 4).toUpperCase()}
+              </span>
+              <div className="xm__name">
+                <strong>{e.label}</strong>
+                <span>{e.name}</span>
+                <span className="xm__tags">
+                  <span className={`xm__tag xm__tag--${e.kind}`} title={KIND[e.kind].help}>
+                    {KIND[e.kind].label}
+                  </span>
+                  {!e.builtIn && <span className="xm__tag">Added</span>}
+                  {!e.enabled && <span className="xm__tag xm__tag--off">Hidden from students</span>}
+                </span>
+              </div>
+              <div className="xm__actions">
+                <button type="button" className="adm-link" onClick={() => setEditing(e.id)} aria-label={`Edit ${e.label}`}>
+                  <Pencil size={15} aria-hidden /> Edit
+                </button>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={e.enabled}
+                  aria-label={`${e.label}: ${e.enabled ? 'on' : 'off'}`}
+                  className={`adm-switch${e.enabled ? ' is-on' : ''}`}
+                  onClick={() => askSwitch(e)}
+                >
+                  <i aria-hidden />
+                  <span>{e.enabled ? 'On' : 'Off'}</span>
+                </button>
+              </div>
+            </li>
+          ),
+        )}
+      </ul>
 
       {confirm && <PasswordDialog title={confirm.title} message={confirm.message} action={confirm.action} onConfirm={confirm.run} onClose={() => setConfirm(null)} />}
     </section>
