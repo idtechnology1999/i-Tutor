@@ -22,6 +22,7 @@ import { bool, image, items, lines, link, mediaSrc, str, useCmsEnv } from './rea
 import { iconFor } from './icons';
 import { Accent, CmsButton, Markdown } from './text';
 import type { BlockData, CmsBlock } from './types';
+import { fillStats, useSiteStats } from '../lib/site-stats';
 
 /* How each block looks on the website. The site-section blocks are the
    homepage's own markup, so CMS pages match the rest of the site. */
@@ -256,7 +257,8 @@ const VideoBlock: R = ({ d, id }) => {
 const HeroBlock: R = ({ d, id }) => {
   const primary = link(d.primary);
   const secondary = link(d.secondary);
-  const pill = str(d.pill);
+  const stats = useSiteStats();
+  const pill = fillStats(str(d.pill), stats);
   return (
     <section className="lp-hero lp-hero--banner" id={id}>
       <div className="lp-banner">
@@ -311,29 +313,33 @@ const HeroBlock: R = ({ d, id }) => {
   );
 };
 
-const StatsBlock: R = ({ d, id }) => (
-  <section className="lp-proof" aria-label="At a glance" id={id}>
-    <div className="lp-wrap lp-proof__grid">
-      {items(d.items).map((s, i) => {
-        const value = str(s.value);
-        // "2,400+" counts up as it scrolls into view.
-        const count = /^[\d,]+\+$/.test(value) ? Number(value.replace(/[,+]/g, '')) : null;
-        return (
-          <div key={i}>
-            {count ? (
-              <b data-count={count} data-count-group="true" data-count-suffix="+">
-                {value}
-              </b>
-            ) : (
-              <b>{value}</b>
-            )}
-            <span>{str(s.label)}</span>
-          </div>
-        );
-      })}
-    </div>
-  </section>
-);
+const StatsBlock: R = ({ d, id }) => {
+  // {questions}, {jambYears}… become real numbers from the question bank.
+  const stats = useSiteStats();
+  return (
+    <section className="lp-proof" aria-label="At a glance" id={id}>
+      <div className="lp-wrap lp-proof__grid">
+        {items(d.items).map((s, i) => {
+          const value = fillStats(str(s.value), stats);
+          // "1,234" or "2,400+" counts up as it scrolls into view.
+          const count = /^[\d,]+\+?$/.test(value) ? Number(value.replace(/[,+]/g, '')) : null;
+          return (
+            <div key={i}>
+              {count ? (
+                <b data-count={count} data-count-group="true" data-count-suffix={value.endsWith('+') ? '+' : ''}>
+                  {value}
+                </b>
+              ) : (
+                <b>{value}</b>
+              )}
+              <span>{fillStats(str(s.label), stats)}</span>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+};
 
 const ShowcaseBlock: R = ({ d, id }) => (
   <section className="lp-showcase-carve" id={id}>

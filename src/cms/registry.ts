@@ -311,16 +311,21 @@ export const BLOCKS: BlockDef[] = [
         max: 6,
         blank: { value: '100+', label: 'what it counts' },
         fields: [
-          { kind: 'text', key: 'value', label: 'Number', help: 'Numbers like 2,400+ count up as the visitor scrolls.' },
+          {
+            kind: 'text',
+            key: 'value',
+            label: 'Number',
+            help: 'Live from your question bank: {questions}, {jambYears}, {years}, {subjects}, {exams}, {schools} (labels can use {examNames}). Plain numbers like 2,400+ count up as the visitor scrolls.',
+          },
           { kind: 'text', key: 'label', label: 'Label' },
         ],
       },
     ],
     defaults: {
       items: [
-        { value: '2,400+', label: 'verified past questions' },
-        { value: '2005–2025', label: 'JAMB papers covered' },
-        { value: '2', label: 'teachers check every item' },
+        { value: '{questions}', label: 'verified past questions' },
+        { value: '{jambYears}', label: 'JAMB papers covered' },
+        { value: '{subjects}', label: 'subjects to practise' },
       ],
     },
   },

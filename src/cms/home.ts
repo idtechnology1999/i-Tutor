@@ -58,7 +58,7 @@ export const HOME_BLOCKS: CmsBlock[] = [
       title: 'Practise the real CBT.\n*Understand every answer.*',
       lead: 'Verified JAMB past questions, timed mock exams like the hall, and a tutor that walks you to the answer.',
       image: { src: '/images/student-cbt-focus.jpg', alt: 'A secondary-school student working at a computer in a school CBT lab' },
-      pill: '2,400+ verified past questions',
+      pill: '{questions} verified past questions',
       primary: { label: 'Start a free mock', href: 'action:cbt' },
       secondary: { label: 'Try a question first', href: '#sample' },
       showStat: true,
@@ -73,10 +73,10 @@ export const HOME_BLOCKS: CmsBlock[] = [
     type: 'stats',
     data: {
       items: [
-        { value: '2,400+', label: 'verified past questions' },
-        { value: '2005–2025', label: 'JAMB papers covered' },
-        { value: '2', label: 'teachers check every item' },
-        { value: '100%', label: 'works offline once downloaded' },
+        { value: '{questions}', label: 'verified past questions' },
+        { value: '{jambYears}', label: 'JAMB papers covered' },
+        { value: '{subjects}', label: 'subjects to practise' },
+        { value: '{exams}', label: 'exams covered: {examNames}' },
       ],
     },
   },
