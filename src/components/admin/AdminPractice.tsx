@@ -18,7 +18,7 @@ import {
   setPracticeStatus,
   updatePractice,
 } from '../../services/practice';
-import type { PracticePage, PracticeSettings, RealExam, Source, Target } from '../../services/practice';
+import type { PracticePage, PracticeSettings, RealExam, Source, SubjectCount, Target } from '../../services/practice';
 import { QuestionEditor } from './QuestionEditor';
 import type { AdminNav } from './AdminApp';
 import { PageHead, StatusChip } from './AdminApp';
@@ -235,7 +235,7 @@ export const AdminPractice: React.FC<{ nav: AdminNav }> = ({ nav }) => {
   const [target, setTarget] = useState<'' | RealExam>('UTME');
   const [subject, setSubject] = useState<CmsSubject>('English');
   const [settings, setSettings] = useState<PracticeSettings[]>([]);
-  const [summary, setSummary] = useState<Array<{ subject: string; total: number; published: number }>>([]);
+  const [summary, setSummary] = useState<SubjectCount[]>([]);
   const [data, setData] = useState<PracticePage | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -529,12 +529,32 @@ export const AdminPractice: React.FC<{ nav: AdminNav }> = ({ nav }) => {
             const total = row?.total ?? 0;
             return (
               <option key={s} value={s}>
-                {s}: {n(live)} live{total > live ? `, ${n(total - live)} draft` : ''}
+                {s}: {n(live)} practice{total > live ? ` (+${n(total - live)} draft)` : ''}
+                {target ? ` · ${n(row?.past ?? 0)} past` : ''}
               </option>
             );
           })}
         </select>
       </label>
+
+      {(() => {
+        // Say plainly where students' questions come from while the practice bank is empty.
+        if (!target || !setting) return null;
+        const row = summary.find((x) => x.subject === subject);
+        const live = row?.published ?? 0;
+        const past = row?.past ?? 0;
+        if (live > 0) return null;
+        return (
+          <p className="adm-px__note">
+            <Info size={16} aria-hidden />
+            {setting.source === 'practice'
+              ? `There are no published ${examName} ${subject} practice questions yet, so students get none here. Write some below, or switch “Questions come from” to Mix or Past questions.`
+              : past
+                ? `The ${examName} ${subject} practice bank is empty, so students’ practice sets use the ${n(past)} ${examName} past questions for now. Practice questions you publish are mixed in automatically.`
+                : `There are no ${examName} ${subject} questions yet, in the practice bank or past papers. Write some practice questions below.`}
+          </p>
+        );
+      })()}
 
       {/* ------------------------------------------------------- AI writer */}
       <section className="adm-pr__ai" aria-labelledby="pr-ai-title">

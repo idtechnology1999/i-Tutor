@@ -151,16 +151,31 @@ export async function listPractice(q: {
   return api<PracticePage>(`/api/admin/practice/questions?${params}`);
 }
 
+export interface SubjectCount {
+  subject: string;
+  /** Practice-bank questions. */
+  total: number;
+  published: number;
+  /** For one exam: its published past questions, which sets can mix in. */
+  past?: number;
+}
+
 /** Totals per subject, for the subject picker. */
-export async function practiceSummary(target: Target): Promise<Array<{ subject: string; total: number; published: number }>> {
+export async function practiceSummary(target: Target): Promise<SubjectCount[]> {
   if (!isLive) {
-    const per = new Map<string, { subject: string; total: number; published: number }>();
+    const per = new Map<string, Required<SubjectCount>>();
+    const rowOf = (subject: string) => {
+      const row = per.get(subject) ?? { subject, total: 0, published: 0, past: 0 };
+      per.set(subject, row);
+      return row;
+    };
     for (const x of localQuestions().filter((q) => inTarget(q, target))) {
-      const row = per.get(x.subject) ?? { subject: x.subject, total: 0, published: 0 };
+      const row = rowOf(x.subject);
       row.total += 1;
       if (x.status === 'published') row.published += 1;
-      per.set(x.subject, row);
     }
+    if (target !== 'all' && target !== '')
+      for (const x of localQuestions()) if (x.examType === target && x.status === 'published') rowOf(x.subject).past += 1;
     return [...per.values()];
   }
   return api(`/api/admin/practice/summary?target=${encodeURIComponent(target)}`);
