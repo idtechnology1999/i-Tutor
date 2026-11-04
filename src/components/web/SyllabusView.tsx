@@ -19,9 +19,10 @@ type CheckMode = 'during' | 'after';
 const MODE_KEY = 'itutor-pq-check';
 const savedMode = (): CheckMode => {
   try {
-    return window.localStorage.getItem(MODE_KEY) === 'after' ? 'after' : 'during';
+    // After is the default, like a real exam; During only when the student chose it.
+    return window.localStorage.getItem(MODE_KEY) === 'during' ? 'during' : 'after';
   } catch {
-    return 'during';
+    return 'after';
   }
 };
 
@@ -190,110 +191,113 @@ export const SyllabusView: React.FC<Props> = ({ initialExam, initialSchool, exam
 
   return (
     <div className="jamb pq-cbt">
-      <header className="jamb__top pq-cbt__top">
-        <div className="jamb__brand">
-          <strong>{paperName} past questions</strong>
-          <span>i-Tutor CBT · {after ? 'check your answers at the end' : 'see each answer as you go'}, no timer</span>
-        </div>
-        <div className="pq-cbt__picks">
-          {examTabs.length > 1 && (
+      {/* Exam, year, score and subjects stay in view while scrolling through a question. */}
+      <div className="pq-cbt__sticky">
+        <header className="jamb__top pq-cbt__top">
+          <div className="jamb__brand">
+            <strong>{paperName} past questions</strong>
+            <span>i-Tutor CBT · {after ? 'check your answers at the end' : 'see each answer as you go'}, no timer</span>
+          </div>
+          <div className="pq-cbt__picks">
+            {examTabs.length > 1 && (
+              <label className="pq-cbt__exam">
+                <small>1 · Exam</small>
+                <select value={exam} onChange={(e) => pickExam(e.target.value as ExamType)} aria-label="Exam">
+                  {examTabs.map((t) => (
+                    <option key={t} value={t} title={EXAM_FULL_NAME[t]}>
+                      {EXAM_LABEL[t]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {bySchool && (
+              <label className="pq-cbt__exam">
+                <small>{examTabs.length > 1 ? '2 · ' : ''}School</small>
+                <select
+                  value={school}
+                  onChange={(e) => {
+                    setSchool(e.target.value);
+                    setYear(null);
+                    restart();
+                  }}
+                  aria-label="School"
+                >
+                  <option value="">All schools</option>
+                  {SCHOOLS.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.id}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <label className="pq-cbt__exam">
-              <small>1 · Exam</small>
-              <select value={exam} onChange={(e) => pickExam(e.target.value as ExamType)} aria-label="Exam">
-                {examTabs.map((t) => (
-                  <option key={t} value={t} title={EXAM_FULL_NAME[t]}>
-                    {EXAM_LABEL[t]}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          {bySchool && (
-            <label className="pq-cbt__exam">
-              <small>{examTabs.length > 1 ? '2 · ' : ''}School</small>
+              <small>
+                {examTabs.length > 1 ? `${bySchool ? 3 : 2} · ` : ''}Year
+              </small>
               <select
-                value={school}
+                value={shownYear ?? ''}
                 onChange={(e) => {
-                  setSchool(e.target.value);
-                  setYear(null);
+                  setYear(Number(e.target.value));
                   restart();
                 }}
-                aria-label="School"
+                aria-label="Year"
+                disabled={!years.length}
               >
-                <option value="">All schools</option>
-                {SCHOOLS.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.id}
+                {!years.length && <option value="">No years yet</option>}
+                {years.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
                   </option>
                 ))}
               </select>
             </label>
-          )}
-          <label className="pq-cbt__exam">
-            <small>
-              {examTabs.length > 1 ? `${bySchool ? 3 : 2} · ` : ''}Year
-            </small>
-            <select
-              value={shownYear ?? ''}
-              onChange={(e) => {
-                setYear(Number(e.target.value));
-                restart();
-              }}
-              aria-label="Year"
-              disabled={!years.length}
-            >
-              {!years.length && <option value="">No years yet</option>}
-              {years.map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <div className="jamb__time pq-cbt__score" aria-label={after ? 'Answered' : 'Your score'}>
-          <small>{after ? 'Answered' : 'Score'}</small>
-          <strong>{after ? `${pickedHere}/${list.length}` : `${rightCount}/${triedIds.length}`}</strong>
-        </div>
-      </header>
+          </div>
+          <div className="jamb__time pq-cbt__score" aria-label={after ? 'Answered' : 'Your score'}>
+            <small>{after ? 'Answered' : 'Score'}</small>
+            <strong>{after ? `${pickedHere}/${list.length}` : `${rightCount}/${triedIds.length}`}</strong>
+          </div>
+        </header>
 
-      <nav className="jamb__subjects pq-cbt__bar" aria-label="Subjects">
-        {subjects.map((s) => {
-          const qs = inYear.filter((x) => x.subject === s);
-          return (
-            <button key={s} type="button" className={s === subject ? 'is-on' : ''} onClick={() => pickSubject(s)} aria-current={s === subject ? 'true' : undefined}>
-              {s}
-              <small>
-                {qs.filter((x) => (after ? picks[x.id] : tried[x.id]) !== undefined).length}/{qs.length}
-              </small>
-            </button>
-          );
-        })}
-        <span className="jamb__tools pq-cbt__tools">
-          <span className="pq-cbt__mode" role="group" aria-label="When to check answers">
-            <small>Check answers</small>
-            <button type="button" className={!after ? 'is-on' : ''} aria-pressed={!after} onClick={() => switchMode('during')}>
-              During
-            </button>
-            <button type="button" className={after ? 'is-on' : ''} aria-pressed={after} onClick={() => switchMode('after')}>
-              After
-            </button>
+        <nav className="jamb__subjects pq-cbt__bar" aria-label="Subjects">
+          {subjects.map((s) => {
+            const qs = inYear.filter((x) => x.subject === s);
+            return (
+              <button key={s} type="button" className={s === subject ? 'is-on' : ''} onClick={() => pickSubject(s)} aria-current={s === subject ? 'true' : undefined}>
+                {s}
+                <small>
+                  {qs.filter((x) => (after ? picks[x.id] : tried[x.id]) !== undefined).length}/{qs.length}
+                </small>
+              </button>
+            );
+          })}
+          <span className="jamb__tools pq-cbt__tools">
+            <span className="pq-cbt__mode" role="group" aria-label="When to check answers">
+              <small>Check answers</small>
+              <button type="button" className={!after ? 'is-on' : ''} aria-pressed={!after} onClick={() => switchMode('during')}>
+                During
+              </button>
+              <button type="button" className={after ? 'is-on' : ''} aria-pressed={after} onClick={() => switchMode('after')}>
+                After
+              </button>
+            </span>
+            <label className="pq-cbt__search">
+              <Search size={16} aria-hidden />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  restart();
+                }}
+                placeholder={`Search ${subject}`}
+                aria-label={`Search ${paperName} ${subject} questions`}
+              />
+            </label>
           </span>
-          <label className="pq-cbt__search">
-            <Search size={16} aria-hidden />
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                restart();
-              }}
-              placeholder={`Search ${subject}`}
-              aria-label={`Search ${paperName} ${subject} questions`}
-            />
-          </label>
-        </span>
-      </nav>
+        </nav>
+      </div>
 
       <main className="jamb__body">
         {!q ? (

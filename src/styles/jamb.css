@@ -729,3 +729,15 @@
   .jamb__leave { padding: 0 10px; }
   .jamb__leave span { display: none; }
 }
+
+/* Past questions: the exam bar and subject row stay in view under the site menu. */
+.pq-cbt__sticky {
+  position: sticky;
+  top: var(--nav-h, 64px);
+  z-index: 40;
+  box-shadow: 0 8px 18px -14px rgba(11, 31, 30, 0.45);
+}
+/* Phones: that block is tall, so it scrolls away to leave room for the question. */
+@media (max-width: 720px) {
+  .pq-cbt__sticky { position: static; box-shadow: none; }
+}
