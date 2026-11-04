@@ -5,6 +5,14 @@
   "cleanUrls": true,
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "https://i-shelf.app/api-i-tutor/api/:path*"
+    },
+    {
+      "source": "/uploads/:path*",
+      "destination": "https://i-shelf.app/api-i-tutor/uploads/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/"
     }

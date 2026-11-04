@@ -11,10 +11,20 @@
    with credentials. Never put API keys (AI, Paystack secret) in the frontend.
    -------------------------------------------------------------------------- */
 
-export const API_BASE = (import.meta.env.VITE_API_URL ?? '').trim().replace(/\/+$/, '');
+const CONFIGURED = (import.meta.env.VITE_API_URL ?? '').trim().replace(/\/+$/, '');
 
 /** True when a backend address is configured; false means demo mode. */
-export const isLive = API_BASE !== '';
+export const isLive = CONFIGURED !== '';
+
+/**
+ * Where requests go. The built site uses its own address: vercel.json
+ * forwards /api/… and /uploads/… to the backend, so the sign-in cookie
+ * belongs to the site itself. A cookie from another site (the backend's own
+ * domain) is blocked by incognito windows, Safari and Brave, which signed
+ * people straight back out. Development (npm run dev) talks to the backend
+ * directly; VITE_API_DIRECT=true does the same in a build.
+ */
+export const API_BASE = isLive && import.meta.env.PROD && import.meta.env.VITE_API_DIRECT !== 'true' ? '' : CONFIGURED;
 
 // While developing, say which backend this tab is using (npm run dev = local,
 // npm run dev:live = the live server). Never shown in the built site.
