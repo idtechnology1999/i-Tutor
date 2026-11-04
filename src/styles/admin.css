@@ -3354,3 +3354,14 @@
   .adm-side__item { min-height: 36px; }
   .adm-side__foot .adm-mode { margin-bottom: 4px; }
 }
+
+/* Exams switched off in Settings → Exams: greyed out and not clickable */
+.adm-px__exams button:disabled,
+.adm-exams button:disabled,
+.adm-tabs button:disabled,
+.adm-seg button:disabled:not(.is-taken) {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-style: dashed;
+}
+.adm-px__exams button:disabled:hover { border-color: var(--rule); color: var(--ink-3); }

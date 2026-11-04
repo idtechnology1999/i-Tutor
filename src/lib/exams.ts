@@ -64,6 +64,8 @@ export const allExams = () => all;
 /** The exams students see. */
 export const liveExams = () => all.filter((e) => e.enabled);
 export const isLiveExam = (id: string) => all.some((e) => e.id === id && e.enabled);
+/** Shown on an admin's exam button that can't be used because the exam is off. */
+export const OFF_NOTE = 'switched off in Settings → Exams. Switch it on there to work on it.';
 export const examInfo = (id: string) => all.find((e) => e.id === id);
 export const kindOf = (id: string): ExamKind | undefined => examInfo(id)?.kind;
 export const isJambLike = (id: string) => kindOf(id) === 'jamb';

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { CheckSquare, ChevronLeft, ChevronRight, Info, LoaderCircle, Mic, Plus, Search, Shuffle, Sparkles, Square, Trash2, Upload, X } from 'lucide-react';
 import { CMS_SUBJECTS, EXAM_LABEL, PRACTICE } from '../../lib/cms';
-import { isCertLike, useExams } from '../../lib/exams';
+import { OFF_NOTE, isCertLike, isLiveExam, liveExams, useExams } from '../../lib/exams';
 import type { ExamInfo } from '../../lib/exams';
 import type { CmsQuestion, CmsSubject, QuestionDraft } from '../../lib/cms';
 import { SYLLABUS_LABEL, syllabusTopics } from '../../data/waec-syllabus';
@@ -44,7 +44,7 @@ const PAGE = 50;
 /** '' = shared by every exam; then every exam in Admin → Settings → Exams (on or off, so a bank can be filled before it goes live). */
 const tabsFor = (exams: ExamInfo[]): Array<{ id: '' | RealExam; label: string; full: string; off: boolean }> => [
   { id: '', label: 'Shared', full: 'Questions for every exam', off: false },
-  ...exams.map((e) => ({ id: e.id, label: e.label, full: e.enabled ? e.name : `${e.name} (switched off: students can’t see it yet)`, off: !e.enabled })),
+  ...exams.map((e) => ({ id: e.id, label: e.label, full: e.name, off: !e.enabled })),
 ];
 
 const SOURCES: Array<{ id: Source; label: string; help: string }> = [
@@ -256,6 +256,10 @@ const SettingsCard: React.FC<{
 export const AdminPractice: React.FC<{ nav: AdminNav }> = ({ nav }) => {
   const exams = useExams();
   const [target, setTarget] = useState<'' | RealExam>('UTME');
+  // An exam switched off in Settings → Exams can't be worked on here: move to the first one that's on.
+  useEffect(() => {
+    if (target && !isLiveExam(target)) setTarget(liveExams()[0]?.id ?? '');
+  }, [target, exams]);
   const [subject, setSubject] = useState<CmsSubject>('English');
   const [settings, setSettings] = useState<PracticeSettings[]>([]);
   const [summary, setSummary] = useState<SubjectCount[]>([]);
@@ -602,7 +606,8 @@ export const AdminPractice: React.FC<{ nav: AdminNav }> = ({ nav }) => {
             type="button"
             className={`${target === t.id ? 'is-on' : ''}${t.off ? ' is-off' : ''}`}
             onClick={() => pickTarget(t.id)}
-            title={t.full}
+            disabled={t.off}
+            title={t.off ? `${t.label}: ${OFF_NOTE}` : t.full}
             aria-pressed={target === t.id}
           >
             {t.label}

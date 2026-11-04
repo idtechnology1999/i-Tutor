@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { isLiveExam } from '../../lib/exams';
 import { CircleAlert, Plus, Trash2, X } from 'lucide-react';
 import { CMS_SUBJECTS, EXAM_LABEL, EXAM_TYPES, needsSchool } from '../../lib/cms';
 import { SCHOOLS } from '../../lib/schools';
@@ -107,9 +108,11 @@ export const QuestionEditor: React.FC<Props> = ({ initial, isNew, onClose, onSav
             <label className="adm-field">
               <span>Exam</span>
               <select className="adm-input" value={q.examType} onChange={(e) => set('examType', e.target.value as QuestionDraft['examType'])}>
+                {/* Switched-off exams can't be chosen (a question already in one keeps it). */}
                 {EXAM_TYPES.map((s) => (
-                  <option key={s} value={s}>
+                  <option key={s} value={s} disabled={!isLiveExam(s) && s !== q.examType}>
                     {EXAM_LABEL[s]}
+                    {isLiveExam(s) ? '' : ' (off)'}
                   </option>
                 ))}
               </select>

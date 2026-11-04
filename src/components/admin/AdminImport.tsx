@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { OFF_NOTE, isLiveExam, liveExams } from '../../lib/exams';
 import {
   ArrowLeft,
   Check,
@@ -60,7 +61,9 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
   const { questions } = useCms();
   const [stage, setStage] = useState<Stage>('setup');
   const [subject, setSubject] = useState<CmsSubject>(preset?.subject ?? 'Physics');
-  const [examType, setExamType] = useState<ExamType>(preset?.exam ?? 'UTME');
+  const [pickedExam, setExamType] = useState<ExamType>(preset?.exam ?? 'UTME');
+  // A switched-off exam can't be imported into: the first one that's on stands in.
+  const examType = isLiveExam(pickedExam) ? pickedExam : (liveExams()[0]?.id ?? pickedExam);
   const [school, setSchool] = useState(preset?.school ?? '');
   const [year, setYear] = useState(preset?.year ? String(preset.year) : '');
   // Coming from a subject/year in the bank: details are already known.
@@ -563,8 +566,8 @@ export const AdminImport: React.FC<{ nav: AdminNav; preset?: ImportPreset | null
                     aria-checked={examType === t}
                     className={`${examType === t ? 'is-on' : ''}${taken ? ' is-taken' : ''}`}
                     onClick={() => setExamType(t)}
-                    disabled={taken}
-                    title={taken ? `${EXAM_LABEL[t]} ${subject} ${yearNum} is already added` : undefined}
+                    disabled={taken || !isLiveExam(t)}
+                    title={!isLiveExam(t) ? `${EXAM_LABEL[t]}: ${OFF_NOTE}` : taken ? `${EXAM_LABEL[t]} ${subject} ${yearNum} is already added` : undefined}
                   >
                     {EXAM_LABEL[t]}
                     {taken && <small>added</small>}

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Layers, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { CMS_SUBJECTS, EXAM_FULL_NAME, EXAM_LABEL, cms, useCms } from '../../lib/cms';
 import type { CmsCourse, FacultySet } from '../../lib/cms';
-import { isJambLike } from '../../lib/exams';
+import { OFF_NOTE, isJambLike, isLiveExam } from '../../lib/exams';
 import { COURSE_EXAMS, FACULTIES } from '../../data/courses';
 import type { CourseExam } from '../../data/courses';
 import type { AdminNav } from './AdminApp';
@@ -258,7 +258,9 @@ const FacultySetEditor: React.FC<{
 export const AdminCourses: React.FC<{ nav: AdminNav }> = ({ nav }) => {
   const { courses, questions, facultySets } = useCms();
   const [editingSet, setEditingSet] = useState<FacultySet | null>(null);
-  const [exam, setExam] = useState<CourseExam>(COURSE_EXAMS[0] ?? 'UTME');
+  const [pickedExam, setExam] = useState<CourseExam>(COURSE_EXAMS[0] ?? 'UTME');
+  // A switched-off exam can't be worked on: the first one that's on stands in.
+  const exam = isLiveExam(pickedExam) ? pickedExam : (COURSE_EXAMS.find(isLiveExam) ?? pickedExam);
   const [editing, setEditing] = useState<CmsCourse | 'new' | null>(null);
   const [search, setSearch] = useState('');
   const isUtme = isJambLike(exam);
@@ -366,7 +368,8 @@ export const AdminCourses: React.FC<{ nav: AdminNav }> = ({ nav }) => {
               setExam(t);
               setSearch('');
             }}
-            title={EXAM_FULL_NAME[t]}
+            disabled={!isLiveExam(t)}
+            title={isLiveExam(t) ? EXAM_FULL_NAME[t] : `${EXAM_LABEL[t]}: ${OFF_NOTE}`}
           >
             {EXAM_LABEL[t]}
             <small>{courses.filter((c) => (c.exam ?? 'UTME') === t).length}</small>

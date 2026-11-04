@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { OFF_NOTE, isLiveExam, liveExams, useExams } from '../../lib/exams';
 import { Pencil, Plus, RefreshCw, ScanText, Search, Trash2 } from 'lucide-react';
 import { CMS_SUBJECTS, EXAM_FULL_NAME, EXAM_LABEL, EXAM_TYPES, cms, needsSchool, paperSize, useCms } from '../../lib/cms';
 import { SCHOOLS } from '../../lib/schools';
@@ -35,6 +36,13 @@ export const AdminQuestions: React.FC<{
   const [askReplace, setAskReplace] = useState(false);
 
   const { exam, school, subject, year } = scope;
+  // An exam switched off in Settings → Exams can't be worked on: move to the first one that's on.
+  const examList = useExams();
+  useEffect(() => {
+    const first = liveExams()[0]?.id;
+    if (!isLiveExam(exam) && first) setScope({ exam: first, school: '', year: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exam, examList]);
   const bySchool = needsSchool(exam);
   // "UNILAG Post-UTME" when a school is chosen, otherwise just the exam.
   const examName = bySchool && school ? `${school} ${EXAM_LABEL[exam]}` : EXAM_LABEL[exam];
@@ -149,7 +157,8 @@ export const AdminQuestions: React.FC<{
                 aria-checked={exam === t}
                 className={exam === t ? 'is-on' : ''}
                 onClick={() => setScope({ exam: t, school: '', year: null })}
-                title={EXAM_FULL_NAME[t]}
+                disabled={!isLiveExam(t)}
+                title={isLiveExam(t) ? EXAM_FULL_NAME[t] : `${EXAM_LABEL[t]}: ${OFF_NOTE}`}
               >
                 <strong>{EXAM_LABEL[t]}</strong>
                 <small>{questions.filter((q) => q.examType === t).length} questions</small>
