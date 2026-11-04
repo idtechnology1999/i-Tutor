@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { api, isLive } from './api';
 import { PRACTICE, cms, localQuestions } from '../lib/cms';
 import type { CmsQuestion, CmsSubject, ExamType, QuestionDraft } from '../lib/cms';
@@ -239,3 +240,47 @@ export async function getPracticeSet(exam: RealExam, subject: string, size?: num
   return api<PracticeSet>(`/api/practice/set?${params}`);
 }
 
+
+/* ------------------------------------------- Student: what's ready to practise */
+
+export interface ExamCount {
+  subject: string;
+  past: number;
+  practice: number;
+}
+
+/** Published questions per subject an exam's practice can draw on (past + its own and shared practice). */
+export async function getExamCounts(exam: RealExam): Promise<ExamCount[]> {
+  if (!isLive) {
+    const per = new Map<string, ExamCount>();
+    for (const q of localQuestions()) {
+      if (q.status !== 'published') continue;
+      const practice = q.examType === PRACTICE && (!q.target || q.target === exam);
+      if (!practice && q.examType !== exam) continue;
+      const row = per.get(q.subject) ?? { subject: q.subject, past: 0, practice: 0 };
+      if (practice) row.practice += 1;
+      else row.past += 1;
+      per.set(q.subject, row);
+    }
+    return [...per.values()];
+  }
+  return api<ExamCount[]>(`/api/practice/counts?exam=${encodeURIComponent(exam)}`);
+}
+
+/** getExamCounts as a React hook: a count lookup by subject (0 until loaded). */
+export function useExamCounts(exam: RealExam): (subject: string) => number {
+  const [rows, setRows] = useState<ExamCount[]>([]);
+  useEffect(() => {
+    let live = true;
+    getExamCounts(exam)
+      .then((r) => live && setRows(r))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [exam]);
+  return (subject) => {
+    const row = rows.find((r) => r.subject === subject);
+    return row ? row.past + row.practice : 0;
+  };
+}

@@ -4,6 +4,8 @@ import { EXAM_LABEL, useCms } from '../../lib/cms';
 import type { ExamType } from '../../lib/cms';
 import type { SchoolCert, StudentExam } from '../../types';
 import { STUDENT_EXAMS } from '../../lib/student-exams';
+import { useExamCounts } from '../../services/practice';
+import type { RealExam } from '../../services/practice';
 
 /** When each school-certificate exam usually runs. */
 const WHEN: Partial<Record<StudentExam, string>> = {
@@ -28,7 +30,9 @@ export const ExamRoom: React.FC<Props> = ({ exam, cert, onStart, onPastQuestions
   const info = STUDENT_EXAMS.find((e) => e.id === exam);
   const label = EXAM_LABEL[exam as ExamType] ?? exam;
   const inExam = questions.filter((q) => q.status === 'published' && q.examType === exam);
-  const countFor = (s: string) => inExam.filter((q) => q.subject === s).length;
+  // Past questions plus the practice bank, as the server counts them (the past ones here until it answers).
+  const server = useExamCounts(exam as RealExam);
+  const countFor = (s: string) => Math.max(server(s), inExam.filter((q) => q.subject === s).length);
 
   if (!cert) {
     return (

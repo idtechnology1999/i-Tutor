@@ -168,21 +168,21 @@ async function buildPracticePaper(profile: UserProfile, presetSubject: string): 
 }
 
 /**
- * The UTME mock in JAMB's format (English 60, other subjects 40), with each
- * subject drawn fresh by the server in the share set for JAMB in Admin →
- * Practice questions (e.g. 80% practice bank, 20% past questions); if one
- * side runs short, the other fills the gap. A subject the server can't
- * supply keeps the questions already on this device.
+ * Draws each subject of a paper fresh from the server, in the share set for
+ * that exam in Admin → Practice questions (e.g. 80% practice bank, 20% past
+ * questions); if one side runs short, the other fills the gap. `size` gives
+ * the questions per subject (none = the exam's "Questions in a set"). A
+ * subject the server can't supply keeps the questions already on this device.
  */
-async function buildMockPaper(paper: Paper): Promise<Paper> {
-  const sets = await Promise.all(paper.subjects.map((s) => getPracticeSet('UTME', s, perSubject(s)).catch(() => null)));
+async function drawPaper(paper: Paper, exam: RealExam, size?: (subject: string) => number, maxSeconds = Infinity): Promise<Paper> {
+  const sets = await Promise.all(paper.subjects.map((s) => getPracticeSet(exam, s, size?.(s)).catch(() => null)));
   const questions = paper.subjects.flatMap((s, i) => {
     const here = paper.questions.filter((q) => q.subject === s);
     const drawn = sets[i]?.questions ?? [];
     return drawn.length >= here.length ? drawn.map(toExamQuestion) : here;
   });
   const subjects = paper.subjects.filter((s) => questions.some((q) => q.subject === s));
-  return { ...paper, subjects, questions, seconds: Math.min(MOCK_SECONDS, questions.length * SECONDS_EACH) };
+  return { ...paper, subjects, questions, seconds: Math.min(maxSeconds, questions.length * SECONDS_EACH) };
 }
 
 const clock = (secs: number) => {
@@ -260,7 +260,14 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
     let next = buildPaper(bank, profile, presetSubject, presetCourse);
     // Practice sets come fresh from the server; the questions already here stand in if it can't be reached.
     if (presetSubject) next = await buildPracticePaper(profile, presetSubject).catch(() => next);
-    else if (!presetCourse) next = await buildMockPaper(next);
+    // The UTME mock keeps JAMB's format (English 60, others 40).
+    else if (!presetCourse) next = await drawPaper(next, 'UTME', perSubject, MOCK_SECONDS);
+    // An exam's practice (WAEC, NECO, a course…) follows that exam's settings.
+    // A Post-UTME school's paper stays that school's real past questions.
+    else if (!presetCourse.school) {
+      const exam = (presetCourse.exam ?? 'UTME') as RealExam;
+      next = await drawPaper(next, exam, exam === 'UTME' ? perSubject : undefined);
+    }
     const end = Date.now() + next.seconds * 1000;
     setPaper(next);
     setSubject(next.subjects[0] ?? '');

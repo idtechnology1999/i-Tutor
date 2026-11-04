@@ -20,6 +20,8 @@ import {
   Users,
 } from 'lucide-react';
 import { EXAM_FULL_NAME, EXAM_LABEL, useCms } from '../../lib/cms';
+import { useExamCounts } from '../../services/practice';
+import type { RealExam } from '../../services/practice';
 import type { CmsCourse } from '../../lib/cms';
 import { COURSE_EXAMS, FACULTIES } from '../../data/courses';
 import type { CourseExam } from '../../data/courses';
@@ -80,7 +82,9 @@ export const CourseView: React.FC<Props> = ({ profile, onStart, onUpdateProfile 
   const cardRef = useRef<HTMLElement>(null);
 
   const examQs = questions.filter((q) => q.status === 'published' && q.examType === exam);
-  const countFor = (subject: string) => examQs.filter((q) => q.subject === subject).length;
+  // Past questions plus the practice bank, as the server counts them (the past ones here until it answers).
+  const server = useExamCounts(exam as RealExam);
+  const countFor = (subject: string) => Math.max(server(subject), examQs.filter((q) => q.subject === subject).length);
   const examName = EXAM_LABEL[exam];
   const term = search.trim().toLowerCase();
   const list = term
