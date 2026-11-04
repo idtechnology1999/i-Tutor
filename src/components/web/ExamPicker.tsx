@@ -3,7 +3,8 @@ import { Award, BadgeCheck, Check, ClipboardList, Landmark, School, Wrench } fro
 import type { StudentExam } from '../../types';
 import { STUDENT_EXAMS } from '../../lib/student-exams';
 
-const ICON: Record<StudentExam, typeof Check> = {
+/** Built-in exams' icons; an added exam gets a certificate badge. */
+const ICON: Record<StudentExam, typeof Check | undefined> = {
   UTME: ClipboardList,
   'Post-UTME': Landmark,
   WAEC: School,
@@ -22,7 +23,7 @@ export const ExamPicker: React.FC<Props> = ({ selected, onToggle }) => (
   <div className="exam-pick" role="group" aria-label="Exams">
     {STUDENT_EXAMS.map((e) => {
       const on = selected.includes(e.id);
-      const Icon = ICON[e.id];
+      const Icon = ICON[e.id] ?? BadgeCheck;
       return (
         <button
           key={e.id}

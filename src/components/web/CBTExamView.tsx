@@ -10,7 +10,8 @@ import { tutorById } from '../../data/tutors';
 import { ExamReview } from './ExamReview';
 import { getPracticeSet } from '../../services/practice';
 import type { RealExam } from '../../services/practice';
-import { examsOf } from '../../lib/student-exams';
+import { defaultExam, examsOf } from '../../lib/student-exams';
+import { isBySchool, isJambLike } from '../../lib/exams';
 
 /* The CBT, laid out like JAMB's: candidate bar with the clock, one button per
    subject, radio-button options, a numbered question grid, and Previous /
@@ -142,7 +143,7 @@ function buildPaper(
 /** The exam a student practises for: JAMB if they're sitting it, otherwise their first exam. */
 const practiceExam = (profile: UserProfile): RealExam => {
   const exams = examsOf(profile) as string[];
-  return (exams.includes('UTME') ? 'UTME' : (exams.find((e) => e !== 'Post-UTME') ?? 'UTME')) as RealExam;
+  return (exams.includes('UTME') ? 'UTME' : (exams.find((e) => !isBySchool(e)) ?? defaultExam())) as RealExam;
 };
 
 /**
@@ -266,7 +267,8 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
     // A Post-UTME school's paper stays that school's real past questions.
     else if (!presetCourse.school) {
       const exam = (presetCourse.exam ?? 'UTME') as RealExam;
-      next = await drawPaper(next, exam, exam === 'UTME' ? perSubject : undefined);
+      // JAMB-style exams keep JAMB's format (English 60, others 40).
+      next = await drawPaper(next, exam, isJambLike(exam) ? perSubject : undefined);
     }
     const end = Date.now() + next.seconds * 1000;
     setPaper(next);

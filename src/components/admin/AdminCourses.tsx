@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Layers, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { CMS_SUBJECTS, EXAM_FULL_NAME, EXAM_LABEL, cms, useCms } from '../../lib/cms';
 import type { CmsCourse, FacultySet } from '../../lib/cms';
+import { isJambLike } from '../../lib/exams';
 import { COURSE_EXAMS, FACULTIES } from '../../data/courses';
 import type { CourseExam } from '../../data/courses';
 import type { AdminNav } from './AdminApp';
@@ -14,7 +15,7 @@ const slug = (name: string) =>
     .replace(/^-|-$/g, '');
 
 const blank = (exam: CourseExam): CmsCourse =>
-  exam === 'UTME'
+  isJambLike(exam)
     ? { id: '', name: '', faculty: 'Engineering', subjects: ['English', 'Mathematics', 'Physics', 'Chemistry'], note: '', exam }
     : { id: '', name: '', faculty: '', subjects: ['English', 'Mathematics'], note: '', exam };
 
@@ -35,7 +36,8 @@ const CourseEditor: React.FC<{
 }> = ({ initial, isNew, taken, onClose, onSave, onDelete }) => {
   const [c, setC] = useState<CmsCourse>(initial);
   const [error, setError] = useState('');
-  const isUtme = c.exam === 'UTME';
+  // JAMB, and any exam added to work like it: courses of four subjects, in faculties.
+  const isUtme = isJambLike(c.exam);
   const kind = isUtme ? 'course' : 'class';
 
   useEffect(() => {
@@ -64,7 +66,7 @@ const CourseEditor: React.FC<{
     const id = isNew ? `${isUtme ? '' : `${c.exam.toLowerCase()}-`}${slug(name)}` : c.id;
     if (isNew && taken.has(id)) return setError(`A ${kind} with this name already exists for ${EXAM_LABEL[c.exam]}.`);
     if (new Set(c.subjects).size !== c.subjects.length) return setError('Each subject can only be listed once.');
-    if (isUtme && c.subjects.length !== 4) return setError('JAMB courses need exactly four subjects.');
+    if (isUtme && c.subjects.length !== 4) return setError(`${EXAM_LABEL[c.exam] ?? c.exam} courses need exactly four subjects.`);
     if (!isUtme && c.subjects.length < 3) return setError('Add at least three subjects.');
     onSave({ ...c, id, name, note: c.note.trim() });
   };
@@ -103,7 +105,7 @@ const CourseEditor: React.FC<{
           </div>
 
           <fieldset className="adm-field">
-            <span>{isUtme ? 'JAMB subjects (four)' : `${EXAM_LABEL[c.exam]} subjects`}</span>
+            <span>{isUtme ? `${EXAM_LABEL[c.exam] ?? c.exam} subjects (four)` : `${EXAM_LABEL[c.exam]} subjects`}</span>
             <div className="adm-course-subjects">
               {c.subjects.map((s, i) => (
                 <div key={i} className="adm-course-subject">
@@ -256,10 +258,10 @@ const FacultySetEditor: React.FC<{
 export const AdminCourses: React.FC<{ nav: AdminNav }> = ({ nav }) => {
   const { courses, questions, facultySets } = useCms();
   const [editingSet, setEditingSet] = useState<FacultySet | null>(null);
-  const [exam, setExam] = useState<CourseExam>('UTME');
+  const [exam, setExam] = useState<CourseExam>(COURSE_EXAMS[0] ?? 'UTME');
   const [editing, setEditing] = useState<CmsCourse | 'new' | null>(null);
   const [search, setSearch] = useState('');
-  const isUtme = exam === 'UTME';
+  const isUtme = isJambLike(exam);
   const kind = isUtme ? 'course' : 'class';
 
   const published = questions.filter((q) => q.status === 'published' && q.examType === exam);
@@ -378,7 +380,7 @@ export const AdminCourses: React.FC<{ nav: AdminNav }> = ({ nav }) => {
           type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder={isUtme ? 'Search JAMB courses or faculties' : `Search ${EXAM_LABEL[exam]} classes`}
+          placeholder={isUtme ? `Search ${EXAM_LABEL[exam]} courses or faculties` : `Search ${EXAM_LABEL[exam]} classes`}
           aria-label="Search"
         />
       </label>

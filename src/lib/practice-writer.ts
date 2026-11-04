@@ -2,6 +2,7 @@ import { PRACTICE, cms, questionKey } from './cms';
 import type { CmsQuestion, CmsSubject, QuestionDraft } from './cms';
 import { syllabusTopics } from '../data/waec-syllabus';
 import type { SyllabusChoice } from '../data/waec-syllabus';
+import { examInfo, isBySchool } from './exams';
 import { organiseWithAI } from './question-import';
 
 /** How each exam is named to the AI ('' = questions that suit every exam). */
@@ -84,7 +85,7 @@ export async function writePracticeQuestions(opts: {
   const { subject, count } = opts;
   const syllabus = opts.syllabus ?? 'jamb';
   const exam = opts.exam ?? 'UTME';
-  const style = EXAM_STYLE[exam] ?? 'JAMB UTME';
+  const style = EXAM_STYLE[exam] ?? examInfo(exam)?.name ?? exam;
   const named = opts.topics.map((t) => matchTopic(subject, t, syllabus)).filter(Boolean);
   const all = syllabusTopics(subject, syllabus);
   const topics = named.length ? [...new Set(named)] : all.length ? all : ['General'];
@@ -98,7 +99,7 @@ export async function writePracticeQuestions(opts: {
     try {
       const res = await organiseWithAI({
         subject,
-        examType: exam && exam !== 'Post-UTME' ? (exam as 'UTME' | 'WAEC' | 'NECO' | 'GCE' | 'NABTEB') : 'UTME',
+        examType: exam && !isBySchool(exam) ? exam : 'UTME',
         year: null,
         source: '',
         text:

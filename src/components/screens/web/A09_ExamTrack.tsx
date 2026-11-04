@@ -1,4 +1,5 @@
 import React from 'react';
+import { liveExamNames } from '../../../lib/exams';
 import { ArrowRight } from 'lucide-react';
 import { OnboardingShell, StepActions } from './shared';
 import type { StudentExam } from '../../../types';
@@ -20,8 +21,8 @@ export const A09_ExamTrack: React.FC<Props> = ({ selected, onToggle, onContinue,
     lede="Tick all that apply. We’ll show you the right past questions and practice exams for each one. You can change this later."
     aside={
       <p className="onboard__hint">
-        Most students write <strong>JAMB (UTME)</strong>, their school’s <strong>Post-UTME</strong>, and{' '}
-        <strong>WAEC</strong> or <strong>NECO</strong> in the same year.
+        {/* The exams switched on in Admin → Settings → Exams. */}
+        Tick every exam you’re sitting this year: <strong>{liveExamNames()}</strong>.
       </p>
     }
   >

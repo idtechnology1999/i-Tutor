@@ -1,51 +1,29 @@
+import { isBySchool, isJambLike, isLiveExam, liveExams, onExamsChange } from './exams';
 import type { ExamTrack, SchoolCert, StudentExam, UserProfile } from '../types';
 
-/** Exams a student can prepare for, in the order students think of them. */
-export const STUDENT_EXAMS: Array<{ id: StudentExam; name: string; full: string; desc: string }> = [
-  {
-    id: 'UTME',
-    name: 'JAMB (UTME)',
-    full: 'Unified Tertiary Matriculation Examination',
-    desc: 'The CBT exam for university admission: English plus three subjects for your course.',
-  },
-  {
-    id: 'Post-UTME',
-    name: 'Post-UTME',
-    full: 'University screening',
-    desc: 'Your chosen school’s own screening test. You’ll pick the school in a later step.',
-  },
-  {
-    id: 'WAEC',
-    name: 'WAEC (WASSCE)',
-    full: 'West African Senior School Certificate Examination',
-    desc: 'Your final secondary school exam, May/June or private candidates.',
-  },
-  {
-    id: 'NECO',
-    name: 'NECO (SSCE)',
-    full: 'National Examinations Council',
-    desc: 'The national senior school certificate exam, June/July or Nov/Dec.',
-  },
-  {
-    id: 'GCE',
-    name: 'GCE',
-    full: 'General Certificate Examination',
-    desc: 'WAEC or NECO for private candidates, usually to improve a result.',
-  },
-  {
-    id: 'NABTEB',
-    name: 'NABTEB',
-    full: 'National Business and Technical Examinations Board',
-    desc: 'Technical and business certificate exams.',
-  },
-];
+/** Exams a student can register for: the ones switched on in Admin →
+    Settings → Exams, in the admin's order (kept in step by lib/exams.ts). */
+export const STUDENT_EXAMS: Array<{ id: StudentExam; name: string; full: string; desc: string }> = [];
 
-const NAME = Object.fromEntries(STUDENT_EXAMS.map((e) => [e.id, e.name])) as Record<StudentExam, string>;
+/** Exams that need a class (Science/Arts/Commercial) and 7–9 subjects: WAEC, NECO, … and any added like them. */
+export const SCHOOL_CERT_EXAMS: StudentExam[] = [];
+
+onExamsChange((exams) => {
+  STUDENT_EXAMS.splice(
+    0,
+    STUDENT_EXAMS.length,
+    ...exams.filter((e) => e.enabled).map((e) => ({ id: e.id, name: e.label, full: e.name, desc: e.desc })),
+  );
+  SCHOOL_CERT_EXAMS.splice(0, SCHOOL_CERT_EXAMS.length, ...exams.filter((e) => e.kind === 'cert').map((e) => e.id));
+});
+
+/** The exam to fall back on: JAMB if it's on, otherwise the first exam that is. */
+export const defaultExam = (): StudentExam => (isLiveExam('UTME') ? 'UTME' : (liveExams()[0]?.id ?? 'UTME'));
 
 /** Exams on the profile; older profiles only had a track. */
 export const examsOf = (profile: Pick<UserProfile, 'exams' | 'track'>): StudentExam[] =>
-  profile.exams ??
-  (profile.track === 'jamb' ? ['UTME'] : profile.track === 'post-jamb' ? ['Post-UTME'] : ['UTME', 'Post-UTME']);
+  // Exams switched off in Admin → Settings → Exams are hidden until they're switched back on.
+  (profile.exams ?? (profile.track === 'jamb' ? ['UTME'] : profile.track === 'post-jamb' ? ['Post-UTME'] : ['UTME', 'Post-UTME'])).filter(isLiveExam);
 
 /** Keeps the older JAMB/Post-UTME track in step with the exams chosen. */
 export const trackFor = (exams: StudentExam[]): ExamTrack => {
@@ -55,7 +33,7 @@ export const trackFor = (exams: StudentExam[]): ExamTrack => {
 };
 
 export const examsLabel = (exams: StudentExam[]) =>
-  exams.length ? STUDENT_EXAMS.filter((e) => exams.includes(e.id)).map((e) => NAME[e.id]).join(', ') : 'No exam chosen';
+  exams.length ? STUDENT_EXAMS.filter((e) => exams.includes(e.id)).map((e) => e.name).join(', ') : 'No exam chosen';
 
 /** Tick or untick one exam, returning the profile update. */
 export const toggleExam = (current: StudentExam[], exam: StudentExam) => {
@@ -65,8 +43,6 @@ export const toggleExam = (current: StudentExam[], exam: StudentExam) => {
 
 /* --------------------------------------------------------- School certificate */
 
-/** Exams that need a class (Science/Arts/Commercial) and 7–9 subjects. */
-export const SCHOOL_CERT_EXAMS: StudentExam[] = ['WAEC', 'NECO', 'GCE', 'NABTEB'];
 export const hasSchoolCert = (exams: StudentExam[]) => exams.some((e) => SCHOOL_CERT_EXAMS.includes(e));
 export const SCHOOL_CERT_MIN = 7;
 export const SCHOOL_CERT_MAX = 9;
@@ -94,8 +70,9 @@ const STEP_LABEL: Record<OnboardingStep, string> = {
 
 /** Only the steps that apply to the exams chosen, in order. */
 export const onboardingSteps = (exams: StudentExam[]): OnboardingStep[] => {
-  const utme = exams.includes('UTME');
-  const post = exams.includes('Post-UTME');
+  // By kind, so an added exam gets the same steps as the exams it works like.
+  const utme = exams.some(isJambLike);
+  const post = exams.some(isBySchool);
   return [
     'track',
     ...(hasSchoolCert(exams) ? (['schoolcert'] as const) : []),
@@ -124,7 +101,7 @@ export const subjectsFor = (
   exam: string,
 ): string[] | null => {
   const picked =
-    exam === 'UTME'
+    isJambLike(exam)
       ? ['English', ...profile.selectedSubjects]
       : SCHOOL_CERT_EXAMS.includes(exam as StudentExam)
         ? (profile.schoolCert?.subjects ?? [])

@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
 import type { DiagnosticQuestion, UserProfile } from './types';
 import { Navbar } from './components/web/Navbar';
+import { isLiveExam, liveExamNames, loadExams, useExams } from './lib/exams';
 import { initMotion } from './lib/motion';
 import { useRouter, pathForView, isAccountFlowView, isAppView } from './lib/router';
 import type { AppView } from './lib/router';
@@ -123,6 +124,17 @@ export function App() {
   const inApp = isAppView(activeView);
 
   const goTo = (view: AppView) => navigate(pathForView(view));
+
+  // The exams switched on in Admin → Settings → Exams (admins load all of them in AdminApp).
+  const examList = useExams();
+  useEffect(() => {
+    if (!isAdmin) void loadExams();
+  }, [isAdmin]);
+  // Post-UTME switched off: its pages go back to the home page.
+  const postUtmeOff = !isLiveExam('Post-UTME');
+  useEffect(() => {
+    if (postUtmeOff && activeView === 'postutme') navigate(pathForView('home'));
+  }, [postUtmeOff, activeView, navigate]);
   const openTutor = () => setIsTutorOpen(true);
   const isPremium = profile.plan === 'premium';
   // The AI allowance ring follows the plan (and the account signed in).
@@ -188,8 +200,9 @@ export function App() {
 
   useEffect(() => {
     // CMS pages set their own title once loaded.
-    if (activeView !== 'page') document.title = TITLES[activeView];
-  }, [activeView]);
+    // The home title names the exams that are switched on (Admin → Settings → Exams).
+    if (activeView !== 'page') document.title = activeView === 'home' ? `i-Tutor — ${liveExamNames() || 'Exam'} practice that teaches` : TITLES[activeView];
+  }, [activeView, examList]);
 
   const handleUpdateProfile = (updated: Partial<UserProfile>) => {
     setProfile((prev) => ({ ...prev, ...updated }));

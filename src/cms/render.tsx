@@ -11,6 +11,7 @@ import {
   WifiOff,
 } from 'lucide-react';
 import { initMotion } from '../lib/motion';
+import { allExams, isLiveExam, useExams } from '../lib/exams';
 import { useScrollProgress } from '../lib/ui';
 import { CbtPreview, TutorPreview } from '../components/web/ProductPreviews';
 import { ServiceSection } from '../components/web/ServiceSection';
@@ -800,8 +801,17 @@ export const BlockView: React.FC<{ block: CmsBlock }> = ({ block }) => {
   );
 };
 
-/** A page's visible blocks, with the site's scroll reveals. */
+/** The exam an exam panel ('service' block) is about, from its anchor: 'waec' → WAEC, 'post-utme' → Post-UTME. */
+const examOfBlock = (b: CmsBlock): string | undefined => {
+  if (b.type !== 'service') return undefined;
+  const anchor = String((b.data as { anchor?: unknown }).anchor ?? '').toLowerCase();
+  return allExams().find((e) => e.id.toLowerCase() === anchor || e.label.toLowerCase() === anchor)?.id;
+};
+
+/** A page's visible blocks, with the site's scroll reveals. An exam's panel
+    hides while that exam is switched off in Admin → Settings → Exams. */
 export const BlockList: React.FC<{ blocks: CmsBlock[] }> = ({ blocks }) => {
+  useExams();
   useEffect(() => {
     const frame = requestAnimationFrame(() => initMotion());
     return () => cancelAnimationFrame(frame);
@@ -810,6 +820,10 @@ export const BlockList: React.FC<{ blocks: CmsBlock[] }> = ({ blocks }) => {
     <>
       {blocks
         .filter((b) => !b.hidden)
+        .filter((b) => {
+          const exam = examOfBlock(b);
+          return !exam || isLiveExam(exam);
+        })
         .map((b) => (
           <BlockView key={b.id} block={b} />
         ))}

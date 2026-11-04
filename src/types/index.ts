@@ -19,7 +19,8 @@ export type ScreenId =
 export type ExamTrack = 'jamb' | 'post-jamb' | 'both';
 
 /** Exams a student is sitting; most sit more than one. */
-export type StudentExam = 'UTME' | 'Post-UTME' | 'WAEC' | 'NECO' | 'GCE' | 'NABTEB';
+/** An exam's code: 'UTME', 'WAEC', … or one added in Admin → Settings → Exams (lib/exams.ts). */
+export type StudentExam = string;
 
 /** WAEC / NECO / GCE / NABTEB: the student's class and the subjects they sit. */
 export interface SchoolCert {

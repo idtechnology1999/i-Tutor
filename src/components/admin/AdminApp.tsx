@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { loadAdminExams, useExams } from '../../lib/exams';
 import {
   ArrowUpRight,
   BookOpenCheck,
@@ -151,6 +152,11 @@ export const AdminApp: React.FC<{
   useEffect(() => {
     if (signedIn) void syncQuestions('admin');
   }, [signedIn]);
+  // Admins see every exam, switched on or off (Settings → Exams).
+  useExams();
+  useEffect(() => {
+    if (signedIn || demo) loadAdminExams().catch(() => undefined);
+  }, [signedIn, demo]);
   // The address is the source of truth: /admin/settings shows Settings, and
   // back/forward move between sections.
   const section = sectionForPath(path);

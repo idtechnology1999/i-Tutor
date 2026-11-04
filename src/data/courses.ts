@@ -1,3 +1,4 @@
+import { onExamsChange } from '../lib/exams';
 /**
  * Starter list of courses and the four UTME subjects usually required.
  *
@@ -20,9 +21,12 @@ export const FACULTIES = [
   'Agriculture',
 ] as const;
 
-/** Exams that have course/class practice. */
-export const COURSE_EXAMS = ['UTME', 'WAEC', 'NECO', 'GCE'] as const;
-export type CourseExam = (typeof COURSE_EXAMS)[number];
+/** Exams that have course/class practice: JAMB-style and school-certificate
+    exams (every one except Post-UTME, which goes by school). Kept in step
+    with Admin → Settings → Exams. */
+export const COURSE_EXAMS: string[] = [];
+export type CourseExam = string;
+onExamsChange((exams) => COURSE_EXAMS.splice(0, COURSE_EXAMS.length, ...exams.filter((e) => e.kind !== 'school').map((e) => e.id)));
 
 export interface CourseSeed {
   id: string;

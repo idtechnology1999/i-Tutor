@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { BadgeCheck, Check, ChevronLeft, ChevronRight, ClipboardCheck, MessageSquareText, RotateCcw, Search, Sparkles, X } from 'lucide-react';
 import { EXAM_FULL_NAME, EXAM_LABEL, EXAM_TYPES, needsSchool, useCms } from '../../lib/cms';
+import { isLiveExam } from '../../lib/exams';
+import { defaultExam } from '../../lib/student-exams';
 import { SCHOOLS } from '../../lib/schools';
 import type { ExamType } from '../../lib/cms';
 import type { SolveRequest, TutorPersona } from '../../data/tutors';
@@ -52,9 +54,10 @@ const CORE_SUBJECTS = ['English', 'Mathematics', 'Physics', 'Chemistry', 'Biolog
 
 export const SyllabusView: React.FC<Props> = ({ initialExam, initialSchool, exams, subjectsFor, solveLabel, askLabel, tutor, firstName = 'there', onUpgrade }) => {
   // Only the student's own exams (JAMB first); everything if none chosen yet.
-  const examTabs = exams?.length ? EXAM_TYPES.filter((t) => exams.includes(t)) : EXAM_TYPES;
+  // Only exams switched on in Admin → Settings → Exams.
+  const examTabs = (exams?.length ? EXAM_TYPES.filter((t) => exams.includes(t)) : EXAM_TYPES).filter(isLiveExam);
   const [exam, setExam] = useState<ExamType>(
-    initialExam && (examTabs as readonly string[]).includes(initialExam) ? initialExam : (examTabs[0] ?? 'UTME'),
+    initialExam && (examTabs as readonly string[]).includes(initialExam) ? initialExam : (examTabs[0] ?? defaultExam()),
   );
   const [school, setSchool] = useState(initialSchool ?? '');
   const { questions } = useCms();

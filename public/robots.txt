@@ -3,3 +3,5 @@ User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /cms
+
+Sitemap: https://i-tutor-seven.vercel.app/sitemap.xml

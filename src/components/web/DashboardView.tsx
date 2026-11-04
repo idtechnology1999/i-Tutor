@@ -20,20 +20,12 @@ import { JAMB_SUBJECTS, findInstitution } from '../../data/nigerian-curriculum';
 import { masteryOf, readProgress } from '../../lib/progress';
 import type { ExamType } from '../../lib/cms';
 import type { StudentExam } from '../../types';
-import { SCHOOL_CERT_EXAMS, examsOf } from '../../lib/student-exams';
+import { SCHOOL_CERT_EXAMS, defaultExam, examsOf, subjectsFor } from '../../lib/student-exams';
+import { examLabel, isJambLike } from '../../lib/exams';
 import { ExamRoom } from './ExamRoom';
 import { PageBanner } from './PageBanner';
 import type { TutorPersona } from '../../data/tutors';
 
-/** Short tab names for each exam room. */
-const ROOM_NAME: Record<StudentExam, string> = {
-  UTME: 'JAMB',
-  'Post-UTME': 'Post-UTME',
-  WAEC: 'WAEC',
-  NECO: 'NECO',
-  GCE: 'GCE',
-  NABTEB: 'NABTEB',
-};
 
 type Subject = DiagnosticQuestion['subject'];
 
@@ -85,8 +77,8 @@ export const DashboardView: React.FC<Props> = ({
 }) => {
   // One "room" per exam the student chose; tabs switch between them.
   const exams = examsOf(profile);
-  const [room, setRoom] = useState<StudentExam>(exams[0] ?? 'UTME');
-  const current = exams.includes(room) ? room : (exams[0] ?? 'UTME');
+  const [room, setRoom] = useState<StudentExam>(exams[0] ?? defaultExam());
+  const current = exams.includes(room) ? room : (exams[0] ?? defaultExam());
   const { questions } = useCms();
   // The student's real subjects (English plus the three they chose) and how
   // their practice has gone, from results saved on this device.
@@ -146,7 +138,7 @@ export const DashboardView: React.FC<Props> = ({
               className={current === e ? 'is-on' : ''}
               onClick={() => setRoom(e)}
             >
-              {ROOM_NAME[e]}
+              {examLabel(e)}
             </button>
           ))}
         </nav>
@@ -320,11 +312,20 @@ export const DashboardView: React.FC<Props> = ({
         </>
       )}
 
-      {SCHOOL_CERT_EXAMS.includes(current) && (
+      {/* WAEC, NECO… and any exam added in Admin → Settings → Exams (JAMB has its own room above). */}
+      {current !== 'UTME' && (SCHOOL_CERT_EXAMS.includes(current) || isJambLike(current)) && (
         <ExamRoom
           key={current}
           exam={current}
-          cert={profile.schoolCert}
+          cert={
+            isJambLike(current)
+              ? // Like JAMB: English plus their three subjects (none yet: it asks them to choose).
+                (() => {
+                  const subjects = subjectsFor(profile, current);
+                  return subjects ? { className: '', subjects } : undefined;
+                })()
+              : profile.schoolCert
+          }
           onStart={onStartPractice}
           onPastQuestions={onOpenPastQuestions}
           onEdit={onEditGoal}

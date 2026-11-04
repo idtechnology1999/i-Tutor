@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, isLive } from './api';
 import { PRACTICE, cms, localQuestions } from '../lib/cms';
+import { allExams, isCertLike } from '../lib/exams';
 import type { CmsQuestion, CmsSubject, ExamType, QuestionDraft } from '../lib/cms';
 import type { SyllabusChoice } from '../data/waec-syllabus';
 
@@ -34,13 +35,12 @@ export interface PracticePage {
   topics: Array<{ topic: string; total: number; published: number }>;
 }
 
-const REAL: RealExam[] = ['UTME', 'WAEC', 'NECO', 'GCE', 'NABTEB', 'Post-UTME'];
 const defaults = (exam: RealExam): PracticeSettings => ({
   exam,
   source: 'mix',
   pastShare: 30,
   size: 40,
-  syllabus: exam === 'UTME' || exam === 'Post-UTME' ? 'jamb' : 'waec',
+  syllabus: isCertLike(exam) ? 'waec' : 'jamb',
 });
 
 /* ------------------------------------------------------------- Demo store */
@@ -53,7 +53,7 @@ const demoSettings = (): PracticeSettings[] => {
   } catch {
     /* defaults */
   }
-  return REAL.map((e) => ({ ...defaults(e), ...saved[e], exam: e }));
+  return allExams().map(({ id: e }) => ({ ...defaults(e), ...saved[e], exam: e }));
 };
 
 const inTarget = (q: CmsQuestion, t: Target) => q.examType === PRACTICE && (t === 'all' || (q.target ?? '') === t);

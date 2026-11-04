@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { isLiveExam } from '../../lib/exams';
 import {
   BookOpenCheck,
   ChevronRight,
@@ -39,6 +40,9 @@ const APP_TABS: { label: string; short: string; view: AppView; icon: typeof Hous
   { label: 'Classroom', short: 'Class', view: 'classroom', icon: GraduationCap },
   { label: 'Post-UTME', short: 'Post-UTME', view: 'postutme', icon: Landmark, phone: false },
 ];
+
+/** Post-UTME's tab only while Post-UTME is switched on (Admin → Settings → Exams). */
+const tabOn = (t: { view: AppView }) => t.view !== 'postutme' || isLiveExam('Post-UTME');
 
 /* Visitor links on the landing page. */
 const HOME_ANCHORS = [
@@ -155,7 +159,7 @@ export const Navbar: React.FC<Props> = ({
             </button>
 
             <nav className="site-nav__links" aria-label="Main">
-              {APP_TABS.map((tab) => (
+              {APP_TABS.filter(tabOn).map((tab) => (
                 <RouteLink
                   key={tab.view}
                   view={tab.view}
@@ -203,7 +207,7 @@ export const Navbar: React.FC<Props> = ({
 
         {/* Phone tab bar */}
         <nav className="tabbar" aria-label="Main">
-          {APP_TABS.filter((t) => t.phone !== false).map(({ view, short, icon: Icon }) => (
+          {APP_TABS.filter((t) => tabOn(t) && t.phone !== false).map(({ view, short, icon: Icon }) => (
             <RouteLink key={view} view={view} active={activeView === view} className="tabbar__item">
               <Icon size={22} aria-hidden />
               <span>{short}</span>

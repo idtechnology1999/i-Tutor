@@ -5,6 +5,7 @@ import { checkAdmin } from '../../lib/question-import';
 import { adminChangePassword } from '../../services/admin-auth';
 import type { AdminNav } from './AdminApp';
 import { PageHead } from './AdminApp';
+import { ExamsCard } from './AdminExams';
 
 /** Any admin can change their own password here (forgotten ones: the sign-in screen). */
 const PasswordCard: React.FC<{ nav: AdminNav }> = ({ nav }) => {
@@ -98,6 +99,8 @@ export const AdminSettings: React.FC<{ nav: AdminNav; mode: 'live' | 'demo' }> =
   return (
     <div className="adm-page adm-page--narrow">
       <PageHead title="Settings" />
+
+      <ExamsCard nav={nav} />
 
       {mode === 'live' && <PasswordCard nav={nav} />}
 

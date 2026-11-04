@@ -1,3 +1,4 @@
+import { isBySchool, onExamsChange } from './exams';
 import { useSyncExternalStore } from 'react';
 import type { DiagnosticQuestion } from '../types';
 import { DIAGNOSTIC_QUESTIONS } from '../data/nigerian-curriculum';
@@ -42,34 +43,29 @@ export const CMS_SUBJECTS = [
 ] as const;
 export type CmsSubject = (typeof CMS_SUBJECTS)[number];
 
-/** Exam bodies. Each one is its own past-question collection. */
-export const EXAM_TYPES = ['UTME', 'WAEC', 'NECO', 'GCE', 'NABTEB', 'Post-UTME'] as const;
+/** Exam bodies, each its own past-question collection. Kept in step with
+    Admin → Settings → Exams (lib/exams.ts): every exam for admins, the
+    switched-on ones for students. */
+export const EXAM_TYPES: string[] = [];
 /** The syllabus practice bank: questions admins set per subject and topic, not from a paper. */
 export const PRACTICE = 'Practice' as const;
-export type ExamType = (typeof EXAM_TYPES)[number] | typeof PRACTICE;
+/** An exam's code ('UTME', 'WAEC', one an admin added), or the practice bank. */
+export type ExamType = string;
 
 /** What students and admins see. UTME is the JAMB exam. */
-export const EXAM_LABEL: Record<ExamType, string> = {
-  UTME: 'JAMB',
-  WAEC: 'WAEC',
-  NECO: 'NECO',
-  GCE: 'GCE',
-  NABTEB: 'NABTEB',
-  'Post-UTME': 'Post-UTME',
-  Practice: 'Practice',
-};
+export const EXAM_LABEL: Record<ExamType, string> = { Practice: 'Practice' };
+export const EXAM_FULL_NAME: Record<ExamType, string> = { Practice: 'Syllabus practice' };
 
-export const needsSchool = (exam: string) => exam === 'Post-UTME';
+onExamsChange((exams) => {
+  EXAM_TYPES.splice(0, EXAM_TYPES.length, ...exams.map((e) => e.id));
+  for (const e of exams) {
+    EXAM_LABEL[e.id] = e.label;
+    EXAM_FULL_NAME[e.id] = e.name;
+  }
+});
 
-export const EXAM_FULL_NAME: Record<ExamType, string> = {
-  UTME: 'JAMB UTME',
-  WAEC: 'WAEC WASSCE (school)',
-  NECO: 'NECO SSCE (school)',
-  GCE: 'GCE (private candidates)',
-  NABTEB: 'NABTEB',
-  'Post-UTME': 'University Post-UTME',
-  Practice: 'Syllabus practice',
-};
+/** Post-UTME papers belong to a university. */
+export const needsSchool = (exam: string) => isBySchool(exam);
 
 export type Status = 'draft' | 'published';
 

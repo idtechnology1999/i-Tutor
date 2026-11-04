@@ -21,12 +21,13 @@ import {
 } from 'lucide-react';
 import { EXAM_FULL_NAME, EXAM_LABEL, useCms } from '../../lib/cms';
 import { useExamCounts } from '../../services/practice';
+import { isJambLike } from '../../lib/exams';
 import type { RealExam } from '../../services/practice';
 import type { CmsCourse } from '../../lib/cms';
 import { COURSE_EXAMS, FACULTIES } from '../../data/courses';
 import type { CourseExam } from '../../data/courses';
 import type { UserProfile } from '../../types';
-import { examsOf } from '../../lib/student-exams';
+import { defaultExam, examsOf } from '../../lib/student-exams';
 import { PageBanner } from './PageBanner';
 
 interface Props {
@@ -66,9 +67,10 @@ export const CourseView: React.FC<Props> = ({ profile, onStart, onUpdateProfile 
   // Only the exams the student registered for (Post-UTME-only students practise the JAMB combination).
   const mineExams = examsOf(profile);
   const examTabs = COURSE_EXAMS.filter((e) => mineExams.includes(e));
-  const tabs: CourseExam[] = examTabs.length ? examTabs : ['UTME'];
+  const tabs: CourseExam[] = examTabs.length ? examTabs : [defaultExam()];
   const [exam, setExam] = useState<CourseExam>(tabs[0]);
-  const isUtme = exam === 'UTME';
+  // JAMB, and any exam added to work like it: courses of four subjects, in faculties.
+  const isUtme = isJambLike(exam);
   const courses = allCourses.filter((c) => (c.exam ?? 'UTME') === exam);
   const mine = isUtme ? (courses.find((c) => normal(c.name) === normal(profile.targetCourse)) ?? null) : null;
 
@@ -97,12 +99,13 @@ export const CourseView: React.FC<Props> = ({ profile, onStart, onUpdateProfile 
     setExam(t);
     setSearch('');
     const first = allCourses.filter((c) => (c.exam ?? 'UTME') === t);
-    const own = t === 'UTME' ? first.find((c) => normal(c.name) === normal(profile.targetCourse)) : undefined;
+    const own = isJambLike(t) ? first.find((c) => normal(c.name) === normal(profile.targetCourse)) : undefined;
     setFaculty(own?.faculty ?? first[0]?.faculty ?? '');
     setPicked(own ?? null);
   };
   // One combination shared by the whole faculty, set in admin.
-  const facultySet = isUtme && !term ? facultySets.find((f) => f.faculty === faculty) : undefined;
+  // Faculty sets are JAMB's.
+  const facultySet = exam === 'UTME' && !term ? facultySets.find((f) => f.faculty === faculty) : undefined;
   const facultyReady = facultySet ? facultySet.subjects.reduce((n, s) => n + countFor(s), 0) : 0;
   const total = picked ? picked.subjects.reduce((n, s) => n + countFor(s), 0) : 0;
   const isMine = picked && normal(picked.name) === normal(profile.targetCourse);

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { examLabel } from '../../lib/exams';
 import { BadgeCheck, Crown, KeyRound, Search, Trash2, UsersRound, X } from 'lucide-react';
 import { deleteUser, listUsers } from '../../services/admin';
 import type { AdminUser, UserList } from '../../services/admin';
@@ -21,7 +22,6 @@ const ago = (iso: string) => {
   return days < 31 ? `${days} d ago` : day(iso);
 };
 
-const EXAM_NAME: Record<string, string> = { UTME: 'JAMB' };
 
 const DeleteDialog: React.FC<{ target: AdminUser; onClose: () => void; onDeleted: () => void }> = ({ target, onClose, onDeleted }) => {
   const [password, setPassword] = useState('');
@@ -174,7 +174,7 @@ export const AdminUsers: React.FC<{ nav: AdminNav; mode: 'live' | 'demo' }> = ({
                     </span>
                   </span>
                   <span role="cell" className="adm-users__exams">
-                    {u.exams.length ? u.exams.map((e) => <em key={e}>{EXAM_NAME[e] ?? e}</em>) : <small>Not set</small>}
+                    {u.exams.length ? u.exams.map((e) => <em key={e}>{examLabel(e)}</em>) : <small>Not set</small>}
                   </span>
                   <span role="cell">
                     {u.plan === 'premium' ? (

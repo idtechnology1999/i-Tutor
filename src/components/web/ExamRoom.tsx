@@ -4,6 +4,7 @@ import { EXAM_LABEL, useCms } from '../../lib/cms';
 import type { ExamType } from '../../lib/cms';
 import type { SchoolCert, StudentExam } from '../../types';
 import { STUDENT_EXAMS } from '../../lib/student-exams';
+import { examInfo, isJambLike } from '../../lib/exams';
 import { useExamCounts } from '../../services/practice';
 import type { RealExam } from '../../services/practice';
 
@@ -38,7 +39,11 @@ export const ExamRoom: React.FC<Props> = ({ exam, cert, onStart, onPastQuestions
     return (
       <section className="room room--empty">
         <h2>Set up your {label}</h2>
-        <p>Choose your class (Science, Arts or Commercial) and the subjects you’ll sit, and we’ll build your {label} practice.</p>
+        <p>
+          {isJambLike(exam)
+            ? `Choose the subjects you’ll sit, and we’ll build your ${label} practice.`
+            : `Choose your class (Science, Arts or Commercial) and the subjects you’ll sit, and we’ll build your ${label} practice.`}
+        </p>
         <button type="button" className="ui-btn ui-btn--primary" onClick={onEdit}>
           Choose class & subjects
         </button>
@@ -52,11 +57,12 @@ export const ExamRoom: React.FC<Props> = ({ exam, cert, onStart, onPastQuestions
     <div className="room">
       <section className="room__hero">
         <p className="room__eyebrow">
-          {info?.name ?? label} · {cert.className} class
+          {info?.full ?? label}
+          {cert.className ? ` · ${cert.className} class` : ''}
         </p>
         <h2>Your {label} room</h2>
         <p className="room__when">
-          <CalendarDays size={16} aria-hidden /> {WHEN[exam] ?? info?.full}
+          <CalendarDays size={16} aria-hidden /> {examInfo(exam)?.when || WHEN[exam] || info?.full}
         </p>
         <div className="room__stats">
           <span>
@@ -71,7 +77,7 @@ export const ExamRoom: React.FC<Props> = ({ exam, cert, onStart, onPastQuestions
             type="button"
             className="room__start"
             disabled={ready === 0}
-            onClick={() => onStart({ name: `${label} ${cert.className}`, subjects: cert.subjects, exam })}
+            onClick={() => onStart({ name: cert.className ? `${label} ${cert.className}` : `${label} practice`, subjects: cert.subjects, exam })}
           >
             <Play size={18} aria-hidden /> Start {label} practice
           </button>

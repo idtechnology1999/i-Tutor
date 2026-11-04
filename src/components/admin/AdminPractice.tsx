@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { CheckSquare, ChevronLeft, ChevronRight, Info, LoaderCircle, Mic, Plus, Search, Shuffle, Sparkles, Square, Trash2, X } from 'lucide-react';
-import { CMS_SUBJECTS, EXAM_FULL_NAME, EXAM_LABEL, PRACTICE } from '../../lib/cms';
+import { CMS_SUBJECTS, EXAM_LABEL, PRACTICE } from '../../lib/cms';
+import { isCertLike, useExams } from '../../lib/exams';
+import type { ExamInfo } from '../../lib/exams';
 import type { CmsQuestion, CmsSubject, QuestionDraft } from '../../lib/cms';
 import { SYLLABUS_LABEL, syllabusTopics } from '../../data/waec-syllabus';
 import type { SyllabusChoice } from '../../data/waec-syllabus';
@@ -37,11 +39,10 @@ const ALL = '__all';
 const OTHER = '__other';
 const PAGE = 50;
 
-const EXAMS: RealExam[] = ['UTME', 'WAEC', 'NECO', 'GCE', 'NABTEB', 'Post-UTME'];
-/** '' = shared by every exam. */
-const TABS: Array<{ id: '' | RealExam; label: string; full: string }> = [
-  { id: '', label: 'Shared', full: 'Questions for every exam' },
-  ...EXAMS.map((e) => ({ id: e, label: EXAM_LABEL[e], full: EXAM_FULL_NAME[e] })),
+/** '' = shared by every exam; then every exam in Admin → Settings → Exams (on or off, so a bank can be filled before it goes live). */
+const tabsFor = (exams: ExamInfo[]): Array<{ id: '' | RealExam; label: string; full: string; off: boolean }> => [
+  { id: '', label: 'Shared', full: 'Questions for every exam', off: false },
+  ...exams.map((e) => ({ id: e.id, label: e.label, full: e.enabled ? e.name : `${e.name} (switched off: students can’t see it yet)`, off: !e.enabled })),
 ];
 
 const SOURCES: Array<{ id: Source; label: string; help: string }> = [
@@ -251,6 +252,7 @@ const SettingsCard: React.FC<{
 /* ------------------------------------------------------------------ Page */
 
 export const AdminPractice: React.FC<{ nav: AdminNav }> = ({ nav }) => {
+  const exams = useExams();
   const [target, setTarget] = useState<'' | RealExam>('UTME');
   const [subject, setSubject] = useState<CmsSubject>('English');
   const [settings, setSettings] = useState<PracticeSettings[]>([]);
@@ -282,7 +284,7 @@ export const AdminPractice: React.FC<{ nav: AdminNav }> = ({ nav }) => {
 
   // The exam's settings decide the syllabus; shared questions use both.
   const setting = target ? settings.find((s) => s.exam === target) : undefined;
-  const syllabus: SyllabusChoice = target ? (setting?.syllabus ?? (target === 'UTME' || target === 'Post-UTME' ? 'jamb' : 'waec')) : 'both';
+  const syllabus: SyllabusChoice = target ? (setting?.syllabus ?? (isCertLike(target) ? 'waec' : 'jamb')) : 'both';
   const topics = syllabusTopics(subject, syllabus);
   const allPicked = topics.length > 0 && picked.length === topics.length;
   const examName = target ? EXAM_LABEL[target] : 'All exams';
@@ -509,9 +511,17 @@ export const AdminPractice: React.FC<{ nav: AdminNav }> = ({ nav }) => {
 
       {/* --------------------------------------------------------- Exams */}
       <nav className="adm-px__exams" aria-label="Exam">
-        {TABS.map((t) => (
-          <button key={t.id || 'shared'} type="button" className={target === t.id ? 'is-on' : ''} onClick={() => pickTarget(t.id)} title={t.full} aria-pressed={target === t.id}>
+        {tabsFor(exams).map((t) => (
+          <button
+            key={t.id || 'shared'}
+            type="button"
+            className={`${target === t.id ? 'is-on' : ''}${t.off ? ' is-off' : ''}`}
+            onClick={() => pickTarget(t.id)}
+            title={t.full}
+            aria-pressed={target === t.id}
+          >
             {t.label}
+            {t.off && <small> · off</small>}
           </button>
         ))}
       </nav>
