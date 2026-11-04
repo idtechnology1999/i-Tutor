@@ -741,3 +741,11 @@
 @media (max-width: 720px) {
   .pq-cbt__sticky { position: static; box-shadow: none; }
 }
+
+/* Exam: the exam bar (time left, Submit) and subject tabs stay at the top while scrolling. */
+.jamb__head {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: 0 8px 18px -14px rgba(11, 31, 30, 0.45);
+}

@@ -433,59 +433,62 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
 
   return (
     <div className="jamb">
-      <header className="jamb__top">
-        <div className="jamb__brand jamb__brand--exit">
-          {/* The way back, where people look for it; it asks first, like the real CBT. */}
-          <button type="button" className="jamb__leave" onClick={() => setConfirm('exit')} aria-label="Exit the exam">
-            <ArrowLeft size={18} aria-hidden /> <span>Exit</span>
-          </button>
-          <div>
-            <strong>{paper.title}</strong>
-            <span>i-Tutor CBT</span>
-          </div>
-        </div>
-        <div className="jamb__candidate">
-          <span className="jamb__photo" aria-hidden>
-            {profile.fullName.charAt(0).toUpperCase() || 'C'}
-          </span>
-          <span>
-            <strong>{profile.fullName || 'Candidate'}</strong>
-            <small>
-              {answered} of {total} answered
-            </small>
-          </span>
-        </div>
-        <div className={`jamb__time${lowTime ? ' is-low' : ''}`} role="timer" aria-label="Time left">
-          <small>Time left</small>
-          <strong>{clock(timeLeft)}</strong>
-        </div>
-        {/* Up here, away from Previous / Next, so it can't be tapped by mistake. */}
-        <button type="button" className="jamb__submit" onClick={() => setConfirm('submit')}>
-          Submit
-        </button>
-      </header>
-
-      <nav className="jamb__subjects" aria-label="Subjects">
-        {paper.subjects.map((s) => {
-          const qs = paper.questions.filter((q) => q.subject === s);
-          return (
-            <button key={s} type="button" className={s === subject ? 'is-on' : ''} onClick={() => switchSubject(s)} aria-current={s === subject ? 'true' : undefined}>
-              {s}
-              <small>
-                {qs.filter((q) => answers[q.id]).length}/{qs.length}
-              </small>
+      {/* The exam bar and subject tabs stay at the top while the question scrolls. */}
+      <div className="jamb__head">
+        <header className="jamb__top">
+          <div className="jamb__brand jamb__brand--exit">
+            {/* The way back, where people look for it; it asks first, like the real CBT. */}
+            <button type="button" className="jamb__leave" onClick={() => setConfirm('exit')} aria-label="Exit the exam">
+              <ArrowLeft size={18} aria-hidden /> <span>Exit</span>
             </button>
-          );
-        })}
-        <span className="jamb__tools">
-          <button type="button" className={showCalculator ? 'is-on' : ''} onClick={() => setShowCalculator((v) => !v)} aria-pressed={showCalculator}>
-            <Calculator size={16} aria-hidden /> Calculator
+            <div>
+              <strong>{paper.title}</strong>
+              <span>i-Tutor CBT</span>
+            </div>
+          </div>
+          <div className="jamb__candidate">
+            <span className="jamb__photo" aria-hidden>
+              {profile.fullName.charAt(0).toUpperCase() || 'C'}
+            </span>
+            <span>
+              <strong>{profile.fullName || 'Candidate'}</strong>
+              <small>
+                {answered} of {total} answered
+              </small>
+            </span>
+          </div>
+          <div className={`jamb__time${lowTime ? ' is-low' : ''}`} role="timer" aria-label="Time left">
+            <small>Time left</small>
+            <strong>{clock(timeLeft)}</strong>
+          </div>
+          {/* Up here, away from Previous / Next, so it can't be tapped by mistake. */}
+          <button type="button" className="jamb__submit" onClick={() => setConfirm('submit')}>
+            Submit
           </button>
-          <button type="button" onClick={() => setConfirm('exit')}>
-            <X size={16} aria-hidden /> Exit
-          </button>
-        </span>
-      </nav>
+        </header>
+
+        <nav className="jamb__subjects" aria-label="Subjects">
+          {paper.subjects.map((s) => {
+            const qs = paper.questions.filter((q) => q.subject === s);
+            return (
+              <button key={s} type="button" className={s === subject ? 'is-on' : ''} onClick={() => switchSubject(s)} aria-current={s === subject ? 'true' : undefined}>
+                {s}
+                <small>
+                  {qs.filter((q) => answers[q.id]).length}/{qs.length}
+                </small>
+              </button>
+            );
+          })}
+          <span className="jamb__tools">
+            <button type="button" className={showCalculator ? 'is-on' : ''} onClick={() => setShowCalculator((v) => !v)} aria-pressed={showCalculator}>
+              <Calculator size={16} aria-hidden /> Calculator
+            </button>
+            <button type="button" onClick={() => setConfirm('exit')}>
+              <X size={16} aria-hidden /> Exit
+            </button>
+          </span>
+        </nav>
+      </div>
 
       <main className="jamb__body">
         {paper.note && <p className="jamb__note">{paper.note}</p>}
