@@ -1,4 +1,5 @@
 import { API_BASE, api } from './api';
+import { PIECE, sendPiece } from './upload-piece';
 
 /* Whole-system backup and restore, and resetting one exam (backend
    routes/admin/system.ts). Everything needs the super admin password. Files
@@ -9,7 +10,6 @@ export interface BackupSummary {
   counts: Record<string, number>;
 }
 
-const CHUNK = 3 * 1024 * 1024;
 
 /** Downloads a backup of everything (questions, users, admins, settings…) as a .json.gz file. */
 export async function downloadBackup(password: string, onProgress?: (text: string) => void): Promise<BackupSummary> {
@@ -40,18 +40,9 @@ export async function downloadBackup(password: string, onProgress?: (text: strin
 /** Sends a backup file to the server and says what it holds (nothing changes yet). */
 export async function uploadBackup(file: File, password: string, onProgress?: (text: string) => void): Promise<{ id: string; summary: BackupSummary }> {
   const { id } = await api<{ id: string }>('/api/admin/system/restore', { method: 'POST', body: { password } });
-  for (let at = 0; at < file.size; at += CHUNK) {
+  for (let at = 0; at < file.size; at += PIECE) {
     onProgress?.(`Uploading: ${Math.round((at / file.size) * 100)}%…`);
-    const res = await fetch(`${API_BASE}/api/admin/system/restore/${id}/chunk`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'content-type': 'application/octet-stream' },
-      body: file.slice(at, at + CHUNK),
-    });
-    if (!res.ok) {
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
-      throw new Error(data.error ?? `The upload stopped (${res.status}).`);
-    }
+    await sendPiece(`/api/admin/system/restore/${id}/chunk`, file.slice(at, at + PIECE));
   }
   onProgress?.('Checking the file…');
   const summary = await api<BackupSummary>(`/api/admin/system/restore/${id}/check`, { method: 'POST', body: {} });

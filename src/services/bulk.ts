@@ -1,4 +1,5 @@
-import { API_BASE, api, isLive } from './api';
+import { api, isLive } from './api';
+import { PIECE, sendPiece } from './upload-piece';
 import { isExcel, isWord, officeText } from '../lib/office-files';
 import { crop, openPages, toBlob } from '../lib/pdf-pages';
 import { uploadMedia } from './pages';
@@ -91,7 +92,6 @@ const toDataUrl = (blob: Blob) =>
     r.readAsDataURL(blob);
   });
 
-const CHUNK = 3 * 1024 * 1024;
 const MAX = 18 * 1024 * 1024;
 
 const mediaTypeOf = (f: File) =>
@@ -120,18 +120,9 @@ export async function bulkUpload(
   onUpdate(job);
 
   if (!text) {
-    for (let at = 0; at < file.size; at += CHUNK) {
+    for (let at = 0; at < file.size; at += PIECE) {
       onUpdate({ ...job, message: `Uploading ${file.name}: ${Math.round((at / file.size) * 100)}%…` });
-      const res = await fetch(`${API_BASE}/api/admin/bulk/${job.id}/chunk`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'content-type': 'application/octet-stream' },
-        body: file.slice(at, at + CHUNK),
-      });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(data.error ?? `Upload failed (${res.status}).`);
-      }
+      await sendPiece(`/api/admin/bulk/${job.id}/chunk`, file.slice(at, at + PIECE));
     }
   }
 
