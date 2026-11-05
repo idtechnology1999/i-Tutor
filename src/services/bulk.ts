@@ -1,5 +1,7 @@
 import { API_BASE, api, isLive } from './api';
 import { isExcel, isWord, officeText } from '../lib/office-files';
+import { crop, openPages, toBlob } from '../lib/pdf-pages';
+import { uploadMedia } from './pages';
 
 /* Bulk upload of past papers (backend ai/bulk.ts): one file with many papers
    (e.g. JAMB English 1999–2004) is read on the server and each paper is
@@ -27,8 +29,67 @@ export interface BulkJob {
   stage: 'uploading' | 'surveying' | 'extracting' | 'done' | 'failed';
   message: string;
   papers: BulkPaper[];
+  /** Saved questions whose diagram is on a page of the file (cut out by attachDiagrams). */
+  diagrams: Array<{ id: number; page: number; hint: string; label: string }>;
   error: string;
 }
+
+/**
+ * Cuts each diagram out of its page and attaches it to its question: the page
+ * is drawn here, the AI says where each diagram is on it, and the cut-out is
+ * uploaded like any image. Ones that can't be found stay marked to check.
+ */
+async function attachDiagrams(file: File, job: BulkJob, onUpdate: (job: BulkJob) => void): Promise<{ attached: number; total: number }> {
+  const total = job.diagrams.length;
+  let attached = 0;
+  let done = 0;
+  const say = (message: string) => onUpdate({ ...job, message });
+  say(`Cutting out diagrams: 0 of ${total}…`);
+  const source = await openPages(file);
+  const byPage = new Map<number, BulkJob['diagrams']>();
+  for (const d of job.diagrams) if (d.page <= source.pages) byPage.set(d.page, [...(byPage.get(d.page) ?? []), d]);
+  for (const [page, list] of byPage) {
+    try {
+      const canvas = await source.render(page);
+      const image = (await toDataUrl(await toBlob(canvas))).split(',')[1] ?? '';
+      // At most 20 diagrams per question to the AI (a page rarely has more than a few).
+      for (let i = 0; i < list.length; i += 20) {
+        const slice = list.slice(i, i + 20);
+        const boxes = await api<Array<{ id: string; box: number[] }>>('/api/admin/bulk/locate', {
+          method: 'POST',
+          body: { image, mediaType: 'image/jpeg', items: slice.map((d) => ({ id: String(d.id), hint: d.hint })) },
+          timeout: 90_000,
+        });
+        for (const d of slice) {
+          const b = boxes.find((x) => x.id === String(d.id));
+          done += 1;
+          if (b) {
+            const cut = await toBlob(crop(canvas, b.box), 'image/png');
+            const item = await uploadMedia(new File([cut], `q${d.id}-diagram.png`, { type: 'image/png' }), d.hint);
+            await api(`/api/admin/questions/${d.id}`, {
+              method: 'PATCH',
+              body: { image: item.url, imageAlt: d.hint.slice(0, 300), reviewNote: `Diagram cut out of page ${page} automatically: check it’s the right one.` },
+            });
+            attached += 1;
+          }
+          say(`Cutting out diagrams: ${done} of ${total}…`);
+        }
+      }
+    } catch {
+      // That page couldn't be done; its questions stay marked to check.
+      done += list.length;
+    }
+  }
+  return { attached, total };
+}
+
+const toDataUrl = (blob: Blob) =>
+  new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(blob);
+  });
 
 const CHUNK = 3 * 1024 * 1024;
 const MAX = 18 * 1024 * 1024;
@@ -86,6 +147,19 @@ export async function bulkUpload(
       // A dropped connection: keep following; an expired job: stop.
       if (/expired/i.test((e as Error).message)) throw e;
     }
+  }
+  // Diagrams on the pages of a PDF or photo: cut out and attached.
+  if (job.stage === 'done' && job.diagrams?.length && !text) {
+    try {
+      const { attached, total } = await attachDiagrams(file, job, onUpdate);
+      job = {
+        ...job,
+        message: `${job.message} Diagrams: ${attached} of ${total} attached automatically${attached < total ? '; the rest are marked to check' : ''}.`,
+      };
+    } catch {
+      job = { ...job, message: `${job.message} The diagrams couldn’t be cut out automatically; those questions are marked to check.` };
+    }
+    onUpdate(job);
   }
   return job;
 }
