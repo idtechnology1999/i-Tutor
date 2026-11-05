@@ -5,11 +5,9 @@ import type { CmsSubject } from '../../lib/cms';
 import { NIGERIAN_INSTITUTIONS } from '../../data/nigerian-curriculum';
 import type { AdminNav } from './AdminApp';
 import { PageHead } from './AdminApp';
+import { PAPER_YEARS as YEARS } from '../../lib/years';
 
 const TYPES = ['All', 'Federal', 'State', 'Private'] as const;
-const THIS_YEAR = new Date().getFullYear();
-// Papers from 2000 to last year, newest first.
-const YEARS = Array.from({ length: THIS_YEAR - 2000 }, (_, i) => THIS_YEAR - 1 - i);
 const SHOW = ['All schools', 'With questions', 'Empty'] as const;
 
 /** Post-UTME is set by each school, so the admin works school by school. */

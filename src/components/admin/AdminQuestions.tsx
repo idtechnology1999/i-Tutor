@@ -10,6 +10,7 @@ import { QuestionEditor } from './QuestionEditor';
 import { BulkUpload } from './BulkUpload';
 import { ConfirmDelete } from '../cms/ConfirmDelete';
 import { blankQuestion, publishProblems } from '../../lib/question-rules';
+import { PAPER_YEARS as YEARS } from '../../lib/years';
 
 const FILTERS: Array<{ id: QuestionFilter; label: string }> = [
   { id: 'all', label: 'All' },
@@ -18,9 +19,6 @@ const FILTERS: Array<{ id: QuestionFilter; label: string }> = [
   { id: 'review', label: 'Needs review' },
 ];
 
-const THIS_YEAR = new Date().getFullYear();
-// Papers from 2000 to last year, newest first.
-const YEARS = Array.from({ length: THIS_YEAR - 2000 }, (_, i) => THIS_YEAR - 1 - i);
 
 export const AdminQuestions: React.FC<{
   nav: AdminNav;

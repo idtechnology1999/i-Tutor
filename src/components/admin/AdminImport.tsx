@@ -21,6 +21,7 @@ import type { ImportResult, ParsedQuestion } from '../../lib/question-import';
 import type { AdminNav, ImportPreset } from './AdminApp';
 import { PageHead } from './AdminApp';
 import { publishProblems } from '../../lib/question-rules';
+import { PAPER_YEARS as YEARS } from '../../lib/years';
 
 const SAMPLE = `JAMB UTME 2019 PHYSICS (extract)
 
@@ -49,8 +50,6 @@ const STEPS = ['Reading the paper', 'Finding questions and options', 'Matching a
 
 type Stage = 'setup' | 'working' | 'review' | 'done';
 
-const THIS_YEAR = new Date().getFullYear();
-const YEARS = Array.from({ length: THIS_YEAR - 2000 }, (_, i) => THIS_YEAR - 1 - i);
 
 interface ReviewItem extends ParsedQuestion {
   key: number;
