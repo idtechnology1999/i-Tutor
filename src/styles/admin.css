@@ -3453,3 +3453,44 @@
 @media (max-width: 640px) {
   .adm-px__seg button { white-space: nowrap; font-size: 0.85rem; padding: 0 6px; }
 }
+
+/* Past questions: bulk upload */
+.cms-modal__panel.bulk { width: min(760px, 100%); }
+.cms-modal__head h2 { display: inline-flex; align-items: center; gap: 8px; }
+.bulk__body { display: grid; gap: 16px; }
+.bulk__body > p { margin: 0; }
+.bulk__opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.bulk__drop {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 26px 16px;
+  border: 2px dashed var(--rule);
+  border-radius: 16px;
+  background: var(--mist);
+  color: var(--ink-2);
+  font: inherit;
+  cursor: pointer;
+  text-align: center;
+}
+.bulk__drop:hover:not(:disabled) { border-color: var(--brand); color: var(--brand); }
+.bulk__drop small { color: var(--ink-3); }
+.bulk__files { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.bulk__files > li { padding: 12px 14px; border: 1px solid var(--rule); border-radius: 14px; background: #fff; display: grid; gap: 8px; }
+.bulk__file { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.bulk__file strong { overflow-wrap: anywhere; }
+.bulk__file small { color: var(--ink-3); }
+.bulk__file .adm-link { margin-left: auto; }
+.bulk__msg { margin: 0; display: flex; align-items: center; gap: 6px; font-size: 0.9rem; color: var(--ink-2); }
+.bulk__msg.is-bad { color: var(--bad, #b42318); }
+.bulk__papers { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.bulk__papers th { text-align: left; font-weight: 600; color: var(--ink-3); font-size: 0.8rem; padding: 6px 8px; border-bottom: 1px solid var(--rule); }
+.bulk__papers td { padding: 8px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+.bulk__papers tr:last-child td { border-bottom: 0; }
+.bulk__papers small { color: var(--ink-3); }
+.bulk__state { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; }
+.bulk__papers tr.is-saved .bulk__state { color: var(--ok, #1f7a3f); }
+.bulk__papers tr.is-failed .bulk__state { color: var(--bad, #b42318); }
+.bulk__papers tr.is-skipped .bulk__state { color: var(--warn, #9a6200); }
+.bulk__note { display: block; margin-top: 2px; }
+.bulk__keep { margin-right: auto; font-size: 0.85rem; }
