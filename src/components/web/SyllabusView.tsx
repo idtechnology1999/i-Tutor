@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { QuestionFigure } from './QuestionFigure';
 import { BadgeCheck, Check, ChevronLeft, ChevronRight, ClipboardCheck, MessageSquareText, RotateCcw, Search, Sparkles, X } from 'lucide-react';
 import { EXAM_FULL_NAME, EXAM_LABEL, EXAM_TYPES, needsSchool, useCms } from '../../lib/cms';
 import { isLiveExam } from '../../lib/exams';
@@ -333,6 +334,7 @@ export const SyllabusView: React.FC<Props> = ({ initialExam, initialSchool, exam
             <p className="jamb__text" key={q.id}>
               {q.question}
             </p>
+            <QuestionFigure image={q.image} alt={q.imageAlt} />
             <div className="jamb__options" role="radiogroup" aria-labelledby="pq-q">
               {q.options.map((o) => {
                 const isPick = pick === o.label;

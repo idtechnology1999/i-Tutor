@@ -3494,3 +3494,23 @@
 .bulk__papers tr.is-skipped .bulk__state { color: var(--warn, #9a6200); }
 .bulk__note { display: block; margin-top: 2px; }
 .bulk__keep { margin-right: auto; font-size: 0.85rem; }
+
+/* Question editor: diagram */
+.q-diagram > span small { font-weight: 400; }
+.q-diagram__drop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  border: 2px dashed var(--rule);
+  border-radius: 12px;
+  background: var(--mist);
+  color: var(--ink-2);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.q-diagram__drop:hover,
+.q-diagram__drop:focus-visible { border-color: var(--brand); color: var(--brand); outline: none; }
+.q-diagram__has { display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap; }
+.q-diagram__has img { width: 200px; max-height: 180px; object-fit: contain; padding: 6px; border: 1px solid var(--rule); border-radius: 10px; background: #fff; }
+.q-diagram__side { flex: 1 1 220px; display: grid; gap: 10px; }

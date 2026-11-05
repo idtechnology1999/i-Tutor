@@ -8,6 +8,7 @@ import { recordResult } from '../../lib/progress';
 import type { SolveRequest } from '../../data/tutors';
 import { tutorById } from '../../data/tutors';
 import { ExamReview } from './ExamReview';
+import { QuestionFigure } from './QuestionFigure';
 import { saveAttempt } from '../../services/progress';
 import { getPracticeSet } from '../../services/practice';
 import type { RealExam } from '../../services/practice';
@@ -546,6 +547,7 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
                       correctAnswer: question.correctAnswer,
                       explanation: question.explanation,
                       topic: question.topic,
+                      image: question.image,
                       mode: 'hint',
                     })
                   }
@@ -557,6 +559,7 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
             <p className="jamb__text" key={question.id}>
               {question.question}
             </p>
+            <QuestionFigure image={question.image} alt={question.imageAlt} />
             <div className="jamb__options" role="radiogroup" aria-labelledby="jamb-q">
               {question.options.map((o) => {
                 const on = answers[question.id] === o.label;

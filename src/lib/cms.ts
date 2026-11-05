@@ -89,6 +89,9 @@ export interface CmsQuestion {
   status: Status;
   needsReview: boolean;
   reviewNote: string;
+  /** A diagram the question needs (Biology, Physics…): an uploaded image (/uploads/…, or a data URL in demo mode). */
+  image?: string;
+  imageAlt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -339,6 +342,7 @@ export const toExamQuestion = (q: CmsQuestion): DiagnosticQuestion => ({
   options: q.options,
   correctAnswer: q.correctAnswer,
   explanation: q.explanation,
+  ...(q.image ? { image: q.image, imageAlt: q.imageAlt } : {}),
 });
 
 export const EXAM_SUBJECTS = ['English', 'Mathematics', 'Physics', 'Chemistry'];

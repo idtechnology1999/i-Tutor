@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { QuestionFigure } from './QuestionFigure';
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, GraduationCap, RotateCcw, X } from 'lucide-react';
 import type { DiagnosticQuestion } from '../../types';
 import type { TutorPersona } from '../../data/tutors';
@@ -242,6 +243,7 @@ export const ExamReview: React.FC<Props> = ({
               </div>
 
               <p className="xr-question">{q.question}</p>
+              <QuestionFigure image={q.image} alt={q.imageAlt} />
               <ul className="xr-options">
                 {q.options.map((o) => {
                   const mine = answers[q.id] === o.label;

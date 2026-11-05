@@ -54,6 +54,8 @@ export interface SolveRequest {
   explanation: string;
   yourAnswer?: string;
   topic?: string;
+  /** The question's diagram, so the tutor can see it. */
+  image?: string;
   /** 'hint' during a timed exam: point the way, don't give the answer. */
   mode?: 'solve' | 'hint';
 }

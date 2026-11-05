@@ -136,7 +136,7 @@ async function main() {
     const description = `${p.qs.length} ${name(p)} ${p.subject} ${p.year} past questions with answers and explanations. Try ${samples.length} free here, then practise all of them in a timed CBT.`;
     const items = samples
       .map(
-        (q) => `<li><p>${esc(plain(q.question))}</p><ul>${(q.options || []).map((o) => `<li><b>${esc(o.label)}.</b> ${esc(plain(o.text))}</li>`).join('')}</ul>
+        (q) => `<li><p>${esc(plain(q.question))}</p>${q.image ? `<img src="${esc(q.image.startsWith('/') ? SITE + q.image : q.image)}" alt="${esc(q.imageAlt || 'Diagram for this question')}" loading="lazy" style="max-width:100%;max-height:320px;border:1px solid #dfe7e6;border-radius:10px;background:#fff" />` : ''}<ul>${(q.options || []).map((o) => `<li><b>${esc(o.label)}.</b> ${esc(plain(o.text))}</li>`).join('')}</ul>
 <details><summary>Show answer</summary><p><b>Answer: ${esc(q.correctAnswer)}</b>${q.explanation ? ` — ${esc(plain(q.explanation))}` : ''}</p></details></li>`,
       )
       .join('\n');

@@ -69,6 +69,9 @@ export interface DiagnosticQuestion {
   options: { label: string; text: string }[];
   correctAnswer: string;
   explanation: string;
+  /** The question's diagram, when it has one. */
+  image?: string;
+  imageAlt?: string;
 }
 
 export interface Institution {

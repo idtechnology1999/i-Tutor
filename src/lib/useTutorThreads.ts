@@ -19,7 +19,7 @@ export type Turn =
   | { kind: 'loading'; text: string }
   | { kind: 'error'; text: string; out: boolean };
 
-type Item = Pick<DiagnosticQuestion, 'id' | 'subject' | 'topic' | 'question' | 'options' | 'correctAnswer' | 'explanation'>;
+type Item = Pick<DiagnosticQuestion, 'id' | 'subject' | 'topic' | 'question' | 'options' | 'correctAnswer' | 'explanation' | 'image'>;
 
 export function useTutorThreads({ tutor, firstName }: { tutor?: TutorPersona; firstName: string }) {
   const [threads, setThreads] = useState<Record<number, Turn[]>>({});
@@ -35,6 +35,8 @@ export function useTutorThreads({ tutor, firstName }: { tutor?: TutorPersona; fi
     explanation: item.explanation,
     yourAnswer,
     topic: item.topic,
+    // The tutor sees the question's diagram too.
+    image: item.image,
   });
 
   const add = (id: number, ...turns: Turn[]) => setThreads((t) => ({ ...t, [id]: [...(t[id] ?? []), ...turns] }));

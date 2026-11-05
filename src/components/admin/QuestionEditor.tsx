@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { isLiveExam } from '../../lib/exams';
-import { CircleAlert, Plus, Trash2, X } from 'lucide-react';
+import { CircleAlert, ImagePlus, LoaderCircle, Plus, Trash2, X } from 'lucide-react';
+import { mediaSrc } from '../../cms/read';
+import { uploadMedia } from '../../services/pages';
 import { CMS_SUBJECTS, EXAM_LABEL, EXAM_TYPES, needsSchool } from '../../lib/cms';
 import { SCHOOLS } from '../../lib/schools';
 import type { CmsQuestion, QuestionDraft } from '../../lib/cms';
@@ -38,6 +40,23 @@ export const QuestionEditor: React.FC<Props> = ({ initial, isNew, onClose, onSav
   }, [onClose]);
 
   const set = <K extends keyof QuestionDraft>(key: K, value: QuestionDraft[K]) => setQ((prev) => ({ ...prev, [key]: value }));
+
+  // The question's diagram: uploaded like any site image (shrunk if large).
+  const diagramRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [diagramError, setDiagramError] = useState('');
+  const attachDiagram = async (file: File) => {
+    setUploading(true);
+    setDiagramError('');
+    try {
+      const item = await uploadMedia(file, q.imageAlt || `Diagram: ${q.subject} question`);
+      setQ((prev) => ({ ...prev, image: item.url }));
+    } catch (e) {
+      setDiagramError((e as Error).message);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const setOption = (i: number, text: string) =>
     setQ((prev) => ({ ...prev, options: prev.options.map((o, j) => (j === i ? { ...o, text } : o)) }));
@@ -167,8 +186,82 @@ export const QuestionEditor: React.FC<Props> = ({ initial, isNew, onClose, onSav
 
           <label className="adm-field">
             <span>Question</span>
-            <textarea className="adm-input adm-textarea" rows={4} value={q.question} onChange={(e) => set('question', e.target.value)} />
+            <textarea
+              className="adm-input adm-textarea"
+              rows={4}
+              value={q.question}
+              onChange={(e) => set('question', e.target.value)}
+              // A screenshot pasted here becomes the question's diagram.
+              onPaste={(e) => {
+                const img = [...e.clipboardData.files].find((f) => f.type.startsWith('image/'));
+                if (img) {
+                  e.preventDefault();
+                  void attachDiagram(img);
+                }
+              }}
+            />
           </label>
+
+          <div className="adm-field q-diagram">
+            <span>Diagram {q.image ? '' : <small className="adm-muted">(optional: for questions that need a picture)</small>}</span>
+            {q.image ? (
+              <div className="q-diagram__has">
+                <img src={mediaSrc(q.image)} alt={q.imageAlt || 'Diagram'} />
+                <div className="q-diagram__side">
+                  <input
+                    className="adm-input"
+                    value={q.imageAlt ?? ''}
+                    onChange={(e) => set('imageAlt', e.target.value)}
+                    placeholder="What it shows, e.g. “Longitudinal section of a flower”"
+                    aria-label="What the diagram shows"
+                    maxLength={300}
+                  />
+                  <div className="adm-row-actions">
+                    <button type="button" className="adm-btn" onClick={() => diagramRef.current?.click()} disabled={uploading}>
+                      <ImagePlus size={16} aria-hidden /> Replace
+                    </button>
+                    <button type="button" className="adm-btn adm-btn--danger-ghost" onClick={() => setQ((prev) => ({ ...prev, image: '', imageAlt: '' }))}>
+                      <Trash2 size={16} aria-hidden /> Remove
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div
+                className="q-diagram__drop"
+                tabIndex={0}
+                role="button"
+                aria-label="Add a diagram: choose an image, paste a screenshot or drop it here"
+                onClick={() => diagramRef.current?.click()}
+                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && diagramRef.current?.click()}
+                onPaste={(e) => {
+                  const img = [...e.clipboardData.files].find((f) => f.type.startsWith('image/'));
+                  if (img) void attachDiagram(img);
+                }}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const img = [...e.dataTransfer.files].find((f) => f.type.startsWith('image/'));
+                  if (img) void attachDiagram(img);
+                }}
+              >
+                {uploading ? <LoaderCircle size={18} className="adm-spin" aria-hidden /> : <ImagePlus size={18} aria-hidden />}
+                <span>{uploading ? 'Uploading…' : 'Add diagram: choose an image, paste a screenshot (Ctrl+V) or drop it here'}</span>
+              </div>
+            )}
+            {diagramError && <p className="adm-error">{diagramError}</p>}
+            <input
+              ref={diagramRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              hidden
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void attachDiagram(f);
+                e.target.value = '';
+              }}
+            />
+          </div>
 
           <fieldset className="adm-field">
             <span>Options</span>
