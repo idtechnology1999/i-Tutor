@@ -3,6 +3,7 @@ import { loadAdminExams, useExams } from '../../lib/exams';
 import {
   ArrowUpRight,
   BookOpenCheck,
+  ClipboardList,
   GraduationCap,
   Landmark,
   LayoutDashboard,
@@ -36,6 +37,7 @@ import { AdminUsers } from './AdminUsers';
 import { AdminTeam } from './AdminTeam';
 import { AdminAdmins } from './AdminAdmins';
 import { AdminAiUsage } from './AdminAiUsage';
+import { AdminReports } from './AdminReports';
 import { AdminAuth, AdminChangePassword } from './AdminAuth';
 import { adminLogout, currentAdminAccount } from '../../services/admin-auth';
 import type { AdminAccount } from '../../services/admin-auth';
@@ -54,6 +56,7 @@ export type Section =
   | 'cms'
   | 'users'
   | 'ai'
+  | 'reports'
   | 'team'
   | 'admins'
   | 'settings';
@@ -99,6 +102,7 @@ const NAV: Array<{ id: Section; label: string; icon: typeof LayoutDashboard }> =
   { id: 'cms', label: 'CMS', icon: LayoutTemplate },
   { id: 'users', label: 'Users', icon: UsersRound },
   { id: 'ai', label: 'AI usage', icon: Sparkles },
+  { id: 'reports', label: 'Reports', icon: ClipboardList },
   { id: 'team', label: 'Team', icon: UserRoundCog },
   { id: 'admins', label: 'Admins', icon: ShieldCheck },
   { id: 'settings', label: 'Settings', icon: Settings },
@@ -116,6 +120,7 @@ const SECTION_PATH: Record<Section, string> = {
   cms: '/cms',
   users: '/admin/users',
   ai: '/admin/ai-usage',
+  reports: '/admin/reports',
   team: '/admin/team',
   admins: '/admin/admins',
   settings: '/admin/settings',
@@ -333,6 +338,7 @@ export const AdminApp: React.FC<{
         {section === 'news' && <AdminNews nav={nav} />}
         {section === 'users' && <AdminUsers nav={nav} mode={mode} />}
         {section === 'ai' && <AdminAiUsage nav={nav} />}
+        {section === 'reports' && <AdminReports nav={nav} me={account ?? null} />}
         {section === 'team' && <AdminTeam nav={nav} />}
         {section === 'admins' && account && isSuper && <AdminAdmins nav={nav} me={account} />}
         {section === 'settings' && <AdminSettings nav={nav} mode={mode} />}

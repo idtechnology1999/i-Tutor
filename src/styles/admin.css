@@ -3526,3 +3526,373 @@
 .sysr__list li div { display: grid; gap: 2px; min-width: 0; }
 .sysr__list small { color: var(--ink-3); }
 .adm-card .sysr__list .adm-btn { align-self: center; flex: none; }
+
+/* ---------------------------------------------------------------- Reports
+   Admin → Reports. Readable first: 15px body text, 14px tables with roomy
+   rows, tabular numbers, and quiet colour tags for status. */
+
+.rep {
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.rep-tabs button {
+  font-size: 0.9375rem;
+}
+
+.rep-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 16px;
+}
+
+.rep-bar__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 12px;
+  min-width: 0;
+}
+
+.rep-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rep-field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.rep-field > span {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.rep-field .adm-input {
+  min-height: 42px;
+  width: auto;
+  max-width: 100%;
+  font: inherit;
+  font-size: 0.9375rem;
+}
+
+.rep-seg {
+  align-self: flex-end;
+}
+
+.rep-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink-3);
+}
+
+.rep-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 12px;
+}
+
+.rep-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--rule);
+  background: #fff;
+}
+
+.rep-card .rep-stat {
+  background: var(--mist);
+  border-color: transparent;
+}
+
+.rep-stat strong {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: var(--brand);
+}
+
+.rep-stat span {
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+}
+
+.rep-card h2 {
+  font-size: 1.0625rem;
+}
+
+.rep-card h3,
+.rep-school h3 {
+  margin: 4px 0 8px;
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.rep-school + .rep-school {
+  margin-top: 10px;
+}
+
+.rep-table-wrap {
+  overflow-x: auto;
+  margin: 0 -4px;
+  padding: 0 4px;
+}
+
+.rep-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.rep-table th {
+  position: sticky;
+  top: 0;
+  padding: 10px 12px;
+  background: var(--mist);
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.rep-table th:first-child {
+  border-radius: 10px 0 0 10px;
+}
+
+.rep-table th:last-child {
+  border-radius: 0 10px 10px 0;
+}
+
+.rep-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+  color: var(--ink);
+}
+
+.rep-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.rep-table tfoot td {
+  padding: 10px 12px;
+  border-top: 2px solid var(--rule-2);
+  font-weight: 700;
+}
+
+.rep-table td small {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.75rem;
+  color: var(--ink-3);
+}
+
+.rep-table .n {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.rep-when {
+  white-space: nowrap;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.rep-years {
+  min-width: 120px;
+  font-variant-numeric: tabular-nums;
+}
+
+.rep-years.is-missing {
+  color: var(--ink-3);
+}
+
+.rep-cover tr.is-waiting td:first-child b {
+  color: var(--ink-3);
+}
+
+.rep-days tbody tr {
+  cursor: pointer;
+}
+
+.rep-days tbody tr:hover td,
+.rep-days tbody tr:focus-visible td {
+  background: var(--brand-tint);
+}
+
+.rep-tag {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  vertical-align: 1px;
+}
+
+.rep-tag.is-ok {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+.rep-tag.is-warn {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.rep-tag.is-bad {
+  background: var(--bad-bg);
+  color: var(--bad);
+}
+
+.rep-tag.is-plain {
+  background: var(--mist);
+  color: var(--ink-3);
+}
+
+.rep-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+}
+
+.rep-chart svg {
+  max-height: 300px;
+}
+
+.rep-chart .legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 6px 0 0;
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+}
+
+.rep-chart .legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+
+.rep-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.rep-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rep-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 0.875rem;
+}
+
+.rep-list li:last-child {
+  border-bottom: 0;
+}
+
+.rep-list li > span:first-child {
+  flex: 1 1 160px;
+  font-weight: 600;
+}
+
+.rep-list small {
+  color: var(--ink-3);
+  font-size: 0.8125rem;
+}
+
+.rep-bars li {
+  grid-template-columns: minmax(80px, 140px) 1fr 52px;
+}
+
+.rep-day-title {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.rep-hint {
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+.rep-empty {
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .rep-cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .rep-bar,
+  .rep-bar__filters {
+    align-items: stretch;
+  }
+
+  .rep-bar__filters > * {
+    flex: 1 1 140px;
+  }
+
+  .rep-field .adm-input {
+    width: 100%;
+  }
+
+  .rep-bar__actions {
+    width: 100%;
+  }
+
+  .rep-bar__actions .adm-btn {
+    flex: 1;
+  }
+
+  .rep-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rep-stat strong {
+    font-size: 1.25rem;
+  }
+
+  .rep-table {
+    font-size: 0.8125rem;
+  }
+
+  .rep-table th,
+  .rep-table td {
+    padding: 8px 10px;
+  }
+}

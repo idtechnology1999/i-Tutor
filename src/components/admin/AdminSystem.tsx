@@ -31,7 +31,7 @@ const summaryText = (s: BackupSummary) =>
     .join(' · ');
 
 /** Super admin password, plus a word to type when the change can't be undone. */
-const ConfirmDialog: React.FC<{
+export const ConfirmDialog: React.FC<{
   title: string;
   message: React.ReactNode;
   word?: string;
