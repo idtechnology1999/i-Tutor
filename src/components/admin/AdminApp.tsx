@@ -17,6 +17,8 @@ import {
   UsersRound,
   UserRoundCog,
   Workflow,
+  Menu,
+  X,
 } from 'lucide-react';
 import { BrandMark } from '../web/BrandMark';
 import { browserOnlyQuestions, onCmsError, syncQuestions, uploadBrowserQuestions, useCms } from '../../lib/cms';
@@ -165,6 +167,14 @@ export const AdminApp: React.FC<{
   const [importPreset, setImportPreset] = useState<{ value: ImportPreset | null; n: number }>({ value: null, n: 0 });
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null);
   const [autoOpen, setAutoOpen] = useState(false);
+  // Phones: the sections menu under the top bar.
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMenuOpen(false);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
 
   // Ctrl/⌘ + K opens i-Auto from anywhere in the admin; Esc closes it.
   useEffect(() => {
@@ -237,26 +247,46 @@ export const AdminApp: React.FC<{
   const isSuper = account?.role === 'superadmin';
   const navItems = NAV.filter((n) => n.id !== 'admins' || isSuper);
 
+  const current = navItems.find((n) => n.id === section);
+
   return (
     <div className="adm">
-      <aside className="adm-side">
+      {/* Desktop: a sidebar. Phones: a compact top bar; Menu opens the sections. */}
+      <aside className={`adm-side${menuOpen ? ' is-open' : ''}`}>
         <div className="adm-side__brand">
           <BrandMark />
           <span className="adm-side__tag">Admin</span>
         </div>
+        {current && <span className="adm-side__here">{current.label}</span>}
+        <button type="button" className="adm-side__icon" onClick={() => setAutoOpen(true)} aria-label="Open i-Auto">
+          <Workflow size={20} aria-hidden />
+        </button>
+        <button
+          type="button"
+          className="adm-side__icon adm-side__menu"
+          onClick={() => setMenuOpen((o) => !o)}
+          aria-expanded={menuOpen}
+          aria-controls="adm-menu"
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+        >
+          {menuOpen ? <X size={22} aria-hidden /> : <Menu size={22} aria-hidden />}
+        </button>
         <button type="button" className="adm-side__auto" onClick={() => setAutoOpen(true)}>
           <Workflow size={18} aria-hidden />
           <span>i-Auto</span>
           <kbd>Ctrl K</kbd>
         </button>
-        <nav className="adm-side__nav" aria-label="Admin">
+        <nav className="adm-side__nav" id="adm-menu" aria-label="Admin">
           {navItems.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               type="button"
               className={`adm-side__item${section === id ? ' is-on' : ''}`}
               aria-current={section === id ? 'page' : undefined}
-              onClick={() => nav.go(id)}
+              onClick={() => {
+                setMenuOpen(false);
+                nav.go(id);
+              }}
             >
               <Icon size={18} aria-hidden />
               <span>{label}</span>

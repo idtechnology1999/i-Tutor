@@ -3365,3 +3365,91 @@
   border-style: dashed;
 }
 .adm-px__exams button:disabled:hover { border-color: var(--rule); color: var(--ink-3); }
+
+/* ------------------------------------------------- Admin on phones/tablets */
+.adm-side__here,
+.adm-side__icon {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  /* The bar never stretches to fill a short page. */
+  .adm { grid-template-rows: auto 1fr; align-content: start; min-height: 100dvh; }
+
+  .adm-side {
+    top: 0;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 0 6px;
+    padding: 8px 10px;
+    box-shadow: 0 1px 0 var(--rule);
+  }
+  .adm-side__brand { margin-right: 0; flex: none; }
+  .adm-side__brand .adm-side__tag { display: none; }
+  .adm-side__here {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+    margin-left: 6px;
+    padding-left: 10px;
+    border-left: 1px solid var(--rule);
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .adm-side__icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 42px;
+    height: 42px;
+    border: 0;
+    border-radius: 12px;
+    background: none;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .adm-side__icon:hover,
+  .adm-side__menu[aria-expanded='true'] { background: var(--mist); }
+
+  /* The big i-Auto bar and the floating button are replaced by the icon above. */
+  .adm-side__auto,
+  .auto-fab { display: none; }
+
+  /* Closed: just the bar. Open: every section, then the account actions. */
+  .adm-side__nav,
+  .adm-side__foot { display: none; }
+  .adm-side.is-open .adm-side__nav {
+    display: grid;
+    order: 5;
+    flex: 1 0 100%;
+    gap: 2px;
+    margin: 8px 0 0;
+    padding: 8px 0 4px;
+    max-height: calc(100dvh - 160px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-top: 1px solid var(--rule);
+  }
+  .adm-side.is-open .adm-side__nav .adm-side__item { width: 100%; min-height: 48px; font-size: 1rem; padding: 0 12px; }
+  .adm-side.is-open .adm-side__foot {
+    display: flex;
+    order: 6;
+    flex: 1 0 100%;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+    padding: 10px 0 4px;
+    border-top: 1px solid var(--rule);
+  }
+  .adm-side.is-open .adm-side__foot .adm-side__me { flex: 1 0 100%; padding: 0 12px 4px; }
+  .adm-side.is-open .adm-side__foot .adm-side__item { width: auto; padding: 0 12px; min-height: 44px; }
+  .adm-side.is-open .adm-side__foot .adm-side__item span { display: inline; }
+  .adm-side.is-open { box-shadow: 0 18px 40px -18px rgba(11, 31, 30, 0.35); }
+}
+@media (max-width: 640px) {
+  .adm-px__seg button { white-space: nowrap; font-size: 0.85rem; padding: 0 6px; }
+}
