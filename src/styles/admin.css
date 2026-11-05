@@ -3514,3 +3514,13 @@
 .q-diagram__has { display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap; }
 .q-diagram__has img { width: 200px; max-height: 180px; object-fit: contain; padding: 6px; border: 1px solid var(--rule); border-radius: 10px; background: #fff; }
 .q-diagram__side { flex: 1 1 220px; display: grid; gap: 10px; }
+
+/* Settings: backup & restore, reset an exam */
+.sysb__progress { display: flex; align-items: center; gap: 6px; margin: 0; }
+.sysb__warn { margin: 0; font-size: 0.85rem; }
+.sysr__list { list-style: none; margin: 0; padding: 0; display: grid; border: 1px solid var(--rule); border-radius: 14px; overflow: hidden; }
+.sysr__list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: #fff; }
+.sysr__list li + li { border-top: 1px solid var(--rule); }
+.sysr__list li div { display: grid; gap: 2px; min-width: 0; }
+.sysr__list small { color: var(--ink-3); }
+.adm-card .sysr__list .adm-btn { align-self: center; flex: none; }

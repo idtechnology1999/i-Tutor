@@ -6,6 +6,7 @@ import { adminChangePassword } from '../../services/admin-auth';
 import type { AdminNav } from './AdminApp';
 import { PageHead } from './AdminApp';
 import { ExamsCard } from './AdminExams';
+import { BackupCard, ResetCard } from './AdminSystem';
 
 /** Any admin can change their own password here (forgotten ones: the sign-in screen). */
 const PasswordCard: React.FC<{ nav: AdminNav }> = ({ nav }) => {
@@ -119,11 +120,20 @@ export const AdminSettings: React.FC<{ nav: AdminNav; mode: 'live' | 'demo' }> =
         </button>
       </section>
 
+      {/* Live: the real database. Demo: content kept in this browser. */}
+      {mode === 'live' && (
+        <>
+          <BackupCard nav={nav} />
+          <ResetCard nav={nav} />
+        </>
+      )}
+
+      {mode === 'demo' && (
+      <>
       <section className="adm-card">
         <h2 className="adm-card__title">Backup</h2>
         <p className="adm-muted">
-          Content is saved in this browser until the database is connected. Download a backup regularly, and use it to
-          move your work to another computer.
+          Demo mode: content is saved in this browser. Download a backup to keep it or move it to another computer.
         </p>
         <div className="adm-row-actions">
           <button type="button" className="adm-btn" onClick={exportBackup}>
@@ -161,6 +171,8 @@ export const AdminSettings: React.FC<{ nav: AdminNav; mode: 'live' | 'demo' }> =
           <RotateCcw size={16} aria-hidden /> Reset content
         </button>
       </section>
+      </>
+      )}
     </div>
   );
 };
