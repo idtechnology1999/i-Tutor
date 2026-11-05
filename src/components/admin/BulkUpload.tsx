@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { CheckCircle2, CircleAlert, CircleDashed, FileUp, LoaderCircle, MinusCircle, Upload, X } from 'lucide-react';
+import { CheckCircle2, CircleAlert, CircleDashed, FileUp, LoaderCircle, MinusCircle, RotateCcw, Upload, X } from 'lucide-react';
 import { CMS_SUBJECTS, syncQuestions } from '../../lib/cms';
 import { isBySchool, liveExams } from '../../lib/exams';
 import { SCHOOLS } from '../../lib/schools';
-import { bulkUpload } from '../../services/bulk';
+import { bulkRetry, bulkUpload } from '../../services/bulk';
 import type { BulkJob, BulkPaper } from '../../services/bulk';
 import type { AdminNav } from './AdminApp';
 
@@ -71,6 +71,26 @@ export const BulkUpload: React.FC<{ nav: AdminNav; defaultExam: string; onClose:
     // The new drafts appear in the bank.
     await syncQuestions('admin').catch(() => undefined);
     nav.notify(`${papers} paper${papers === 1 ? '' : 's'} saved as drafts. Check them, then publish.`);
+  };
+
+  /** Reads a file's failed papers again: one (by its place in the list) or all. Only missing questions are read. */
+  const retry = async (i: number, index?: number) => {
+    const row = rows[i];
+    if (!row?.job) return;
+    const before = row.job.papers.filter((p) => p.state === 'saved').length;
+    setRunning(true);
+    try {
+      const job = await bulkRetry(row.file, row.job, (j) => setRows((prev) => prev.map((r, k) => (k === i ? { ...r, job: j, error: '' } : r))), index);
+      const added = job.papers.filter((p) => p.state === 'saved').length - before;
+      if (added > 0) {
+        await syncQuestions('admin').catch(() => undefined);
+        nav.notify(`${added} more paper${added === 1 ? '' : 's'} saved as drafts.`);
+      } else nav.notify('Still not read. See the note beside the paper, then try again in a few minutes.');
+    } catch (e) {
+      nav.notify((e as Error).message);
+    } finally {
+      setRunning(false);
+    }
   };
 
   const pending = rows.filter((r) => !r.job && !r.error).length;
@@ -167,6 +187,11 @@ export const BulkUpload: React.FC<{ nav: AdminNav; defaultExam: string; onClose:
                         {r.job.stage !== 'done' && r.job.stage !== 'failed' && <LoaderCircle size={14} className="adm-spin" aria-hidden />}
                         {r.job.error || r.job.message}
                       </p>
+                      {r.job.stage === 'done' && r.job.papers.filter((p) => p.state === 'failed').length > 1 && (
+                        <button type="button" className="adm-btn bulk__retry-all" onClick={() => void retry(i)} disabled={running}>
+                          <RotateCcw size={15} aria-hidden /> Retry all {r.job.papers.filter((p) => p.state === 'failed').length} failed
+                        </button>
+                      )}
                       {r.job.papers.length > 0 && (
                         <table className="bulk__papers">
                           <thead>
@@ -177,7 +202,7 @@ export const BulkUpload: React.FC<{ nav: AdminNav; defaultExam: string; onClose:
                             </tr>
                           </thead>
                           <tbody>
-                            {r.job.papers.map((p) => {
+                            {r.job.papers.map((p, pi) => {
                               const s = STATE[p.state];
                               const Icon = s.icon;
                               return (
@@ -195,6 +220,11 @@ export const BulkUpload: React.FC<{ nav: AdminNav; defaultExam: string; onClose:
                                       <Icon size={15} className={p.state === 'reading' ? 'adm-spin' : ''} aria-hidden /> {s.label}
                                     </span>
                                     {p.note && <small className="bulk__note">{p.note}</small>}
+                                    {p.state === 'failed' && r.job?.stage === 'done' && (
+                                      <button type="button" className="adm-link bulk__retry" onClick={() => void retry(i, pi)} disabled={running}>
+                                        <RotateCcw size={13} aria-hidden /> Retry
+                                      </button>
+                                    )}
                                   </td>
                                 </tr>
                               );

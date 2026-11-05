@@ -40,15 +40,16 @@ export interface BulkJob {
  * is drawn here, the AI says where each diagram is on it, and the cut-out is
  * uploaded like any image. Ones that can't be found stay marked to check.
  */
-async function attachDiagrams(file: File, job: BulkJob, onUpdate: (job: BulkJob) => void): Promise<{ attached: number; total: number }> {
-  const total = job.diagrams.length;
+async function attachDiagrams(file: File, job: BulkJob, onUpdate: (job: BulkJob) => void, from = 0): Promise<{ attached: number; total: number }> {
+  const todo = job.diagrams.slice(from);
+  const total = todo.length;
   let attached = 0;
   let done = 0;
   const say = (message: string) => onUpdate({ ...job, message });
   say(`Cutting out diagrams: 0 of ${total}…`);
   const source = await openPages(file);
   const byPage = new Map<number, BulkJob['diagrams']>();
-  for (const d of job.diagrams) if (d.page <= source.pages) byPage.set(d.page, [...(byPage.get(d.page) ?? []), d]);
+  for (const d of todo) if (d.page <= source.pages) byPage.set(d.page, [...(byPage.get(d.page) ?? []), d]);
   for (const [page, list] of byPage) {
     try {
       const canvas = await source.render(page);
@@ -128,7 +129,25 @@ export async function bulkUpload(
 
   job = await api<BulkJob>(`/api/admin/bulk/${job.id}/run`, { method: 'POST', body: {} });
   onUpdate(job);
-  // Follow it until it ends (big files take a few minutes).
+  return follow(file, job, Boolean(text), onUpdate, 0);
+}
+
+/**
+ * Reads failed papers of a finished upload again (one paper, or all failed
+ * ones when index is left out). Only their missing questions are read.
+ */
+export async function bulkRetry(file: File, previous: BulkJob, onUpdate: (job: BulkJob) => void, index?: number): Promise<BulkJob> {
+  const handled = previous.diagrams.length;
+  const job = await api<BulkJob>(`/api/admin/bulk/${previous.id}/retry`, { method: 'POST', body: index === undefined ? {} : { index } });
+  onUpdate(job);
+  const office = isWord(file) || isExcel(file) || /\.txt$/i.test(file.name);
+  return follow(file, job, office, onUpdate, handled);
+}
+
+/** Follows a job until it ends, then cuts out its new diagrams. */
+async function follow(file: File, start: BulkJob, isText: boolean, onUpdate: (job: BulkJob) => void, diagramsFrom: number): Promise<BulkJob> {
+  let job = start;
+  // Big files take a few minutes.
   while (job.stage !== 'done' && job.stage !== 'failed') {
     await new Promise((r) => window.setTimeout(r, 2500));
     try {
@@ -140,9 +159,9 @@ export async function bulkUpload(
     }
   }
   // Diagrams on the pages of a PDF or photo: cut out and attached.
-  if (job.stage === 'done' && job.diagrams?.length && !text) {
+  if (job.stage === 'done' && job.diagrams?.length > diagramsFrom && !isText) {
     try {
-      const { attached, total } = await attachDiagrams(file, job, onUpdate);
+      const { attached, total } = await attachDiagrams(file, job, onUpdate, diagramsFrom);
       job = {
         ...job,
         message: `${job.message} Diagrams: ${attached} of ${total} attached automatically${attached < total ? '; the rest are marked to check' : ''}.`,

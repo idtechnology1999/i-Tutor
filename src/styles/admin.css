@@ -3493,6 +3493,8 @@
 .bulk__papers tr.is-failed .bulk__state { color: var(--bad, #b42318); }
 .bulk__papers tr.is-skipped .bulk__state { color: var(--warn, #9a6200); }
 .bulk__note { display: block; margin-top: 2px; }
+.bulk__retry { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font-weight: 600; }
+.bulk__retry-all { margin: 0 0 8px; }
 .bulk__keep { margin-right: auto; font-size: 0.85rem; }
 
 /* Question editor: diagram */
