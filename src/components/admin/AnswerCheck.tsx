@@ -8,8 +8,8 @@ import type { AdminNav } from './AdminApp';
 
 /* Admin → Past questions → Check answers. Runs on the server (backend
    ai/answer-check.ts): each answer is solved again, blind, by a second AI.
-   Agree → confirmed. Disagree → flagged for an admin (and taken off the site
-   if it was published). Blank answers are worked out and confirmed the same
+   Agree → confirmed. Disagree → flagged for an admin (it never takes a
+   question off the site). Blank answers are worked out and confirmed the same
    way. Nothing is published by it. */
 
 interface AnswerJob {
@@ -43,6 +43,22 @@ export const AnswerCheck: React.FC<{ nav: AdminNav; defaultExam: string; onClose
   const [job, setJob] = useState<AnswerJob | null>(null);
   const [error, setError] = useState('');
   const running = job?.stage === 'running';
+  const [restoring, setRestoring] = useState(false);
+
+  /** Puts back on the site the questions the first version of the check took off (still flagged). */
+  const restore = async () => {
+    setRestoring(true);
+    setError('');
+    try {
+      const { restored } = await api<{ restored: number }>('/api/admin/answer-check/restore', { method: 'POST', body: { exam } });
+      await syncQuestions('admin').catch(() => undefined);
+      nav.notify(restored ? `${restored} questions are back on the site, still marked to check.` : 'Nothing needed putting back.');
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setRestoring(false);
+    }
+  };
 
   // A check already running (started earlier, or by another admin): follow it.
   useEffect(() => {
@@ -97,7 +113,7 @@ export const AnswerCheck: React.FC<{ nav: AdminNav; defaultExam: string; onClose
         <div className="cms-modal__body cms-newpage">
           <p className="adm-muted">
             A second AI solves every question again <b>without being told the answer</b>. When both agree, the answer is confirmed. When they
-            don’t, the question is flagged “Check this one” for you, and taken off the site if it was published. Blank answers are worked out and
+            don’t, the question is flagged “Check this one” for you (it stays on the site until you decide). Blank answers are worked out and
             confirmed the same way. Nothing is published automatically. It runs on the server, so you can close this window.
           </p>
           {!isLive && <p className="adm-note">This needs the live site.</p>}
@@ -165,7 +181,6 @@ export const AnswerCheck: React.FC<{ nav: AdminNav; defaultExam: string; onClose
                   </div>
                   <p className="adm-muted">
                     {job.done} of {job.total} · {job.agreed} confirmed · {job.filled} filled · {job.flagged} flagged
-                    {job.unpublished ? ` · ${job.unpublished} taken off the site` : ''}
                     {job.failed ? ` · ${job.failed} not reached` : ''}
                     {job.skipped ? ` · ${job.skipped} already confirmed earlier` : ''}
                   </p>
@@ -176,6 +191,11 @@ export const AnswerCheck: React.FC<{ nav: AdminNav; defaultExam: string; onClose
           {error && <p className="adm-error">{error}</p>}
         </div>
         <footer className="cms-modal__foot">
+          {!running && (
+            <button type="button" className="adm-btn" onClick={() => void restore()} disabled={!isLive || restoring} title="Questions the earlier check took off the site go back on, still marked to check.">
+              {restoring ? 'Putting back…' : 'Put back on the site'}
+            </button>
+          )}
           {job && !running && job.flagged > 0 && (
             <button
               type="button"
