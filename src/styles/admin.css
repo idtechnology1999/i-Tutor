@@ -3896,3 +3896,24 @@
     padding: 8px 10px;
   }
 }
+
+/* Check answers (Past questions) */
+.ac-progress {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--mist);
+}
+
+.ac-progress p {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.ac-progress .adm-bars__track i {
+  background: var(--ok);
+}
