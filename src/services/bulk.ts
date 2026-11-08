@@ -105,7 +105,7 @@ const mediaTypeOf = (f: File) =>
 /** Uploads one file and follows its job; `onUpdate` gets every change. */
 export async function bulkUpload(
   file: File,
-  opts: { exam: string; school: string; subject: string },
+  opts: { exam: string; school: string; subject: string; replace?: boolean; password?: string },
   onUpdate: (job: BulkJob) => void,
 ): Promise<BulkJob> {
   if (!isLive) throw new Error('Bulk upload needs the live site: the AI reads the files on the server.');
@@ -116,7 +116,16 @@ export async function bulkUpload(
 
   let job = await api<BulkJob>('/api/admin/bulk', {
     method: 'POST',
-    body: { fileName: file.name, mediaType: text ? 'text/plain' : mediaTypeOf(file), exam: opts.exam, school: opts.school, subject: opts.subject, ...(text ? { text } : {}) },
+    body: {
+      fileName: file.name,
+      mediaType: text ? 'text/plain' : mediaTypeOf(file),
+      exam: opts.exam,
+      school: opts.school,
+      subject: opts.subject,
+      ...(text ? { text } : {}),
+      // Replace years already in the bank: the server checks the super admin password.
+      ...(opts.replace ? { replace: true, password: opts.password ?? '' } : {}),
+    },
   });
   onUpdate(job);
 

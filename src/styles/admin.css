@@ -3934,3 +3934,18 @@
   display: grid;
   gap: 4px;
 }
+
+.bulk__replace {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--warn-bg);
+  font-size: 0.875rem;
+}
+
+.bulk__replace .adm-check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}

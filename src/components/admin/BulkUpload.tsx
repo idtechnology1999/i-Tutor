@@ -31,6 +31,9 @@ export const BulkUpload: React.FC<{ nav: AdminNav; defaultExam: string; onClose:
   const [exam, setExam] = useState(exams.some((e) => e.id === defaultExam) ? defaultExam : (exams[0]?.id ?? 'UTME'));
   const [school, setSchool] = useState('');
   const [subject, setSubject] = useState('');
+  // Re-read years already in the bank (e.g. English papers saved without their passages).
+  const [replace, setReplace] = useState(false);
+  const [password, setPassword] = useState('');
   const [rows, setRows] = useState<Row[]>([]);
   const [running, setRunning] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -53,12 +56,13 @@ export const BulkUpload: React.FC<{ nav: AdminNav; defaultExam: string; onClose:
 
   const start = async () => {
     if (bySchool && !school) return nav.notify('Choose the university for Post-UTME papers.');
+    if (replace && !password) return nav.notify('Enter the super admin password to replace years already in the bank.');
     setRunning(true);
     let papers = 0;
     for (let i = 0; i < rows.length; i += 1) {
       if (rows[i]!.job || rows[i]!.error) continue;
       try {
-        const job = await bulkUpload(rows[i]!.file, { exam, school, subject }, (j) =>
+        const job = await bulkUpload(rows[i]!.file, { exam, school, subject, replace, password }, (j) =>
           setRows((prev) => prev.map((r, k) => (k === i ? { ...r, job: j } : r))),
         );
         papers += job.papers.filter((p) => p.state === 'saved').length;
@@ -148,6 +152,22 @@ export const BulkUpload: React.FC<{ nav: AdminNav; defaultExam: string; onClose:
                 ))}
               </select>
             </label>
+          </div>
+
+          <div className="bulk__replace">
+            <label className="adm-check">
+              <input type="checkbox" checked={replace} onChange={(e) => setReplace(e.target.checked)} disabled={running} />
+              <span>
+                <b>Replace years already in the bank.</b> Each year in the file is read again and its old questions are deleted. Use it to fix papers saved
+                incomplete, e.g. English without its reading passages.
+              </span>
+            </label>
+            {replace && (
+              <label className="adm-field">
+                <span>Super admin password</span>
+                <input type="password" className="adm-input" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" disabled={running} />
+              </label>
+            )}
           </div>
 
           <button
