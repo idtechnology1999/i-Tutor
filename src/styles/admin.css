@@ -3917,3 +3917,20 @@
 .ac-progress .adm-bars__track i {
   background: var(--ok);
 }
+
+.ac-why {
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+}
+
+.ac-why summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.ac-why ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+}

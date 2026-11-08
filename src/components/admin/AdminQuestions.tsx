@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { OFF_NOTE, isLiveExam, liveExams, useExams } from '../../lib/exams';
-import { FileUp, Pencil, Plus, RefreshCw, ScanText, Search, ShieldCheck, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileUp, Pencil, Plus, RefreshCw, ScanText, Search, ShieldCheck, Trash2 } from 'lucide-react';
 import { CMS_SUBJECTS, EXAM_FULL_NAME, EXAM_LABEL, EXAM_TYPES, cms, needsSchool, paperSize, useCms } from '../../lib/cms';
 import { SCHOOLS } from '../../lib/schools';
 import type { CmsQuestion, CmsSubject, QuestionDraft } from '../../lib/cms';
@@ -21,6 +21,8 @@ const FILTERS: Array<{ id: QuestionFilter; label: string }> = [
 ];
 
 
+const PAGE_SIZE = 50;
+
 export const AdminQuestions: React.FC<{
   nav: AdminNav;
   filter: QuestionFilter;
@@ -30,6 +32,8 @@ export const AdminQuestions: React.FC<{
 }> = ({ nav, filter, onFilter, scope, onScope }) => {
   const { questions } = useCms();
   const [search, setSearch] = useState('');
+  // 50 rows a page: drawing thousands of rows at once froze the page.
+  const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [editing, setEditing] = useState<CmsQuestion | 'new' | null>(null);
   // Replacing a paper deletes its questions: the super admin password comes first.
@@ -94,6 +98,15 @@ export const AdminQuestions: React.FC<{
     setSelected(new Set());
     onScope({ ...scope, ...patch });
   };
+
+  const pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+  const current = Math.min(page, pages);
+  const shown = list.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
+  // A new exam, subject, year, filter or search starts at page 1.
+  const listKey = `${exam}|${school}|${subject}|${year}|${filter}|${term}`;
+  useEffect(() => {
+    setPage(1);
+  }, [listKey]);
 
   const allSelected = list.length > 0 && list.every((q) => selected.has(q.id));
   const toggle = (id: number) =>
@@ -319,8 +332,8 @@ export const AdminQuestions: React.FC<{
       ) : (
         <div className="adm-table adm-table--edit" role="table" aria-label="Questions">
           <div className="adm-table__head" role="row">
-            <label className="adm-check">
-              <input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all" />
+            <label className="adm-check" title={`Select all ${list.length}, on every page`}>
+              <input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label={`Select all ${list.length} questions`} />
             </label>
             <span role="columnheader">Question</span>
             <span role="columnheader">Subject</span>
@@ -328,7 +341,7 @@ export const AdminQuestions: React.FC<{
             <span role="columnheader">Status</span>
             <span role="columnheader" className="adm-sr">Edit</span>
           </div>
-          {list.map((q) => (
+          {shown.map((q) => (
             <div key={q.id} role="row" className={`adm-row${selected.has(q.id) ? ' is-selected' : ''}`}>
               <label className="adm-check" onClick={(e) => e.stopPropagation()}>
                 <input type="checkbox" checked={selected.has(q.id)} onChange={() => toggle(q.id)} aria-label="Select question" />
@@ -352,6 +365,23 @@ export const AdminQuestions: React.FC<{
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {list.length > PAGE_SIZE && (
+        <div className="adm-px__pager">
+          <span className="adm-muted">
+            Showing {(current - 1) * PAGE_SIZE + 1}–{Math.min(current * PAGE_SIZE, list.length)} of {list.length}
+          </span>
+          <button type="button" className="adm-btn" onClick={() => setPage(Math.max(1, current - 1))} disabled={current <= 1}>
+            <ChevronLeft size={16} aria-hidden /> Previous
+          </button>
+          <span className="adm-px__pageno">
+            Page {current} of {pages}
+          </span>
+          <button type="button" className="adm-btn" onClick={() => setPage(Math.min(pages, current + 1))} disabled={current >= pages}>
+            Next <ChevronRight size={16} aria-hidden />
+          </button>
         </div>
       )}
 

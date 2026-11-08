@@ -24,6 +24,7 @@ interface AnswerJob {
   unpublished: number;
   skipped: number;
   failed: number;
+  samples?: string[];
   error: string;
 }
 
@@ -187,6 +188,16 @@ export const AnswerCheck: React.FC<{ nav: AdminNav; defaultExam: string; onClose
                 </>
               )}
             </div>
+          )}
+          {job?.samples && job.samples.length > 0 && (
+            <details className="ac-why" open={job.flagged > 0 && job.agreed + job.filled === 0}>
+              <summary>Why questions were flagged (first {job.samples.length})</summary>
+              <ul>
+                {job.samples.map((s, i) => (
+                  <li key={i}>{s}</li>
+                ))}
+              </ul>
+            </details>
           )}
           {error && <p className="adm-error">{error}</p>}
         </div>
