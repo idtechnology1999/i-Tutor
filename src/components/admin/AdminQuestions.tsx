@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { OFF_NOTE, isLiveExam, liveExams, useExams } from '../../lib/exams';
-import { ChevronLeft, ChevronRight, FileUp, Pencil, Plus, RefreshCw, ScanText, Search, ShieldCheck, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileUp, FolderOpen, Pencil, Plus, RefreshCw, ScanText, Search, ShieldCheck, Trash2 } from 'lucide-react';
 import { CMS_SUBJECTS, EXAM_FULL_NAME, EXAM_LABEL, EXAM_TYPES, cms, needsSchool, paperSize, useCms } from '../../lib/cms';
 import { SCHOOLS } from '../../lib/schools';
 import type { CmsQuestion, CmsSubject, QuestionDraft } from '../../lib/cms';
@@ -9,6 +9,7 @@ import { PageHead, StatusChip } from './AdminApp';
 import { QuestionEditor } from './QuestionEditor';
 import { BulkUpload } from './BulkUpload';
 import { AnswerCheck } from './AnswerCheck';
+import { PreparedImport } from './PreparedImport';
 import { ConfirmDelete } from '../cms/ConfirmDelete';
 import { blankQuestion, publishProblems } from '../../lib/question-rules';
 import { PAPER_YEARS as YEARS } from '../../lib/years';
@@ -43,6 +44,7 @@ export const AdminQuestions: React.FC<{
   // Bulk upload: many papers from one file, each filed under its year.
   const [bulkOpen, setBulkOpen] = useState(false);
   const [checkOpen, setCheckOpen] = useState(false);
+  const [preparedOpen, setPreparedOpen] = useState(false);
   // An exam switched off in Settings → Exams can't be worked on: move to the first one that's on.
   const examList = useExams();
   useEffect(() => {
@@ -161,6 +163,9 @@ export const AdminQuestions: React.FC<{
         sub="Each exam has its own past questions. Choose the exam, subject and year, then add that paper — the AI arranges it for you."
         actions={
           <>
+            <button type="button" className="adm-btn" onClick={() => setPreparedOpen(true)}>
+              <FolderOpen size={18} aria-hidden /> Import prepared files
+            </button>
             <button type="button" className="adm-btn" onClick={() => setCheckOpen(true)}>
               <ShieldCheck size={18} aria-hidden /> Check answers
             </button>
@@ -171,6 +176,7 @@ export const AdminQuestions: React.FC<{
         }
       />
       {bulkOpen && <BulkUpload nav={nav} defaultExam={exam} onClose={() => setBulkOpen(false)} />}
+      {preparedOpen && <PreparedImport nav={nav} onClose={() => setPreparedOpen(false)} />}
       {checkOpen && <AnswerCheck nav={nav} defaultExam={exam} onClose={() => setCheckOpen(false)} />}
 
       <section className="adm-card adm-scope">
