@@ -272,6 +272,11 @@ export function syncQuestions(scope: 'student' | 'admin' = syncScope): Promise<v
     });
 }
 
+/** The server takes at most 5000 ids per request: big selections (e.g. a whole exam) go in batches of 1000, one after another. */
+const inBatches = async (ids: number[], send: (part: number[]) => Promise<unknown>) => {
+  for (let i = 0; i < ids.length; i += 1000) await send(ids.slice(i, i + 1000));
+};
+
 /** Live: send a change to the server. If it's refused, say why and reload what the server has. */
 const remote = (work: Promise<unknown>) => {
   work.catch((error: Error) => {
@@ -458,7 +463,7 @@ export const cms = {
       },
       `${status === 'published' ? 'Published' : 'Unpublished'} ${ids.length} question${ids.length === 1 ? '' : 's'}.`,
     );
-    if (isLive && ids.length) remote(api('/api/admin/questions/status', { method: 'POST', body: { ids, status } }));
+    if (isLive && ids.length) remote(inBatches(ids, (part) => api('/api/admin/questions/status', { method: 'POST', body: { ids: part, status } })));
   },
 
   deleteQuestions(ids: number[]) {
@@ -467,7 +472,7 @@ export const cms = {
       { ...state, questions: state.questions.filter((q) => !set.has(q.id)) },
       `Deleted ${ids.length} question${ids.length === 1 ? '' : 's'}.`,
     );
-    if (isLive && ids.length) remote(api('/api/admin/questions', { method: 'DELETE', body: { ids } }));
+    if (isLive && ids.length) remote(inBatches(ids, (part) => api('/api/admin/questions', { method: 'DELETE', body: { ids: part } })));
   },
 
   saveNews(item: CmsNews) {
