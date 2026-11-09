@@ -3726,6 +3726,69 @@
   color: var(--ink-3);
 }
 
+/* Share of the years that have questions: a small bar and the number. */
+.rep-pct {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+
+.rep-pct__bar {
+  display: inline-block;
+  width: 64px;
+  height: 7px;
+  margin-right: 8px;
+  border-radius: 99px;
+  background: var(--mist);
+  overflow: hidden;
+  vertical-align: 1px;
+}
+
+.rep-pct__bar i {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--ok);
+}
+
+/* Year-by-year grid under each exam's table (folded away until opened). */
+.rep-grid {
+  margin-top: 12px;
+}
+
+.rep-grid summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.rep-grid > div {
+  margin-top: 10px;
+  overflow-x: auto;
+}
+
+.rep-grid svg {
+  min-width: 560px;
+}
+
+.rep-grid .legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 6px 0 0;
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+}
+
+.rep-grid .legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+
 .rep-days tbody tr {
   cursor: pointer;
 }

@@ -9,8 +9,11 @@ import {
   KIND_LABEL,
   barChartSvg,
   byWho,
+  coveragePercent,
   coverageState,
   downloadCsv,
+  gridLegendHtml,
+  yearGridSvg,
   legendHtml,
   longDay,
   missingYears,
@@ -94,27 +97,29 @@ export const AdminReports: React.FC<{ nav: AdminNav; me: AdminAccount | null }> 
     }
   };
   const [day, setDay] = useState(today());
-  const [download, setDownload] = useState<{ name: ReportName; options: Options; format: 'pdf' | 'csv'; fromYear?: number } | null>(null);
+  const [download, setDownload] = useState<{ name: ReportName; options: Options; format: 'pdf' | 'csv'; fromYear?: number; exam?: string } | null>(null);
 
   const by = me ? `${me.name || me.email} (${roleLabel(me.role)})` : 'Admin';
 
   const run = async (password: string) => {
     if (!download) return;
     const data = await downloadReport(download.name, password, download.options);
-    const ctx = { by, fromYear: download.fromYear };
+    const ctx = { by, fromYear: download.fromYear, exam: download.exam };
     const stamp = today();
+    const part = download.exam ? `-${download.exam.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : '';
     if (download.format === 'pdf') {
       const { title, html } = reportPdf(download.name, data, ctx);
       printHtml(html, title);
       nav.notify('Report ready: choose “Save as PDF” as the printer to keep it as a file.');
     } else {
-      downloadCsv(`i-tutor-${download.name}-report-${stamp}.csv`, reportCsv(download.name, data, ctx));
+      downloadCsv(`i-tutor-${download.name}${part}-report-${stamp}.csv`, reportCsv(download.name, data, ctx));
       nav.notify('Report downloaded. It opens in Excel.');
     }
     setDownload(null);
   };
 
-  const ask = (name: ReportName, options: Options, fromYear?: number) => (format: 'pdf' | 'csv') => setDownload({ name, options, format, fromYear });
+  const ask = (name: ReportName, options: Options, fromYear?: number, exam?: string) => (format: 'pdf' | 'csv') =>
+    setDownload({ name, options, format, fromYear, exam });
 
   return (
     <div className="adm-page rep">
@@ -165,7 +170,7 @@ export const AdminReports: React.FC<{ nav: AdminNav; me: AdminAccount | null }> 
 
 /* ------------------------------------------------------------ Shared bits */
 
-type Ask = (name: ReportName, options: Options, fromYear?: number) => (format: 'pdf' | 'csv') => void;
+type Ask = (name: ReportName, options: Options, fromYear?: number, exam?: string) => (format: 'pdf' | 'csv') => void;
 
 const Toolbar: React.FC<{ children?: React.ReactNode; onPdf: () => void; onCsv: () => void; onReload: () => void; busy: boolean; ready: boolean }> = ({
   children,
@@ -401,6 +406,7 @@ const CoverageTable: React.FC<{ subjects: SubjectCoverage[]; fromYear: number }>
         <tr>
           <th>Subject</th>
           <th>Status</th>
+          <th>Years covered</th>
           <th>Done (published)</th>
           <th>In review</th>
           <th>Missing since {fromYear}</th>
@@ -418,6 +424,12 @@ const CoverageTable: React.FC<{ subjects: SubjectCoverage[]; fromYear: number }>
               <td>
                 <span className={`rep-tag is-${st === 'done' ? 'ok' : st === 'review' ? 'warn' : 'plain'}`}>{COVERAGE_LABEL[st]}</span>
               </td>
+              <td className="rep-pct">
+                <span className="rep-pct__bar" aria-hidden>
+                  <i style={{ width: `${coveragePercent(s, fromYear)}%` }} />
+                </span>
+                {coveragePercent(s, fromYear)}%
+              </td>
               <td className="rep-years">{yearRanges(s.done) || '–'}</td>
               <td className="rep-years">{yearRanges(s.review) || '–'}</td>
               <td className="rep-years is-missing">{st === 'waiting' ? 'All years' : yearRanges(missingYears(s, fromYear)) || 'None'}</td>
@@ -433,12 +445,23 @@ const CoverageTable: React.FC<{ subjects: SubjectCoverage[]; fromYear: number }>
   </div>
 );
 
+/** Every subject against every year, coloured by state (the same picture as in the PDF). */
+const YearGrid: React.FC<{ subjects: SubjectCoverage[]; fromYear: number }> = ({ subjects, fromYear }) =>
+  subjects.length ? (
+    <details className="rep-grid">
+      <summary>Year by year</summary>
+      {/* Built from numbers and subject names made here; every text is escaped. */}
+      <div dangerouslySetInnerHTML={{ __html: yearGridSvg(subjects, fromYear) + gridLegendHtml() }} />
+    </details>
+  ) : null;
+
 const ContentTab: React.FC<{ ask: Ask }> = ({ ask }) => {
   const { data, error, busy, reload } = useReport('content', {});
   const [fromYear, setFromYear] = useState(FIRST_PAPER_YEAR);
   const [exam, setExam] = useState('');
-  const go = ask('content', {}, fromYear);
+  const go = ask('content', {}, fromYear, exam || undefined);
   const shown = data?.exams.filter((e) => !exam || e.id === exam) ?? [];
+  const examName = data?.exams.find((e) => e.id === exam)?.name;
   return (
     <>
       <Toolbar onPdf={() => go('pdf')} onCsv={() => go('csv')} onReload={reload} busy={busy} ready={Boolean(data)}>
@@ -465,6 +488,12 @@ const ContentTab: React.FC<{ ask: Ask }> = ({ ask }) => {
         </label>
       </Toolbar>
       <Status busy={busy} error={error} empty={!data} />
+      {data && (
+        <p className="adm-muted rep-hint">
+          {examName ? `PDF and Excel download the ${examName} report only.` : 'PDF and Excel download every exam. Choose an exam above to download that exam alone.'} Green:
+          published. Amber: uploaded, waiting to be published. Grey: no questions yet.
+        </p>
+      )}
       {shown.map((e) => {
         const subs = e.kind === 'school' ? e.schools.flatMap((s) => s.subjects) : e.subjects;
         const count = (st: string) => subs.filter((s) => coverageState(s) === st).length;
@@ -488,13 +517,17 @@ const ContentTab: React.FC<{ ask: Ask }> = ({ ask }) => {
                   <div key={s.school} className="rep-school">
                     <h3>{s.school}</h3>
                     <CoverageTable subjects={s.subjects} fromYear={fromYear} />
+                    <YearGrid subjects={s.subjects} fromYear={fromYear} />
                   </div>
                 ))
               ) : (
                 <p className="adm-muted">No Post-UTME papers yet: waiting for upload.</p>
               )
             ) : (
-              <CoverageTable subjects={e.subjects} fromYear={fromYear} />
+              <>
+                <CoverageTable subjects={e.subjects} fromYear={fromYear} />
+                <YearGrid subjects={e.subjects} fromYear={fromYear} />
+              </>
             )}
           </section>
         );

@@ -151,6 +151,14 @@ td.t { white-space: nowrap; color: #3d4f4e; }
 .legend { display: flex; gap: 16px; font-size: 8.5pt; color: #3d4f4e; margin: 4px 0 0; }
 .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
 .foot { margin-top: 24px; padding-top: 8px; border-top: 1px solid #e3e9e8; font-size: 8pt; color: #5c6d6c; }
+.howto { background: #f5f7f6; border-radius: 8px; padding: 10px 12px; font-size: 9pt; color: #3d4f4e; margin: 10px 0 4px; break-inside: avoid; }
+.howto b { color: #0b1f1e; }
+.howto ul { margin: 4px 0 0; padding-left: 16px; }
+.bar { display: inline-block; width: 70px; height: 7px; border-radius: 99px; background: #e3e9e8; vertical-align: middle; overflow: hidden; }
+.bar i { display: block; height: 100%; background: #0f7b4f; border-radius: 99px; }
+.pct { display: inline-block; min-width: 32px; text-align: right; font-size: 8.5pt; color: #3d4f4e; margin-left: 4px; }
+.exam { break-before: page; }
+.exam:first-of-type { break-before: auto; }
 `;
 
 /** A whole report page: header, the sections, a footer. */
@@ -190,27 +198,106 @@ const logTable = (rows: LogRow[], dateCol = true) =>
 
 const coverageRows = (subjects: SubjectCoverage[], fromYear: number) =>
   table(
-    ['Subject', 'Status', 'Done (published)', 'In review (drafts)', `Missing since ${fromYear}`, 'Questions'],
+    ['Subject', 'Status', 'Years covered', 'Published years', 'Waiting to be published', `Missing since ${fromYear}`, 'Questions'],
     subjects.map((s) => {
       const st = coverageState(s);
       return [
         `<b>${esc(s.subject)}</b>`,
         `<span class="tag ${st}">${esc(COVERAGE_LABEL[st])}</span>`,
+        `<span style="white-space:nowrap">${barHtml(coveragePercent(s, fromYear))}</span>`,
         esc(yearRanges(s.done) || '–'),
         esc(yearRanges(s.review) || '–'),
-        st === 'waiting' ? '<span class="muted">All</span>' : esc(yearRanges(missingYears(s, fromYear)) || 'None'),
+        st === 'waiting' ? '<span class="muted">All years</span>' : esc(yearRanges(missingYears(s, fromYear)) || 'None'),
         `${num(s.published)}${s.drafts ? `<br><span class="muted small">+${num(s.drafts)} drafts</span>` : ''}`,
       ];
     }),
-    [5],
+    [6],
   );
+
+/** One exam's section: summary figures, the subject table and the year grid. */
+const examSection = (name: string, subjects: SubjectCoverage[], from: number, heading: string) => {
+  const count = (st: CoverageState) => subjects.filter((s) => coverageState(s) === st).length;
+  const published = subjects.reduce((n, s) => n + s.published, 0);
+  const drafts = subjects.reduce((n, s) => n + s.drafts, 0);
+  const avg = subjects.length ? Math.round(subjects.reduce((n, s) => n + coveragePercent(s, from), 0) / subjects.length) : 0;
+  return (
+    heading +
+    stats([
+      ['Subjects', subjects.length],
+      ['Subjects with published papers', count('done')],
+      ['Subjects waiting to be published', count('review')],
+      ['Subjects with nothing yet', count('waiting')],
+      ['Published questions', published],
+      ['Questions waiting (drafts)', drafts],
+      ['Average years covered', `${avg}%`],
+      [`Years counted`, `${from}–${new Date().getFullYear()}`],
+    ]) +
+    (subjects.length
+      ? `<h3>Subject by subject</h3>${coverageRows(subjects, from)}<h3>Year by year</h3><div class="chart">${yearGridSvg(subjects, from)}${gridLegendHtml()}</div>`
+      : `<p class="muted">No subjects for ${esc(name)} yet: waiting for upload.</p>`)
+  );
+};
+
+const HOWTO = (from: number) => `<div class="howto"><b>How to read this report</b><ul>
+<li><b>Published</b>: the questions are live; students can practise them.</li>
+<li><b>Waiting to be published</b>: the questions are uploaded as drafts; an admin still has to publish them.</li>
+<li><b>Missing</b>: no questions at all for that year (counted from ${from} to this year).</li>
+<li><b>Years covered</b>: the share of those years that have questions, published or waiting.</li></ul></div>`;
 
 export interface ExportContext {
   /** Who is downloading, for the header. */
   by: string;
   /** Content report: the first year counted as missing. */
   fromYear?: number;
+  /** Content report: only this exam (its id); empty means every exam. */
+  exam?: string;
 }
+
+/* ------------------------------------------------- Past-question coverage */
+
+/** Share of the years from `from` to this year that have any questions (published or draft). */
+export const coveragePercent = (s: SubjectCoverage, from: number, to = new Date().getFullYear()) => {
+  const have = new Set([...s.done, ...s.review].filter((y) => y >= from && y <= to));
+  return Math.round((have.size / Math.max(1, to - from + 1)) * 100);
+};
+
+export const GRID_COLORS = { done: '#0f7b4f', review: '#e8a33d', missing: '#e3e9e8' };
+
+/** One row per subject, one small square per year: green published, amber drafts only, grey nothing. */
+export function yearGridSvg(subjects: SubjectCoverage[], from: number, to = new Date().getFullYear()): string {
+  const years: number[] = [];
+  for (let y = from; y <= to; y += 1) years.push(y);
+  const W = 720;
+  const left = 132;
+  const top = 22;
+  const row = 17;
+  const cell = Math.min(16, (W - left - 6) / Math.max(1, years.length));
+  const H = top + subjects.length * row + 6;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Years covered for each subject" font-family="Outfit, 'Segoe UI', Arial, sans-serif" style="width:100%;height:auto;display:block">`;
+  years.forEach((y, i) => {
+    if (y % 5 === 0 || i === 0 || i === years.length - 1)
+      svg += `<text x="${left + i * cell + cell / 2}" y="${top - 8}" text-anchor="middle" font-size="9.5" fill="#5c6d6c">${y}</text>`;
+  });
+  subjects.forEach((s, r) => {
+    const yy = top + r * row;
+    const done = new Set(s.done);
+    const review = new Set(s.review);
+    const name = s.subject.length > 22 ? `${s.subject.slice(0, 21)}…` : s.subject;
+    svg += `<text x="${left - 8}" y="${yy + row / 2 + 4}" text-anchor="end" font-size="10.5" fill="#0b1f1e">${esc(name)}</text>`;
+    years.forEach((y, i) => {
+      const st = done.has(y) ? 'done' : review.has(y) ? 'review' : 'missing';
+      const label = st === 'done' ? 'published' : st === 'review' ? 'drafts, not yet published' : 'no questions';
+      svg += `<rect x="${left + i * cell + 1}" y="${yy + 2}" width="${cell - 2}" height="${row - 4}" rx="2" fill="${GRID_COLORS[st]}"><title>${esc(`${s.subject} ${y}: ${label}`)}</title></rect>`;
+    });
+  });
+  return `${svg}</svg>`;
+}
+
+export const gridLegendHtml = () =>
+  `<p class="legend"><span><i style="background:${GRID_COLORS.done}"></i>Published (students can use it)</span><span><i style="background:${GRID_COLORS.review}"></i>Uploaded, waiting to be published</span><span><i style="background:${GRID_COLORS.missing}"></i>No questions yet</span></p>`;
+
+const barHtml = (pct: number) =>
+  `<span class="bar"><i style="width:${Math.max(0, Math.min(100, pct))}%"></i></span><span class="pct">${pct}%</span>`;
 
 export function reportPdf<K extends ReportName>(name: K, data: ReportMap[K], ctx: ExportContext): { title: string; html: string } {
   switch (name) {
@@ -259,23 +346,27 @@ export function reportPdf<K extends ReportName>(name: K, data: ReportMap[K], ctx
     case 'content': {
       const d = data as ContentReport;
       const from = ctx.fromYear ?? 1978;
-      const title = 'Past questions report';
-      const sub = 'What is done, what is waiting for review, and what still needs uploading';
-      let body = '';
-      for (const e of d.exams) {
-        const subs = e.kind === 'school' ? e.schools.flatMap((s) => s.subjects) : e.subjects;
-        const done = subs.filter((s) => coverageState(s) === 'done').length;
-        body += `<h2>${esc(e.name)}${e.enabled ? '' : ' <span class="tag waiting">Switched off</span>'}</h2>`;
+      const exams = d.exams.filter((e) => !ctx.exam || e.id === ctx.exam);
+      const one = ctx.exam && exams.length === 1 ? exams[0]! : null;
+      const title = one ? `${one.name} past questions` : 'Past questions report';
+      const sub = one
+        ? 'Which subjects and years are published, which are waiting, and which are still missing'
+        : 'Every exam: what is published, what is waiting, and what is still missing';
+      let body = HOWTO(from);
+      for (const e of exams) {
+        const off = e.enabled ? '' : ' <span class="tag waiting">Switched off</span>';
+        body += `<section class="exam">`;
         if (e.kind === 'school') {
+          body += `<h2>${esc(e.name)}${off}</h2>`;
           body += e.schools.length
-            ? e.schools.map((s) => `<h3>${esc(s.school)}</h3>${coverageRows(s.subjects, from)}`).join('')
+            ? e.schools.map((s) => examSection(s.school, s.subjects, from, `<h3>${esc(s.school)}</h3>`)).join('')
             : '<p class="muted">No Post-UTME papers yet: waiting for upload.</p>';
         } else {
-          body += `<p class="muted small">${done} of ${subs.length} subjects have published papers · ${num(subs.reduce((n, s) => n + s.published, 0))} published questions</p>`;
-          body += coverageRows(subs, from);
+          body += examSection(e.name, e.subjects, from, one ? '' : `<h2>${esc(e.name)}${off}</h2>`);
         }
+        body += `</section>`;
       }
-      if (d.practice.length) {
+      if (!one && d.practice.length) {
         body += `<h2>Practice questions (by syllabus)</h2>${table(
           ['Subject', 'Published', 'Drafts'],
           d.practice.map((p) => [`<b>${esc(p.subject)}</b>`, p.published, p.drafts]),
@@ -500,16 +591,29 @@ export function reportCsv<K extends ReportName>(name: K, data: ReportMap[K], ctx
     case 'content': {
       const d = data as ContentReport;
       const from = ctx.fromYear ?? 1978;
-      const rows: Cell[][] = [['Exam', 'School', 'Subject', 'Status', 'Done (published)', 'In review (drafts)', `Missing since ${from}`, 'Published questions', 'Draft questions']];
+      const rows: Cell[][] = [
+        ['Exam', 'School', 'Subject', 'Status', `Years covered since ${from} (%)`, 'Published years', 'Waiting to be published', `Missing since ${from}`, 'Published questions', 'Draft questions'],
+      ];
       const add = (exam: string, school: string, s: SubjectCoverage) => {
         const st = coverageState(s);
-        rows.push([exam, school, s.subject, COVERAGE_LABEL[st].replace(' ✓', ''), yearRanges(s.done), yearRanges(s.review), st === 'waiting' ? 'All' : yearRanges(missingYears(s, from)), s.published, s.drafts]);
+        rows.push([
+          exam,
+          school,
+          s.subject,
+          COVERAGE_LABEL[st].replace(' ✓', ''),
+          coveragePercent(s, from),
+          yearRanges(s.done),
+          yearRanges(s.review),
+          st === 'waiting' ? 'All' : yearRanges(missingYears(s, from)),
+          s.published,
+          s.drafts,
+        ]);
       };
-      for (const e of d.exams) {
+      for (const e of d.exams.filter((x) => !ctx.exam || x.id === ctx.exam)) {
         if (e.kind === 'school') for (const sc of e.schools) for (const s of sc.subjects) add(e.label, sc.school, s);
         else for (const s of e.subjects) add(e.label, '', s);
       }
-      for (const p of d.practice) rows.push(['Practice', '', p.subject, '', '', '', '', p.published, p.drafts]);
+      if (!ctx.exam) for (const p of d.practice) rows.push(['Practice', '', p.subject, '', '', '', '', '', p.published, p.drafts]);
       return rows;
     }
     case 'system': {
