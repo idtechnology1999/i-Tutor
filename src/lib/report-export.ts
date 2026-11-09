@@ -157,6 +157,10 @@ td.t { white-space: nowrap; color: #3d4f4e; }
 .bar { display: inline-block; width: 70px; height: 7px; border-radius: 99px; background: #e3e9e8; vertical-align: middle; overflow: hidden; }
 .bar i { display: block; height: 100%; background: #0f7b4f; border-radius: 99px; }
 .pct { display: inline-block; min-width: 32px; text-align: right; font-size: 8.5pt; color: #3d4f4e; margin-left: 4px; }
+.need { border: 1.5px solid #e8a33d; background: #fffaf0; border-radius: 8px; padding: 4px 12px 8px; margin: 12px 0; }
+.need h3 { color: #9a5a06; margin-top: 8px; }
+.need td { font-size: 10pt; }
+.need .box { display: inline-block; width: 10px; height: 10px; border: 1.5px solid #5c6d6c; border-radius: 2px; margin-right: 8px; vertical-align: -1px; }
 .exam { break-before: page; }
 .exam:first-of-type { break-before: auto; }
 `;
@@ -214,6 +218,21 @@ const coverageRows = (subjects: SubjectCoverage[], fromYear: number) =>
     [6],
   );
 
+/** The checklist for the people finding papers: each subject and the years it still needs. */
+const neededList = (subjects: SubjectCoverage[], from: number) => {
+  const rows = subjects
+    .map((s) => ({ s, years: missingYears(s, from) }))
+    .filter((x) => x.years.length)
+    .sort((a, b) => b.years.length - a.years.length);
+  if (!rows.length) return `<div class="need"><b>Years we still need:</b> none. Every subject has questions for every year from ${from}.</div>`;
+  return `<div class="need"><h3>Years we still need to find (${from} to ${new Date().getFullYear()})</h3><table><thead><tr><th>Subject</th><th>Missing years</th><th class="n">How many</th></tr></thead><tbody>${rows
+    .map(
+      ({ s, years }) =>
+        `<tr><td><span class="box"></span><b>${esc(s.subject)}</b></td><td>${esc(coverageState(s) === 'waiting' ? `All years (${yearRanges(years)})` : yearRanges(years))}</td><td class="n">${years.length}</td></tr>`,
+    )
+    .join('')}</tbody></table></div>`;
+};
+
 /** One exam's section: summary figures, the subject table and the year grid. */
 const examSection = (name: string, subjects: SubjectCoverage[], from: number, heading: string) => {
   const count = (st: CoverageState) => subjects.filter((s) => coverageState(s) === st).length;
@@ -233,7 +252,7 @@ const examSection = (name: string, subjects: SubjectCoverage[], from: number, he
       [`Years counted`, `${from}–${new Date().getFullYear()}`],
     ]) +
     (subjects.length
-      ? `<h3>Subject by subject</h3>${coverageRows(subjects, from)}<h3>Year by year</h3><div class="chart">${yearGridSvg(subjects, from)}${gridLegendHtml()}</div>`
+      ? `${neededList(subjects, from)}<h3>Subject by subject</h3>${coverageRows(subjects, from)}<h3>Year by year</h3><div class="chart">${yearGridSvg(subjects, from)}${gridLegendHtml()}</div>`
       : `<p class="muted">No subjects for ${esc(name)} yet: waiting for upload.</p>`)
   );
 };
