@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Compass, X } from 'lucide-react';
 import { ALL_COURSES } from '../../data/nigerian-curriculum';
 import { findCourses } from '../../services/career';
 import type { CareerMatch } from '../../services/career';
@@ -127,8 +128,7 @@ export const CourseFinder: React.FC<{
   /** For visitors (no account yet): where "Start preparing" goes. */
   startHref?: string;
   /** When it popped up by itself: a "Don't show this again" link. */
-  onNeverAgain?: () => void;
-}> = ({ onClose, onPick, startHref, onNeverAgain }) => {
+}> = ({ onClose, onPick, startHref }) => {
   const [stage, setStage] = useState<'intro' | 'ask' | 'thinking' | 'result' | 'error'>('intro');
   const [at, setAt] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
@@ -197,7 +197,7 @@ export const CourseFinder: React.FC<{
   return (
     <div className="cfind" role="presentation" onClick={onClose}>
       <div
-        className="cfind__panel"
+        className={`cfind__panel${stage === 'intro' ? ' is-intro' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="cfind-title"
@@ -206,38 +206,22 @@ export const CourseFinder: React.FC<{
         onClick={(e) => e.stopPropagation()}
       >
         <button type="button" className="cfind__close" onClick={onClose} aria-label="Close">
-          ×
+          <X size={18} aria-hidden />
         </button>
 
         {stage === 'intro' && (
           <div className="cfind__intro">
-            <span className="cfind__badge">Course finder</span>
-            <h2 id="cfind-title">Not sure what to study? That’s normal.</h2>
-            <p className="cfind__lead">
-              You’re not behind, and nothing is wrong with you. Most people your age have simply never been asked the right questions.
-            </p>
-            <p>
-              Answer ten quick questions about what you enjoy, what you’re good at and what matters to you. Our AI reads your answers and shows you the courses
-              that fit the way you’re made, with the reasons why, the jobs they lead to and the subjects you’ll need.
-            </p>
-            <ul className="cfind__points">
-              <li>About 3 minutes</li>
-              <li>No right or wrong answers</li>
-              <li>Free</li>
-            </ul>
-            <button type="button" className="btn btn--primary cfind__go" onClick={() => setStage('ask')}>
-              Let’s discover what fits me
+            <span className="cfind__icon" aria-hidden>
+              <Compass size={30} strokeWidth={1.8} />
+            </span>
+            <h2 id="cfind-title">Not sure what to study?</h2>
+            <p>You’re not behind. Answer 10 quick questions and see the courses that fit you.</p>
+            <button type="button" className="cfind__cta" onClick={() => setStage('ask')}>
+              Find my course
             </button>
-            <div className="cfind__later">
-              <button type="button" onClick={onClose}>
-                Maybe later
-              </button>
-              {onNeverAgain && (
-                <button type="button" onClick={onNeverAgain}>
-                  Don’t show this again
-                </button>
-              )}
-            </div>
+            <button type="button" className="cfind__not-now" onClick={onClose}>
+              Not now
+            </button>
           </div>
         )}
 

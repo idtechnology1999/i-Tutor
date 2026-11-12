@@ -14,5 +14,5 @@ export interface CareerMatch {
 /** null in demo mode (no backend, so no AI). */
 export function findCourses(answers: Array<{ question: string; answer: string }>, courses: string[]): Promise<CareerMatch> | null {
   if (!isLive) return null;
-  return api<CareerMatch>('/api/career/match', { method: 'POST', body: { answers, courses }, timeout: 90_000 });
+  return api<CareerMatch>('/api/career/match', { method: 'POST', body: { answers, courses }, timeout: 60_000 });
 }

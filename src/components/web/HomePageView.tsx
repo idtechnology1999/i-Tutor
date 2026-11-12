@@ -9,8 +9,7 @@ import { CourseFinder } from './CourseFinder';
 /* The homepage: built from CMS blocks (/cms → Homepage). Until an admin
    publishes their own version, it shows the built-in design in cms/home.ts.
    The course finder pops up over it a few seconds after a visitor arrives,
-   once per visit, like an advert they can close. "Don't show this again"
-   stops it for good on that browser. */
+   once per visit, like an advert they can close. */
 
 const SEEN_THIS_VISIT = 'itutor-course-finder-visit';
 export const FINDER_NEVER = 'itutor-course-finder-never';
@@ -48,20 +47,7 @@ export const HomePageView: React.FC = () => {
     <div className="lp">
       <BlockList blocks={blocks} />
       <SiteFooter />
-      {finder && (
-        <CourseFinder
-          onClose={() => setFinder(false)}
-          startHref="/dashboard"
-          onNeverAgain={() => {
-            try {
-              window.localStorage.setItem(FINDER_NEVER, '1');
-            } catch {
-              /* ignore */
-            }
-            setFinder(false);
-          }}
-        />
-      )}
+      {finder && <CourseFinder onClose={() => setFinder(false)} startHref="/dashboard" />}
     </div>
   );
 };
