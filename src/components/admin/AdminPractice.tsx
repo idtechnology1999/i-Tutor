@@ -263,6 +263,9 @@ export const AdminPractice: React.FC<{ nav: AdminNav }> = ({ nav }) => {
   const [subject, setSubject] = useState<CmsSubject>('English');
   const [settings, setSettings] = useState<PracticeSettings[]>([]);
   const [summary, setSummary] = useState<SubjectCount[]>([]);
+  // The shared ("All exams") bank: every exam's practice sets use it too, so an exam's counts include it.
+  const [shared, setShared] = useState<SubjectCount[]>([]);
+  const sharedLive = (s: string) => (target ? (shared.find((x) => x.subject === s)?.published ?? 0) : 0);
   const [data, setData] = useState<PracticePage | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -325,11 +328,13 @@ export const AdminPractice: React.FC<{ nav: AdminNav }> = ({ nav }) => {
         size: PAGE,
       }),
       practiceSummary(t),
+      t ? practiceSummary('') : Promise.resolve([] as SubjectCount[]),
     ])
-      .then(([d, s]) => {
+      .then(([d, s, sh]) => {
         if (!live) return;
         setData(d);
         setSummary(s);
+        setShared(sh);
         setLoadError('');
         if (page > d.pages) setPage(d.pages);
       })
@@ -646,9 +651,11 @@ export const AdminPractice: React.FC<{ nav: AdminNav }> = ({ nav }) => {
             const row = summary.find((x) => x.subject === s);
             const live = row?.published ?? 0;
             const total = row?.total ?? 0;
+            const sh = sharedLive(s);
             return (
               <option key={s} value={s}>
                 {s}: {n(live)} practice{total > live ? ` (+${n(total - live)} draft)` : ''}
+                {sh ? ` + ${n(sh)} shared` : ''}
                 {target ? ` · ${n(row?.past ?? 0)} past` : ''}
               </option>
             );
@@ -660,20 +667,23 @@ export const AdminPractice: React.FC<{ nav: AdminNav }> = ({ nav }) => {
         // Where past questions are filling more than their share, because the practice bank is too small.
         if (!target || !setting) return null;
         const row = summary.find((x) => x.subject === subject);
-        const live = row?.published ?? 0;
+        const own = row?.published ?? 0;
+        const sh = sharedLive(subject);
+        const live = own + sh;
         const past = row?.past ?? 0;
         const needed = practiceNeeded(setting, subject);
         const short = summary
-          .filter((x) => (x.past ?? 0) + x.total > 0 && x.published < practiceNeeded(setting, x.subject))
+          .filter((x) => (x.past ?? 0) + x.total > 0 && x.published + sharedLive(x.subject) < practiceNeeded(setting, x.subject))
           .sort((a, b) => order(a.subject) - order(b.subject));
+        const usable = sh ? `${n(live)} (${n(own)} ${examName}, ${n(sh)} shared)` : n(live);
         return (
           <>
             {live < needed && (
               <p className="adm-px__note">
                 <Info size={16} aria-hidden />
                 {past
-                  ? `A ${examName} ${subject} set needs ${n(needed)} practice questions, and ${n(live)} ${live === 1 ? 'is' : 'are'} published. Until there are more, past questions fill the other ${n(needed - live)}, so students get more past questions than your share.`
-                  : `A ${examName} ${subject} set needs ${n(needed)} practice questions, and ${n(live)} ${live === 1 ? 'is' : 'are'} published. There are no ${examName} ${subject} past questions to fill the gap, so sets will be short until you add more.`}
+                  ? `A ${examName} ${subject} set needs ${n(needed)} practice questions, and ${usable} ${live === 1 ? 'is' : 'are'} published. Until there are more, past questions fill the other ${n(needed - live)}, so students get more past questions than your share.`
+                  : `A ${examName} ${subject} set needs ${n(needed)} practice questions, and ${usable} ${live === 1 ? 'is' : 'are'} published. There are no ${examName} ${subject} past questions to fill the gap, so sets will be short until you add more.`}
               </p>
             )}
             {short.length > 0 && (
@@ -681,7 +691,7 @@ export const AdminPractice: React.FC<{ nav: AdminNav }> = ({ nav }) => {
                 <span>Need more practice questions:</span>
                 {short.map((x) => (
                   <button key={x.subject} type="button" className={x.subject === subject ? 'is-on' : ''} onClick={() => pickSubject(x.subject as CmsSubject)}>
-                    {x.subject} <small>{n(x.published)}/{n(practiceNeeded(setting, x.subject))}</small>
+                    {x.subject} <small>{n(x.published + sharedLive(x.subject))}/{n(practiceNeeded(setting, x.subject))}</small>
                   </button>
                 ))}
               </div>
