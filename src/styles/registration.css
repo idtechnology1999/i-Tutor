@@ -2458,3 +2458,29 @@ select.control__input {
     transition: none;
   }
 }
+
+.cfind__start {
+  display: block;
+  margin-top: 14px;
+  text-align: center;
+  text-decoration: none;
+}
+
+
+.cfind__later {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 12px;
+}
+
+.cfind__later button {
+  padding: 4px;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--ink-3);
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  cursor: pointer;
+}

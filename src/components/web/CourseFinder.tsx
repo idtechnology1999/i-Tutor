@@ -124,7 +124,11 @@ export const CourseFinder: React.FC<{
   onClose: () => void;
   /** When given, each result has a "Choose this course" button. */
   onPick?: (course: string, faculty: string) => void;
-}> = ({ onClose, onPick }) => {
+  /** For visitors (no account yet): where "Start preparing" goes. */
+  startHref?: string;
+  /** When it popped up by itself: a "Don't show this again" link. */
+  onNeverAgain?: () => void;
+}> = ({ onClose, onPick, startHref, onNeverAgain }) => {
   const [stage, setStage] = useState<'intro' | 'ask' | 'thinking' | 'result' | 'error'>('intro');
   const [at, setAt] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
@@ -221,6 +225,16 @@ export const CourseFinder: React.FC<{
             <button type="button" className="btn btn--primary cfind__go" onClick={() => setStage('ask')}>
               Let’s discover what fits me
             </button>
+            <div className="cfind__later">
+              <button type="button" onClick={onClose}>
+                Maybe later
+              </button>
+              {onNeverAgain && (
+                <button type="button" onClick={onNeverAgain}>
+                  Don’t show this again
+                </button>
+              )}
+            </div>
           </div>
         )}
 
@@ -339,6 +353,11 @@ export const CourseFinder: React.FC<{
                 </li>
               ))}
             </ol>
+            {!onPick && startHref && result.matches[0] && (
+              <a className="btn btn--primary cfind__go cfind__start" href={startHref}>
+                Start preparing for {result.matches[0].course}, free
+              </a>
+            )}
             {result.nextStep && (
               <p className="cfind__next">
                 <b>Try this week:</b> {result.nextStep}
