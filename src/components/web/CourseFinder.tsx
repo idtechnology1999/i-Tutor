@@ -145,7 +145,10 @@ export const CourseFinder: React.FC<{
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  useEffect(() => panel.current?.scrollTo({ top: 0 }), [stage, at]);
+  // Braces matter: newer browsers return a promise from scrollTo, and an effect must return nothing (or a cleanup function).
+  useEffect(() => {
+    if (panel.current) panel.current.scrollTop = 0;
+  }, [stage, at]);
 
   const step = STEPS[at]!;
   const chosen = answers[step.id] ?? [];
