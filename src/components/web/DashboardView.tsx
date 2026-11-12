@@ -5,7 +5,6 @@ import {
   ArrowRight,
   BookOpenCheck,
   Check,
-  ClipboardList,
   Flame,
   MessageSquareText,
   Play,
@@ -205,10 +204,10 @@ export const DashboardView: React.FC<Props> = ({
 
       <nav className="dash__actions" aria-label="Quick actions">
         <button type="button" onClick={() => onLaunchCBT()}>
-          <span className="dash__action-icon">
-            <ClipboardList size={22} aria-hidden />
+          <span className="dash__action-icon dash__action-icon--exam" aria-hidden>
+            JAMB
           </span>
-          <strong>Practice exam</strong>
+          <strong>JAMB Exam</strong>
           <small>Timed, like the real CBT</small>
         </button>
         <button type="button" onClick={onOpenSyllabus}>

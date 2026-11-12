@@ -540,6 +540,15 @@ a.site-nav__avatar.is-active {
   margin-bottom: 8px;
 }
 
+/* The exam tile shows the word JAMB as its badge. */
+.dash__action-icon--exam {
+  background: var(--brand);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
 .dash__actions strong {
   font-size: 1rem;
   font-weight: 600;
