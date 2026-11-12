@@ -34,6 +34,8 @@ export interface ParsedQuestion {
   year: number;
   needsReview: boolean;
   reviewNote: string;
+  /** AI-written questions only: a figure the AI drew (a self-contained SVG), or "". */
+  diagramSvg?: string;
 }
 
 export interface ImportResult {

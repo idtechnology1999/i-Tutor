@@ -11,6 +11,7 @@ import {
 import { checkAdmission } from '../../../services/admissions';
 import type { AdmissionCheck } from '../../../services/admissions';
 import { OnboardingShell, StepActions } from './shared';
+import { CourseFinder, CourseFinderInvite } from '../../web/CourseFinder';
 import type { Institution } from '../../../types';
 
 interface Props {
@@ -183,6 +184,7 @@ export const A11_InstitutionCourse: React.FC<Props> = ({
   const [kind, setKind] = useState<Kind>('All');
   const [institutionQuery, setInstitutionQuery] = useState('');
   const [courseQuery, setCourseQuery] = useState('');
+  const [finder, setFinder] = useState(false);
 
   const chosenSchool = findInstitution(selectedInstitution);
 
@@ -305,6 +307,8 @@ export const A11_InstitutionCourse: React.FC<Props> = ({
             ) : null}
           </div>
 
+          <CourseFinderInvite onOpen={() => setFinder(true)} />
+
           <div className="control control--search">
             <SearchIcon size={16} className="control__icon" />
             <input
@@ -365,6 +369,8 @@ export const A11_InstitutionCourse: React.FC<Props> = ({
           onUseSubjects={onUseSubjects}
         />
       ) : null}
+
+      {finder ? <CourseFinder onClose={() => setFinder(false)} onPick={onSelectCourse} /> : null}
 
       <StepActions onBack={onBack} backLabel="Back to subjects" note="You can change your target at any time from Settings.">
         <button type="button" className="btn btn--ghost" onClick={onContinue}>

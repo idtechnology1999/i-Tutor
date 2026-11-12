@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ExamPicker } from './ExamPicker';
 import { examsOf, hasSchoolCert, toggleExam } from '../../lib/student-exams';
 import { SchoolCertPicker } from './SchoolCertPicker';
+import { CourseFinder, CourseFinderInvite } from './CourseFinder';
 import type { UserProfile, DailyCommitment } from '../../types';
 import { CutoffCard } from '../screens/web/A11_InstitutionCourse';
 import { ENGLISH, JAMB_SUBJECTS, ALL_COURSES, findInstitution, matchesSearch, searchInstitutions, toggleJambSubject } from '../../data/nigerian-curriculum';
@@ -26,6 +27,7 @@ export const SetupWizardView: React.FC<Props> = ({ profile, onUpdateProfile, onF
   const [instFilter, setInstFilter] = useState<'All' | 'Federal' | 'State' | 'Private'>('All');
   const [instSearch, setInstSearch] = useState('');
   const [courseSearch, setCourseSearch] = useState('');
+  const [finder, setFinder] = useState(false);
 
   const steps = [
     { number: 1, title: 'Exam Track', desc: 'UTME or Post-UTME' },
@@ -332,6 +334,10 @@ export const SetupWizardView: React.FC<Props> = ({ profile, onUpdateProfile, onF
               {/* Course Selection */}
               <div>
                 <label className="web-label">Select Course of Study</label>
+                <CourseFinderInvite onOpen={() => setFinder(true)} />
+                {finder ? (
+                  <CourseFinder onClose={() => setFinder(false)} onPick={(course, faculty) => onUpdateProfile({ targetCourse: course, targetFaculty: faculty })} />
+                ) : null}
                 <input
                   type="text"
                   value={courseSearch}

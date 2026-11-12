@@ -765,8 +765,10 @@ export const AdminPractice: React.FC<{ nav: AdminNav }> = ({ nav }) => {
         </form>
 
         <p className="adm-muted">
-          Written in {examName}’s style, up to 500 at a time, spread across the ticked topics. They arrive as drafts as each batch is written. Check the answers, then
-          publish. Students only ever see published questions.
+          Written in {examName}’s style, up to 500 at a time, spread across the ticked topics. The AI studies the real past questions on each topic and writes new
+          ones like them (often the same idea with new numbers or wording), draws a diagram when a question needs one, and writes full passages for English
+          comprehension. They arrive as drafts as each batch is written. Check the answers (and any drawn diagram), then publish. Students only ever see published
+          questions.
         </p>
         {aiError && <p className="adm-users__error">{aiError}</p>}
       </section>

@@ -20,7 +20,7 @@ interface Usage {
 }
 
 const naira = (n: number) => `₦${Math.round(n).toLocaleString('en-NG')}`;
-const LABELS: Record<string, string> = { ...KIND_LABEL, admissions: 'Admission checks (sign-up)' };
+const LABELS: Record<string, string> = { ...KIND_LABEL, admissions: 'Admission checks (sign-up)', 'course-finder': 'Course finder (sign-up)' };
 
 export const AdminAiUsage: React.FC<{ nav: AdminNav }> = () => {
   const [span, setSpan] = useState(30);
