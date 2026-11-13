@@ -8,7 +8,8 @@
 
 /** Board marker colours: title blue, formula black (boxed), example green,
     note red. `diagram` is drawn, `ask` stops the lesson for the student. */
-export type BoardKind = 'title' | 'line' | 'formula' | 'example' | 'note' | 'diagram' | 'ask';
+/** 'you': the student's own typed question, written on the board. */
+export type BoardKind = 'title' | 'line' | 'formula' | 'example' | 'note' | 'diagram' | 'ask' | 'you';
 
 export interface BoardLine {
   kind: BoardKind;

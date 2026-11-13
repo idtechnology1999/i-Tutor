@@ -27,7 +27,6 @@ import type { TutorPersona } from '../../data/tutors';
 import { SYLLABUS, syllabusSubject } from '../../data/syllabus';
 import { explainOnBoard, getLesson } from '../../services/classroom';
 import type { ExplainHow } from '../../services/classroom';
-import { askTutor } from '../../services/tutor';
 import { isLive } from '../../services/api';
 import type { BoardLine, Lesson } from '../../data/syllabus';
 import { FREE_PROMPTS, OUT_OF_CREDITS, OUT_OF_FREE, canUse, isOutOfCredits, useCredits } from '../../services/credits';
@@ -36,7 +35,6 @@ import { CreditRing } from './CreditRing';
 import { boardContext, captionOf, checkLine, lenOf } from '../../lib/board';
 import { replyForHistory, replyForSpeech } from '../../lib/tutor-reply';
 import { BoardItem, InkLayer } from './ClassBoard';
-import { TutorReply } from './TutorReply';
 
 /* -----------------------------------------------------------------------------
    Personal classroom. A whiteboard the teacher writes on line by line, talking
@@ -44,9 +42,11 @@ import { TutorReply } from './TutorReply';
    teacher draws diagrams, writes real formulas and stops to ask the student
    questions on the board. The student can tap any line to ask about it, write
    on the board with their own pen, replay a step, or pause the teacher.
-   Commands work typed or tapped: "start", "teach me <topic>", "next",
-   "repeat", "clear the board", "test me". Anything else is a question for the
-   teacher, answered by the AI with the board as context.
+   Commands work typed or spoken in the ask bar under the board: "start",
+   "teach me <topic>", "next", "repeat", "clear the board", "test me".
+   Anything else is a question: it is written on the board, and the teacher
+   answers it on the board underneath. There is no chat window; everything
+   happens on the board (the conversation is kept only as context for the AI).
    -------------------------------------------------------------------------- */
 
 interface Props {
@@ -129,6 +129,8 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
       text: `Hi ${profile.fullName.split(' ')[0]}, welcome to your classroom. I know your syllabus for ${subjects.join(', ') || 'your subjects'}. Pick a topic and press **Start lesson**, or type “teach me” and a topic. While I teach, tap anything on the board to ask me about it.`,
     },
   ]);
+  /** The last thing the teacher said needs the Subscribe/Renew button. */
+  const [needsUpgrade, setNeedsUpgrade] = useState(false);
   const [listening, setListening] = useState(false);
   /** Waiting for the AI: a lesson being prepared, or an answer to a question. */
   const [busy, setBusy] = useState<'' | 'lesson' | 'answer'>('');
@@ -137,7 +139,6 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
   const heardRef = useRef('');
   const hasMic = recogniserCtor() !== null;
   const boardRef = useRef<HTMLDivElement>(null);
-  const chatRef = useRef<HTMLDivElement>(null);
 
   const writing = pen.pending.length > 0;
   const waitingFor = openAsk(pen.written, asks);
@@ -211,10 +212,6 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
     boardRef.current?.scrollTo({ top: boardRef.current.scrollHeight, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
   }, [lineNo, waitingFor]);
 
-  useEffect(() => {
-    chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: 'smooth' });
-  }, [chat]);
-
   useEffect(
     () => () => {
       if ('speechSynthesis' in window) window.speechSynthesis.cancel();
@@ -227,6 +224,7 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
 
   const say = (line: string, extra?: Partial<Chat>) => {
     setChat((prev) => [...prev, { who: 'teacher', text: line, ...extra }]);
+    setNeedsUpgrade(Boolean(extra?.upgrade));
     const words = replyForSpeech(line);
     setCaption(captionOf(words));
     narrate(words);
@@ -349,23 +347,35 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
       .finally(() => setBusy(''));
   };
 
-  /** A real question: the AI answers it, knowing what's on the board. */
+  /** A real question: written on the board, and the teacher answers it on the board underneath. */
   const answer = (question: string) => {
     if (!spend('chat')) return;
-    const board = boardContext([...pen.written, ...pen.pending]);
-    const context =
-      `I'm in my classroom ${lesson ? `learning "${lesson.topic}" (${lesson.subject})` : `studying ${subject}`}.` +
-      (board ? `\nOn the board right now:\n${board}` : '') +
-      `\n\nMy question: ${question}`;
-    // The last few messages, so "and why?" makes sense. The welcome line is skipped.
-    const history = chat
-      .slice(1)
-      .slice(-8)
-      .map((c) => (c.who === 'you' ? { role: 'student' as const, text: c.text } : { role: 'tutor' as const, text: replyForHistory(c.text) }));
+    const asked: BoardLine = { kind: 'you', text: question };
+    const board = boardContext([...pen.written, ...pen.pending, asked]);
+    write([asked]);
     setBusy('answer');
     setCaption('Let me think about that…');
-    askTutor(context, history, tutor?.id)
-      .then((reply) => say(reply))
+    // The last few things said, so "and why?" makes sense. The welcome line is skipped.
+    const recent = chat
+      .slice(1)
+      .slice(-6)
+      .map((c) => `${c.who === 'you' ? 'Student' : 'Teacher'}: ${replyForHistory(c.text)}`)
+      .join('\n');
+    explainOnBoard(
+      {
+        subject: lesson?.subject ?? subject,
+        topic: lesson?.topic ?? topic,
+        how: 'answer',
+        about: question,
+        // The server takes up to 8,000 characters: keep the newest part.
+        board: ((recent ? `Said so far:\n${recent}\n\n` : '') + board).slice(-7800),
+      },
+      tutor?.id,
+    )
+      .then((x) => {
+        say(x.say);
+        write(x.board);
+      })
       .catch(failed('Sorry, I couldn’t answer that just now.'))
       .finally(() => setBusy(''));
   };
@@ -515,9 +525,9 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
   };
 
   const shown = [...pen.written, ...(current ? [current] : [])];
-  const lastTeacher = chat.map((c) => c.who).lastIndexOf('teacher');
   const total = lesson?.steps.length ?? 0;
-  const showCaption = Boolean(caption) && (writing || talking || waitingFor >= 0 || busy !== '' || paused);
+  // With no chat window, the caption is where the teacher's words always show.
+  const showCaption = Boolean(caption);
 
   return (
     <div className="ui-page room-page">
@@ -527,6 +537,18 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
             <GraduationCap size={16} aria-hidden /> My classroom
           </p>
           <h1>{lesson ? lesson.topic : topic}</h1>
+          <p className="cls__credits">
+            <CreditRing credits={credits} onUpgrade={onUpgrade} />
+            <span>
+              {credits
+                ? isPremium
+                  ? `${credits.left} AI credits left · a lesson uses 3`
+                  : `${credits.left} of ${FREE_PROMPTS} free AI prompts left`
+                : isPremium
+                  ? 'Premium'
+                  : `${FREE_PROMPTS} free AI prompts`}
+            </span>
+          </p>
         </div>
         <div className="cls__pickers">
           <select
@@ -595,7 +617,7 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
                       chars={isCurrent ? pen.chars : 0}
                       done={!isCurrent}
                       focused={focus === i}
-                      onTap={l.kind !== 'ask' && !inking ? () => setMenu(menu === i ? null : i) : undefined}
+                      onTap={l.kind !== 'ask' && l.kind !== 'you' && !inking ? () => setMenu(menu === i ? null : i) : undefined}
                       picked={asks[i]}
                       onPick={(label) => pick(i, label)}
                     />
@@ -633,6 +655,11 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
                   <i />
                 </span>
               )}
+              {needsUpgrade && (
+                <button type="button" className="ui-btn ui-btn--primary cls__caption-btn" onClick={onUpgrade}>
+                  {isPremium ? 'Renew now' : 'Subscribe'}
+                </button>
+              )}
             </div>
           )}
 
@@ -641,6 +668,46 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
             <i />
             <i />
           </div>
+
+          {/* Ask the teacher: what's typed or said is written on the board. */}
+          <form
+            className="cls__ask"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handle(text);
+            }}
+          >
+            {hasMic && (
+              <button
+                type="button"
+                className={`cls__mic${listening ? ' is-on' : ''}${isPremium ? '' : ' is-locked'}`}
+                onClick={talk}
+                aria-label={listening ? 'Stop listening' : `Talk to ${teacher}`}
+                aria-pressed={listening}
+              >
+                {listening ? <Square size={16} aria-hidden /> : isPremium ? <Mic size={18} aria-hidden /> : <Lock size={16} aria-hidden />}
+              </button>
+            )}
+            <input
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder={
+                listening
+                  ? 'Listening…'
+                  : busy === 'answer'
+                    ? `${teacher} is writing…`
+                    : waitingFor >= 0
+                      ? 'Type your answer: A, B, C…'
+                      : lesson
+                        ? 'Ask a question about the lesson…'
+                        : 'Say or type “teach me indices”…'
+              }
+              aria-label={`Ask ${teacher}`}
+            />
+            <button type="submit" className="cls__send" disabled={!text.trim() || busy !== ''} aria-label="Send">
+              <SendHorizontal size={18} aria-hidden />
+            </button>
+          </form>
           <div className="cls__tools">
             {writing ? (
               <button type="button" className="cls__tool cls__tool--main" onClick={() => togglePause()}>
@@ -656,6 +723,11 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
             <button type="button" className="cls__tool" onClick={repeat} disabled={waiting || !lesson}>
               <RotateCcw size={18} aria-hidden /> Repeat
             </button>
+            {lesson && (
+              <button type="button" className="cls__tool" onClick={() => handle('Explain it another way')} disabled={waiting}>
+                <Sparkles size={18} aria-hidden /> Another way
+              </button>
+            )}
             <button
               type="button"
               className={`cls__tool${inking ? ' is-on' : ''}`}
@@ -691,86 +763,6 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
           </div>
         </section>
 
-        <aside className="cls__chat" aria-label={`Chat with ${teacher}`}>
-          <header className="cls__chat-head">
-            {tutor ? (
-              <span className={`tutor-avatar tutor-avatar--${tutor.id}`} aria-hidden>
-                {tutor.name.charAt(0)}
-              </span>
-            ) : (
-              <span className="tutor-avatar" aria-hidden>
-                <GraduationCap size={18} />
-              </span>
-            )}
-            <div>
-              <strong>{teacher}</strong>
-              <small>
-                {credits
-                  ? isPremium
-                    ? `${credits.left} AI credits left · a lesson uses 3`
-                    : `${credits.left} of ${FREE_PROMPTS} free AI prompts left`
-                  : isPremium
-                    ? 'Premium'
-                    : `${FREE_PROMPTS} free AI prompts`}
-              </small>
-            </div>
-            <CreditRing credits={credits} onUpgrade={onUpgrade} />
-          </header>
-          <div className="cls__log" ref={chatRef} aria-live="polite">
-            {chat.map((c, i) => (
-              <div key={i} className={`cls__msg cls__msg--${c.who}`}>
-                {c.who === 'teacher' ? <TutorReply text={c.text} stepwise={i === lastTeacher} /> : <p>{c.text}</p>}
-                {c.upgrade && (
-                  <button type="button" className="ui-btn ui-btn--primary" onClick={onUpgrade}>
-                    {isPremium ? 'Renew now' : 'Subscribe'}
-                  </button>
-                )}
-              </div>
-            ))}
-            {busy === 'answer' && (
-              <div className="cls__msg cls__msg--teacher" role="status">
-                <p>{teacher} is thinking…</p>
-              </div>
-            )}
-          </div>
-          <div className="cls__chips">
-            {(lesson ? ['Next', 'Repeat', 'Test me', 'Explain it another way', 'Clear the board'] : ['Start']).map((c) => (
-              <button key={c} type="button" onClick={() => handle(c)} disabled={waiting}>
-                {c}
-              </button>
-            ))}
-          </div>
-          <form
-            className="cls__input"
-            onSubmit={(e) => {
-              e.preventDefault();
-              handle(text);
-            }}
-          >
-            {hasMic && (
-              <button
-                type="button"
-                className={`cls__mic${listening ? ' is-on' : ''}${isPremium ? '' : ' is-locked'}`}
-                onClick={talk}
-                aria-label={listening ? 'Stop listening' : `Talk to ${teacher}`}
-                aria-pressed={listening}
-              >
-                {listening ? <Square size={16} aria-hidden /> : isPremium ? <Mic size={18} aria-hidden /> : <Lock size={16} aria-hidden />}
-              </button>
-            )}
-            <input
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder={
-                listening ? 'Listening…' : waitingFor >= 0 ? 'Type your answer: A, B, C…' : lesson ? 'Ask a question about the lesson…' : 'Say or type “teach me indices”…'
-              }
-              aria-label={`Message ${teacher}`}
-            />
-            <button type="submit" disabled={!text.trim() || busy !== ''} aria-label="Send">
-              <SendHorizontal size={18} aria-hidden />
-            </button>
-          </form>
-        </aside>
       </div>
     </div>
   );

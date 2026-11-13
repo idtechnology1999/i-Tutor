@@ -10,7 +10,15 @@ export const lenOf = (l: BoardLine) =>
 /** The board as text, so the AI knows what the student is looking at. */
 export const boardContext = (lines: BoardLine[]) =>
   lines
-    .map((l) => (l.kind === 'diagram' ? `[diagram: ${l.text}]` : l.kind === 'ask' ? `Question for the student: ${l.text}` : (l.tex ?? l.text)))
+    .map((l) =>
+      l.kind === 'diagram'
+        ? `[diagram: ${l.text}]`
+        : l.kind === 'ask'
+          ? `Question for the student: ${l.text}`
+          : l.kind === 'you'
+            ? `The student asked: ${l.text}`
+            : (l.tex ?? l.text),
+    )
     .join('\n');
 
 /** The lesson's check question, written on the board for the student to answer. */

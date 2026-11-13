@@ -19,7 +19,7 @@ export async function getLesson(subject: string, topic: string, tutorId?: string
 }
 
 /** What the student wants about the part of the board they tapped. */
-export type ExplainHow = 'explain' | 'why' | 'example' | 'again';
+export type ExplainHow = 'explain' | 'why' | 'example' | 'again' | 'answer';
 
 export interface BoardExplanation {
   /** Said before writing (also shown in the chat). */
@@ -33,6 +33,7 @@ const HEADING: Record<ExplainHow, string> = {
   why: 'Why?',
   example: 'Another example',
   again: 'Another way to see it',
+  answer: 'Your question',
 };
 
 /** The teacher explains part of the board, on the board. */
@@ -40,7 +41,8 @@ export async function explainOnBoard(
   req: { subject: string; topic: string; how: ExplainHow; about: string; board: string },
   tutorId?: string,
 ): Promise<BoardExplanation> {
-  return spendAi('board', async () => {
+  // A typed question costs a chat prompt; tapping the board costs a board explanation.
+  return spendAi(req.how === 'answer' ? 'chat' : 'board', async () => {
     if (!isLive) {
       await demoDelay(700);
       return {
