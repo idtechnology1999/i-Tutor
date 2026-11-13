@@ -72,6 +72,8 @@ export interface DiagnosticQuestion {
   /** The question's diagram, when it has one. */
   image?: string;
   imageAlt?: string;
+  /** Where a past question comes from, e.g. "JAMB 2020" or "UNILAG Post-UTME 2019". Practice questions have none. */
+  source?: string;
 }
 
 export interface Institution {

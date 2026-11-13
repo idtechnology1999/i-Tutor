@@ -242,7 +242,10 @@ export const ExamReview: React.FC<Props> = ({
                 <i style={{ width: `${((pos + 1) / list.length) * 100}%` }} />
               </div>
 
-              <p className="xr-question">{q.question}</p>
+              <p className="xr-question">
+                {q.question}
+                {q.source && <span className="q-source"> ({q.source})</span>}
+              </p>
               <QuestionFigure image={q.image} alt={q.imageAlt} />
               <ul className="xr-options">
                 {q.options.map((o) => {

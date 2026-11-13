@@ -348,6 +348,10 @@ export const toExamQuestion = (q: CmsQuestion): DiagnosticQuestion => ({
   correctAnswer: q.correctAnswer,
   explanation: q.explanation,
   ...(q.image ? { image: q.image, imageAlt: q.imageAlt } : {}),
+  // A past question says where it's from, the way past-question books do: "(JAMB 2020)".
+  ...(q.examType !== PRACTICE && q.year
+    ? { source: `${q.school ? `${q.school} ` : ''}${EXAM_LABEL[q.examType] ?? q.examType} ${q.year}` }
+    : {}),
 });
 
 export const EXAM_SUBJECTS = ['English', 'Mathematics', 'Physics', 'Chemistry'];

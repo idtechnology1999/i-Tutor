@@ -589,6 +589,7 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
             </div>
             <p className="jamb__text" key={question.id}>
               {question.question}
+              {question.source && <span className="q-source"> ({question.source})</span>}
             </p>
             <QuestionFigure image={question.image} alt={question.imageAlt} />
             <div className="jamb__options" role="radiogroup" aria-labelledby="jamb-q">

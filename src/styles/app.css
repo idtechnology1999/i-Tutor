@@ -3854,3 +3854,11 @@ body.cbt-active {
   color: #fff;
   cursor: pointer;
 }
+
+/* Where a past question comes from, after its text: "(JAMB 2020)". */
+.q-source {
+  white-space: nowrap;
+  color: var(--brand);
+  font-weight: 600;
+  font-size: 0.9em;
+}
