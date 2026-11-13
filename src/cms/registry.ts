@@ -315,7 +315,7 @@ export const BLOCKS: BlockDef[] = [
             kind: 'text',
             key: 'value',
             label: 'Number',
-            help: 'Live from your question bank: {questions}, {jambYears}, {years}, {subjects}, {exams}, {schools} (labels can use {examNames}). Plain numbers like 2,400+ count up as the visitor scrolls.',
+            help: 'Live from your question bank: {questions}, {jambYears}, {years}, {subjects}, {exams}, {schools}, {students} (labels can use {examNames}). Plain numbers like 2,400+ count up as the visitor scrolls.',
           },
           { kind: 'text', key: 'label', label: 'Label' },
         ],

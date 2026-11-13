@@ -77,6 +77,7 @@ export const HOME_BLOCKS: CmsBlock[] = [
         { value: '{jambYears}', label: 'JAMB papers covered' },
         { value: '{subjects}', label: 'subjects to practise' },
         { value: '{exams}', label: 'exams covered: {examNames}' },
+        { value: '{students}', label: 'students registered' },
       ],
     },
   },
