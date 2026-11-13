@@ -12,12 +12,28 @@
 // included. If the API can't be reached the build still succeeds; the pages
 // are simply left out until the next deploy.
 
+import { readFileSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+/* Vite reads .env.production for the app, but this script runs in plain Node,
+   which doesn't. So a setting missing from the environment (e.g. not added in
+   Vercel → Settings → Environment Variables) is taken from .env.production. */
+const fromEnvFile = (name) => {
+  try {
+    const line = readFileSync(path.resolve('.env.production'), 'utf8')
+      .split(/\r?\n/)
+      .find((l) => l.startsWith(`${name}=`));
+    return line ? line.slice(name.length + 1).trim().replace(/^["']|["']$/g, '') : '';
+  } catch {
+    return '';
+  }
+};
+const setting = (name) => (process.env[name] ?? '').trim() || fromEnvFile(name);
+
 const DIST = path.resolve('dist');
-const SITE = (process.env.SITE_URL || 'https://i-tutor-seven.vercel.app').replace(/\/+$/, '');
-const API = (process.env.VITE_API_URL || '').trim().replace(/\/+$/, '');
+const SITE = (setting('SITE_URL') || 'https://i-tutor-seven.vercel.app').replace(/\/+$/, '');
+const API = setting('VITE_API_URL').replace(/\/+$/, '');
 const SAMPLES = 5;
 const MIN_QUESTIONS = 3;
 
