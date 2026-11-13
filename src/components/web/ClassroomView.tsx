@@ -537,7 +537,7 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
             <GraduationCap size={16} aria-hidden /> My classroom
           </p>
           <h1>{lesson ? lesson.topic : topic}</h1>
-          <p className="cls__credits">
+          <div className="cls__credits">
             <CreditRing credits={credits} onUpgrade={onUpgrade} />
             <span>
               {credits
@@ -548,7 +548,7 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
                   ? 'Premium'
                   : `${FREE_PROMPTS} free AI prompts`}
             </span>
-          </p>
+          </div>
         </div>
         <div className="cls__pickers">
           <select
@@ -699,7 +699,7 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
                     : waitingFor >= 0
                       ? 'Type your answer: A, B, C…'
                       : lesson
-                        ? 'Ask a question about the lesson…'
+                        ? 'Ask about the lesson…'
                         : 'Say or type “teach me indices”…'
               }
               aria-label={`Ask ${teacher}`}
