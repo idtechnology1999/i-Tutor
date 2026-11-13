@@ -188,6 +188,23 @@ export const isCmsPath = (path: string) => /^\/cms(\/|$)/i.test(path);
 
 export const pathForView = (view: AppView) => VIEW_PATHS[view];
 
+/** "Post-UTME" → "post-utme": the same rule as the public pages (scripts/prerender.mjs). */
+export const slugify = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+/* A past paper's address: /past-questions/<exam>[/<school>]/<subject>/<year>
+   (the public pages for search engines) or the same under /syllabus (the app).
+   Vercel serves the public page when one was built; otherwise, and from the
+   public page's "Open in i-Tutor" button, the app opens Past questions there. */
+const PAPER_PATH = /^\/(?:past-questions|syllabus)(?:\/(.*))?$/;
+export const isPaperPath = (pathname: string) => PAPER_PATH.test(normalise(pathname).toLowerCase());
+/** The parts after /past-questions or /syllabus: [exam, (school), subject, year], any of them missing. */
+export const paperPathParts = (pathname: string) =>
+  (PAPER_PATH.exec(normalise(pathname).toLowerCase())?.[1] ?? '').split('/').filter(Boolean);
+
 /** The exam has two addresses: /exam while answering, /exam/result for the score and review. */
 export const EXAM_RESULT_PATH = '/exam/result';
 export const isExamResultPath = (pathname: string) => normalise(pathname).toLowerCase() === EXAM_RESULT_PATH;
@@ -198,6 +215,8 @@ export const viewForPath = (pathname: string): AppView => {
   if (fromScreenId) return fromScreenId;
   // Every /admin/... and /cms/... address belongs to the admin area.
   if (path === '/admin' || path.startsWith('/admin/') || path === '/cms' || path.startsWith('/cms/')) return 'admin';
+  // /syllabus/jamb/english/2010 and /past-questions/…: Past questions on that paper.
+  if (isPaperPath(path)) return 'syllabus';
   return PATH_VIEWS[path] ?? ALIASES[path] ?? 'page';
 };
 

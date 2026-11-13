@@ -3,7 +3,7 @@ import type { DiagnosticQuestion, UserProfile } from './types';
 import { Navbar } from './components/web/Navbar';
 import { isLiveExam, liveExamNames, loadExams, useExams } from './lib/exams';
 import { initMotion } from './lib/motion';
-import { useRouter, pathForView, isAccountFlowView, isAppView } from './lib/router';
+import { useRouter, pathForView, isAccountFlowView, isAppView, paperPathParts, slugify } from './lib/router';
 import type { AppView } from './lib/router';
 import { HomePageView } from './components/web/HomePageView';
 import { CmsContext } from './cms/read';
@@ -130,6 +130,16 @@ export function App() {
   useEffect(() => {
     if (!isAdmin) void loadExams();
   }, [isAdmin]);
+  // A paper's address (/syllabus/jamb/english/2010, /past-questions/post-utme/unilag/…):
+  // Past questions opens on that exam, school, subject and year.
+  const paperLink = (() => {
+    if (activeView !== 'syllabus') return null;
+    const [examSlug, ...rest] = paperPathParts(path);
+    const exam = examSlug ? examList.find((e) => slugify(e.label) === examSlug || slugify(e.id) === examSlug) : undefined;
+    if (!exam) return null;
+    const [school, subject, year] = exam.kind === 'school' ? rest : ['', ...rest];
+    return { exam: exam.id as ExamType, school: school || undefined, subject: subject || undefined, year: Number(year) || undefined };
+  })();
   // Post-UTME switched off: its pages go back to the home page.
   const postUtmeOff = !isLiveExam('Post-UTME');
   useEffect(() => {
@@ -341,10 +351,12 @@ export function App() {
             onSolve={solveWithTutor}
             solveLabel={solveLabel}
             askLabel={askLabel}
-            key={`${pq.exam ?? 'any'}-${pq.school ?? ''}`}
+            key={paperLink ? path : `${pq.exam ?? 'any'}-${pq.school ?? ''}`}
             onOpenTutor={openTutor}
-            initialExam={pq.exam}
-            initialSchool={pq.school}
+            initialExam={paperLink?.exam ?? pq.exam}
+            initialSchool={paperLink ? paperLink.school : pq.school}
+            initialSubject={paperLink?.subject}
+            initialYear={paperLink?.year}
             exams={examsOf(profile)}
             subjectsFor={(exam) => subjectsFor(profile, exam)}
             tutor={tutor}

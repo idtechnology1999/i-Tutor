@@ -51,7 +51,7 @@ const slug = (s) =>
 const plain = (s) => String(s ?? '').replace(/\$+([^$]*)\$+/g, '$1').replace(/\s+/g, ' ').trim();
 
 async function get(p) {
-  const res = await fetch(`${API}${p}`, { signal: AbortSignal.timeout(60_000) });
+  const res = await fetch(`${API}${p}`, { signal: AbortSignal.timeout(180_000) });
   if (!res.ok) throw new Error(`${p}: ${res.status}`);
   return res.json();
 }
@@ -63,7 +63,7 @@ const STYLE = `
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:#fff;line-height:1.6}
 a{color:var(--brand)}header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-bottom:1px solid var(--rule)}
 header.top a.logo{font-weight:800;font-size:1.15rem;text-decoration:none;color:var(--brand)}
-.btn{display:inline-block;padding:12px 20px;border-radius:999px;background:var(--accent);color:#fff;font-weight:700;text-decoration:none}
+.btn{display:inline-block;margin:4px 6px 4px 0;padding:12px 20px;border-radius:999px;background:var(--accent);color:#fff;font-weight:700;text-decoration:none}.btn--alt{background:var(--brand)}
 main{max-width:820px;margin:0 auto;padding:24px 16px 64px}nav.crumbs{font-size:.9rem;color:var(--ink3);margin-bottom:8px}
 h1{font-size:clamp(1.6rem,4vw,2.2rem);line-height:1.2;margin:.2em 0 .4em}.lead{color:var(--ink2);font-size:1.05rem}
 ol.qs{padding-left:1.2em}ol.qs>li{margin:0 0 22px;padding:16px;border:1px solid var(--rule);border-radius:14px;background:#fff}
@@ -160,7 +160,7 @@ async function main() {
 <h1>${esc(name(p))} ${esc(p.subject)} ${p.year} past questions</h1>
 <p class="lead">${p.qs.length} real ${esc(p.exam.name)} ${esc(p.subject)} questions from ${p.year}, with answers. Here are ${samples.length} to try; tap “Show answer” to check yourself.</p>
 <ol class="qs">${items}</ol>
-<div class="cta"><h2>Practise all ${p.qs.length} questions in a real CBT</h2><p>Timed like the real exam, with an AI tutor that explains every answer step by step.</p><a class="btn" href="/register">Start practising free</a></div>`;
+<div class="cta"><h2>Practise all ${p.qs.length} questions in a real CBT</h2><p>Timed like the real exam, with an AI tutor that explains every answer step by step.</p><a class="btn" href="/register">Start practising free</a> <a class="btn btn--alt" href="${url.replace(/^\/past-questions/, '/syllabus')}">Already a student? Open this paper</a></div>`;
     const ld = {
       '@context': 'https://schema.org',
       '@type': 'Quiz',

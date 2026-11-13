@@ -8,6 +8,7 @@ import { SCHOOLS } from '../../lib/schools';
 import type { ExamType } from '../../lib/cms';
 import type { SolveRequest, TutorPersona } from '../../data/tutors';
 import { useTutorThreads } from '../../lib/useTutorThreads';
+import { slugify } from '../../lib/router';
 import { TutorThread } from './TutorThread';
 import { ExamReview } from './ExamReview';
 
@@ -34,6 +35,9 @@ interface Props {
   /** Open on this exam (and Post-UTME school), e.g. from the Post-UTME page. */
   initialExam?: ExamType;
   initialSchool?: string;
+  /** Open on this subject and year (from a paper's address; names may be slugs like "english"). */
+  initialSubject?: string;
+  initialYear?: number;
   /** The exams the student registered for; only these can be picked. */
   exams?: ExamType[];
   /** The student's own subjects for an exam (null: show every subject). */
@@ -53,7 +57,19 @@ interface Props {
 // Always offered, even before questions exist, so the layout stays familiar.
 const CORE_SUBJECTS = ['English', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Economics'];
 
-export const SyllabusView: React.FC<Props> = ({ initialExam, initialSchool, exams, subjectsFor, solveLabel, askLabel, tutor, firstName = 'there', onUpgrade }) => {
+export const SyllabusView: React.FC<Props> = ({
+  initialExam,
+  initialSchool,
+  initialSubject,
+  initialYear,
+  exams,
+  subjectsFor,
+  solveLabel,
+  askLabel,
+  tutor,
+  firstName = 'there',
+  onUpgrade,
+}) => {
   // Only the student's own exams (JAMB first); everything if none chosen yet.
   // Only exams switched on in Admin → Settings → Exams.
   const examTabs = (exams?.length ? EXAM_TYPES.filter((t) => exams.includes(t)) : EXAM_TYPES).filter(isLiveExam);
@@ -63,11 +79,12 @@ export const SyllabusView: React.FC<Props> = ({ initialExam, initialSchool, exam
   const [school, setSchool] = useState(initialSchool ?? '');
   const { questions } = useCms();
   const [selectedSubject, setSelectedSubject] = useState<string>(() => {
+    if (initialSubject) return initialSubject;
     if (!initialSchool) return 'English';
     const first = questions.find((q) => q.status === 'published' && q.examType === initialExam && q.school === initialSchool);
     return first?.subject ?? 'English';
   });
-  const [year, setYear] = useState<number | null>(null);
+  const [year, setYear] = useState<number | null>(initialYear ?? null);
   const [searchQuery, setSearchQuery] = useState('');
   const [index, setIndex] = useState(0);
   // The option the student tried for each question (During).
@@ -81,7 +98,16 @@ export const SyllabusView: React.FC<Props> = ({ initialExam, initialSchool, exam
 
   const published = questions.filter((q) => q.status === 'published');
   const bySchool = needsSchool(exam);
-  const inExam = published.filter((q) => q.examType === exam && (!bySchool || !school || q.school === school));
+  // A school from an address is a slug ("unilag"): match it to the school's real name.
+  const realSchool =
+    published.find((q) => q.examType === exam && q.school === school)?.school ??
+    published.find((q) => q.examType === exam && q.school && slugify(q.school) === slugify(school))?.school ??
+    school;
+  // Once matched, the real name is what the school picker shows.
+  useEffect(() => {
+    if (realSchool !== school) setSchool(realSchool);
+  }, [realSchool, school]);
+  const inExam = published.filter((q) => q.examType === exam && (!bySchool || !school || q.school === realSchool));
   // Exam, then (Post-UTME) school, then year: the year applies to every subject.
   const years = [...new Set(inExam.map((q) => q.year).filter((y): y is number => y !== null))].sort((a, b) => b - a);
   // Always one year at a time (the latest unless one is picked), so one paper
@@ -90,13 +116,16 @@ export const SyllabusView: React.FC<Props> = ({ initialExam, initialSchool, exam
   const inYear = shownYear === null ? inExam : inExam.filter((q) => q.year === shownYear);
   // Only what the student registered for; exams without their own list show everything.
   const subjects = subjectsFor?.(exam) ?? [...new Set([...CORE_SUBJECTS, ...inExam.map((q) => q.subject)])];
-  const subject = subjects.includes(selectedSubject) ? selectedSubject : (subjects[0] ?? '');
+  // A subject from an address is a slug ("english"): match it by slug too.
+  const subject = subjects.includes(selectedSubject)
+    ? selectedSubject
+    : (subjects.find((s) => slugify(s) === slugify(selectedSubject)) ?? subjects[0] ?? '');
   const inSubject = inYear.filter((q) => q.subject === subject);
   const query = searchQuery.trim().toLowerCase();
   const list = inSubject.filter((q) => !query || q.question.toLowerCase().includes(query) || q.topic.toLowerCase().includes(query));
   const at = Math.min(index, Math.max(list.length - 1, 0));
   const q = list[at];
-  const examName = bySchool && school ? `${school} ${EXAM_LABEL[exam]}` : EXAM_LABEL[exam];
+  const examName = bySchool && school ? `${realSchool} ${EXAM_LABEL[exam]}` : EXAM_LABEL[exam];
   const paperName = `${examName}${shownYear ? ` ${shownYear}` : ''}`;
 
   const triedIds = Object.keys(tried).map(Number);
