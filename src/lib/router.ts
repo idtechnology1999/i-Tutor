@@ -120,6 +120,8 @@ const PATH_VIEWS: Record<string, AppView> = Object.entries(VIEW_PATHS).reduce(
 
 /** Legacy / hand-typed variants we still answer to, so old links keep working. */
 const ALIASES: Record<string, AppView> = {
+  // The exam's result and AI review: same view, its own address (see EXAM_RESULT_PATH).
+  '/exam/result': 'cbt',
   '/cbt': 'cbt',
   '/cbt-simulation': 'cbt',
   '/cbt_simulation': 'cbt',
@@ -185,6 +187,10 @@ const SCREEN_IDS: Record<string, AppView> = {
 export const isCmsPath = (path: string) => /^\/cms(\/|$)/i.test(path);
 
 export const pathForView = (view: AppView) => VIEW_PATHS[view];
+
+/** The exam has two addresses: /exam while answering, /exam/result for the score and review. */
+export const EXAM_RESULT_PATH = '/exam/result';
+export const isExamResultPath = (pathname: string) => normalise(pathname).toLowerCase() === EXAM_RESULT_PATH;
 
 export const viewForPath = (pathname: string): AppView => {
   const path = normalise(pathname).toLowerCase();

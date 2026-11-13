@@ -10,6 +10,7 @@ import { tutorById } from '../../data/tutors';
 import { ExamReview } from './ExamReview';
 import { QuestionFigure } from './QuestionFigure';
 import { saveAttempt } from '../../services/progress';
+import { EXAM_RESULT_PATH, isExamResultPath, pathForView } from '../../lib/router';
 import { getPracticeSet } from '../../services/practice';
 import type { RealExam } from '../../services/practice';
 import { defaultExam, examsOf } from '../../lib/student-exams';
@@ -41,6 +42,8 @@ interface Props {
   askLabel?: string;
   /** Out of AI credits while reviewing: go and get more. */
   onUpgrade?: () => void;
+  /** Swap the address without a new history entry: /exam while answering, /exam/result after. */
+  onRoute?: (path: string) => void;
 }
 
 /** JAMB: English has 60 questions, every other subject 40, all in 2 hours (40 seconds each). */
@@ -227,11 +230,12 @@ interface Session {
   recorded: boolean;
 }
 
-const readSession = (key: string): Session | null => {
+/** The saved exam. `key` null: whichever exam it was (the result page shows the latest one). */
+const readSession = (key: string | null): Session | null => {
   try {
     const saved = JSON.parse(window.localStorage.getItem(SESSION_KEY) ?? 'null') as Session | null;
     // Another exam, or one long finished: start afresh.
-    if (!saved || saved.key !== key || !saved.paper?.questions?.length) return null;
+    if (!saved || (key !== null && saved.key !== key) || !saved.paper?.questions?.length) return null;
     if (Date.now() - saved.deadline > 24 * 3600 * 1000) return null;
     return saved;
   } catch {
@@ -253,8 +257,9 @@ const clearSession = () => {
   }
 };
 const secondsUntil = (deadline: number) => Math.max(0, Math.round((deadline - Date.now()) / 1000));
+const isOver = (s: Session) => s.submitted || secondsUntil(s.deadline) <= 0;
 
-export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, presetTopic, presetCourse, onSolve, askLabel, onUpgrade }) => {
+export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, presetTopic, presetCourse, onSolve, askLabel, onUpgrade, onRoute }) => {
   const { questions: bank } = useCms();
   const ready = useQuestionsReady();
   // The paper is drawn once, when the bank is ready, so it doesn't reshuffle mid-exam.
@@ -296,12 +301,20 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
     setSubmitted(false);
     setConfirm(null);
     recorded.current = false;
+    // A new exam is answered at /exam (a retake from the result page comes back here).
+    if (isExamResultPath(window.location.pathname)) onRoute?.(pathForView('cbt'));
   };
 
   useEffect(() => {
     if (!ready || paper) return;
-    // Back after a refresh: carry on with the same exam.
-    const saved = readSession(sessionKey);
+    // /exam/result: the latest finished exam, whichever it was. /exam: carry on
+    // with an unfinished exam after a refresh; a finished one is behind us, so
+    // a new exam starts (its result stays at /exam/result until then).
+    const onResult = isExamResultPath(window.location.pathname);
+    const found = readSession(onResult ? null : sessionKey);
+    // /exam/result while an exam is still running: back into that exam, at /exam.
+    if (onResult && found && !isOver(found)) onRoute?.(pathForView('cbt'));
+    const saved = found && (onResult || !isOver(found)) ? found : null;
     if (saved) {
       setPaper(saved.paper);
       setSubject(saved.subject);
@@ -360,6 +373,23 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
   }, [running, finished]);
+
+  // Submitted or out of time: the score and review have their own address.
+  useEffect(() => {
+    if (finished && !isExamResultPath(window.location.pathname)) onRoute?.(EXAM_RESULT_PATH);
+    // onRoute is a fresh function each render; only finishing matters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finished]);
+
+  // Back from the result goes to the dashboard. (Behind the result are only the
+  // exam's own /exam entries, and a finished exam can't be gone back into.)
+  // The result is kept, so /exam/result shows it again until the next exam.
+  useEffect(() => {
+    if (!finished) return;
+    const onBack = () => onExit();
+    window.addEventListener('popstate', onBack);
+    return () => window.removeEventListener('popstate', onBack);
+  }, [finished, onExit]);
 
   useEffect(() => {
     if (!finished || !paper || recorded.current) return;
@@ -456,7 +486,8 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
         timeUp={timeLeft <= 0 && !submitted}
         estimate={full ? Math.round((correct / total) * 400) : undefined}
         tutor={profile.plan === 'premium' ? tutorById(profile.tutorId) : undefined}
-        onExit={leave}
+        // Leaving the result keeps it: /exam/result can show it again.
+        onExit={onExit}
         onRetake={() => void start()}
         onUpgrade={onUpgrade}
       />

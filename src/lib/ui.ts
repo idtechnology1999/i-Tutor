@@ -15,8 +15,9 @@ export const reducedMotion = () =>
 const finePointer = () =>
   typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
 
+type ViewTransition = { ready?: Promise<void>; finished?: Promise<void> };
 type ViewTransitionDoc = Document & {
-  startViewTransition?: (cb: () => void) => unknown;
+  startViewTransition?: (cb: () => void) => ViewTransition | undefined;
 };
 
 /** Run a state update inside a View Transition when the browser has one. */
@@ -26,9 +27,15 @@ export function withViewTransition(update: () => void) {
     update();
     return;
   }
-  doc.startViewTransition(() => {
+  const t = doc.startViewTransition(() => {
     flushSync(update);
   });
+  // Two page changes in quick succession (e.g. Back from the exam result, which
+  // then goes to the dashboard) skip the first animation; the browser reports
+  // that as a rejected promise. The page itself is fine, so don't log an error.
+  const ignore = () => undefined;
+  t?.ready?.catch(ignore);
+  t?.finished?.catch(ignore);
 }
 
 /**

@@ -309,6 +309,7 @@ export function App() {
             }}
             onOpenTutor={openTutor}
             onUpgrade={() => goTo('upgrade')}
+            onRoute={(to) => navigate(to, { replace: true })}
           />
         )}
 
