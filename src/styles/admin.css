@@ -1758,11 +1758,12 @@
     padding: 16px 12px 120px;
   }
 
+  /* Buttons share the row, wrapping onto a second row when there are too many
+     to fit (three long labels used to be squeezed and cut off). */
   .adm-head__actions {
     width: 100%;
     display: grid;
-    grid-auto-columns: minmax(0, 1fr);
-    grid-auto-flow: column;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   }
 
   .adm-head__actions .adm-btn {
@@ -3388,7 +3389,9 @@
   .adm-side__brand .adm-side__tag { display: none; }
   .adm-side__here {
     display: block;
-    flex: 1 1 auto;
+    /* Basis 0, so a long name shortens with "…" instead of pushing the menu
+       button onto a second line. */
+    flex: 1 1 0;
     min-width: 0;
     margin-left: 6px;
     padding-left: 10px;
