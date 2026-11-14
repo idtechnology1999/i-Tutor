@@ -116,8 +116,8 @@ export const DashboardView: React.FC<Props> = ({
     <div className="ui-page dash">
       {/* ------------------------------------------------------------ Hello */}
       <PageBanner
-        image="/images/student-cbt-focus.jpg"
-        imageAlt="A student practising at a computer in a CBT lab"
+        image="/images/jamb-student-laptop.jpg"
+        imageAlt="A young student concentrating on his laptop"
         focus="60% 12%"
         eyebrow={
           <>

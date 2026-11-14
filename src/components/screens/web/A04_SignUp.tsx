@@ -12,6 +12,7 @@ import {
   calculatePasswordStrength,
 } from '../../../utils/phone';
 import { AuthShell, FormField, PhotoAside } from './shared';
+import { useSiteStats } from '../../../lib/site-stats';
 
 interface Props {
   onBack: () => void;
@@ -31,6 +32,8 @@ export const A04_SignUp: React.FC<Props> = ({
   loadingMessage,
   serverError,
 }) => {
+  // Real counts from the question bank for the photo panel (null while loading).
+  const stats = useSiteStats();
   const [fullName, setFullName] = useState('');
   const [fullNameTouched, setFullNameTouched] = useState(false);
 
@@ -99,15 +102,20 @@ export const A04_SignUp: React.FC<Props> = ({
       aside={
         <PhotoAside
           screen="signup"
-          src="/images/students-at-terminals.jpg"
-          alt="Secondary-school students in white uniforms working at computers in a CBT lab"
+          src="/images/jamb-boys-laptop.jpg"
+          alt="Two students in school uniform studying together on a laptop"
           caption="Practise on a screen that feels like the real CBT hall — then learn from every question you miss."
+          credit="Photo: Roman Odintsov on Pexels"
           badge={{ label: 'Free to start', value: '₦0', note: 'No card needed' }}
-          stats={[
-            { value: '2,400+', label: 'verified past questions' },
-            { value: '4', label: 'UTME subjects live' },
-            { value: 'Offline', label: 'once downloaded' },
-          ]}
+          // Live numbers from the question bank, never typed in.
+          stats={
+            stats
+              ? [
+                  { value: stats.questions, label: 'past questions with answers' },
+                  { value: stats.subjects, label: 'subjects to practise' },
+                ]
+              : undefined
+          }
         />
       }
       footer={

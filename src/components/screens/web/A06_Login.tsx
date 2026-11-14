@@ -90,10 +90,10 @@ export const A06_Login: React.FC<Props> = ({
       aside={
         <PhotoAside
           screen="login"
-          src="/images/student-cbt-focus.jpg"
-          alt="A student concentrating at a computer in a school CBT lab"
+          src="/images/jamb-student-library.jpg"
+          alt="A student in glasses studying on a laptop in a library"
           caption="Your progress follows you — phone, laptop or the cyber-café computer."
-          badge={{ label: 'Mock score', value: '268/400', note: '+34 since last week' }}
+          credit="Photo: Kampus Production on Pexels"
         />
       }
       footer={

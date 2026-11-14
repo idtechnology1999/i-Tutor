@@ -224,8 +224,26 @@ export async function deletePage(id: string, password: string) {
 
 /* ------------------------------------------------------------------ Images */
 
-/** Photos already on the website, offered in the image picker. */
+/** Photos already on the website, offered in the image picker.
+    The jamb-… photos are real photographs under the free Pexels / Unsplash
+    licences (commercial use allowed, credit appreciated):
+      jamb-students-smiling   amazinggraceu, Pexels 12804469 (Edufort school, Port Harcourt)
+      jamb-student-laptop     Kojo Kwarteng, Unsplash KUzlAah2dog
+      jamb-boys-laptop        Roman Odintsov, Pexels 11025029
+      jamb-student-library    Kampus Production, Pexels 5940710
+      jamb-nursing-students   AB Pixels NG, Pexels 38451625 (Zaria)
+      jamb-graduates(-wide)   Shot by Khalid, Pexels 30243808 (Lagos)
+      jamb-class-uniform      Tosin Olowoleni, Pexels 34162709
+    Each was cropped and darkened slightly so text on top reads well. */
 export const SITE_IMAGES: MediaItem[] = [
+  ['jamb-students-smiling.jpg', 'Three smiling secondary-school students in uniform at their school entrance'],
+  ['jamb-student-laptop.jpg', 'A young student concentrating on his laptop'],
+  ['jamb-boys-laptop.jpg', 'Two students in school uniform studying together on a laptop'],
+  ['jamb-student-library.jpg', 'A student in glasses studying on a laptop in a library'],
+  ['jamb-class-uniform.jpg', 'Secondary-school students in uniform in a classroom'],
+  ['jamb-nursing-students.jpg', 'Smiling nursing students in uniform'],
+  ['jamb-graduates.jpg', 'Two graduates in academic caps and gowns'],
+  ['jamb-graduates-wide.jpg', 'Two graduates in academic caps and gowns (wide)'],
   ['student-cbt-focus.jpg', 'A student working at a computer in a school CBT lab'],
   ['students-laptops.jpg', 'Students with laptops on red-and-white steps'],
   ['teacher-guiding.jpg', 'A teacher explaining something on a computer screen to students'],

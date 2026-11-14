@@ -131,8 +131,8 @@ export const CourseView: React.FC<Props> = ({ profile, onStart, onUpdateProfile 
   return (
     <div className="ui-page course">
       <PageBanner
-        image="/images/tutor-session.jpg"
-        imageAlt="A tutor helping students with their work"
+        image="/images/jamb-nursing-students.jpg"
+        imageAlt="Smiling nursing students in uniform"
         eyebrow={profile.targetCourse || undefined}
         title={
           <>

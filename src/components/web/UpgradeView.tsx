@@ -305,8 +305,8 @@ export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor
     <div className="pay">
       {step === 'plan' && (
         <PageBanner
-          image="/images/teacher-guiding.jpg"
-          imageAlt="A teacher guiding a student through a problem"
+          image="/images/jamb-graduates-wide.jpg"
+          imageAlt="Two graduates in academic caps and gowns"
           eyebrow="i-Tutor Premium"
           title={
             <>

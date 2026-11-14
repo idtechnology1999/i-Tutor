@@ -156,19 +156,21 @@ export const DefaultAside: React.FC<{
 );
 
 /**
- * Photo panel for the split-screen account pages. Real photographs from a
- * Nigerian school CBT lab (James Rhoda, Wikimedia Commons, CC BY-SA 4.0).
+ * Photo panel for the split-screen account pages: real photographs of
+ * Nigerian students (credits in src/services/pages.ts, SITE_IMAGES).
  */
 export const PhotoAside: React.FC<{
   src: string;
   alt: string;
   caption: string;
+  /** Who took the built-in photo, e.g. "Photo: Roman Odintsov on Pexels". */
+  credit?: string;
   stats?: Array<{ value: string; label: string }>;
   /** A small card carved into the photo's top-right corner. */
   badge?: { label: string; value: string; note: string };
   /** Its screen's id in the CMS: an admin can change the photo, caption and card. */
   screen?: string;
-}> = ({ src, alt, caption, stats, badge, screen }) => {
+}> = ({ src, alt, caption, credit, stats, badge, screen }) => {
   const cms = useScreenText(screen);
   const picked = readImage(cms.image);
   const card =
@@ -202,11 +204,7 @@ export const PhotoAside: React.FC<{
         </dl>
       ) : null}
       {/* The credit is for the built-in photos only. */}
-      {!picked.src && (
-        <span className="auth-photo__credit">
-          Photo: James Rhoda / Wikimedia Commons, CC BY-SA 4.0
-        </span>
-      )}
+      {!picked.src && credit && <span className="auth-photo__credit">{credit}</span>}
     </figcaption>
   </figure>
   );
