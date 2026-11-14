@@ -42,7 +42,7 @@ interface Message {
    -------------------------------------------------------------------------- */
 
 const PAGES = {
-  exam: { label: 'Open practice exam', view: 'cbt' as AppView },
+  exam: { label: 'Open JAMB Exam', view: 'cbt' as AppView },
   questions: { label: 'Open past questions', view: 'syllabus' as AppView },
   home: { label: 'Go to my home page', view: 'dashboard' as AppView },
   upgrade: { label: 'See Premium plans', view: 'upgrade' as AppView },
@@ -60,7 +60,7 @@ const GUIDE: Array<{ test: RegExp; text: string; links: NavLink[] }> = [
   },
   {
     test: /\b(exam|mock|cbt|test|timed|timer)\b/,
-    text: 'Tap Practice exam. Choose a subject (or all subjects) and how many questions you want, then press Start exam. The timer only starts when you press Start.',
+    text: 'Tap JAMB Exam. Choose a subject (or all subjects) and how many questions you want, then press Start exam. The timer only starts when you press Start.',
     links: [PAGES.exam],
   },
   {
@@ -95,7 +95,7 @@ const GUIDE: Array<{ test: RegExp; text: string; links: NavLink[] }> = [
   },
   {
     test: /\b(how (do|can) i (use|start|navigate|find)|where (is|are|do)|help me (use|find|navigate)|show me around|get started|what can (i|you) do|navigate|menu)\b/,
-    text: 'Here’s how i-Tutor works:\n\n1. **Practice exam** — timed tests like the real CBT.\n2. **Past questions** — try a question and check the answer.\n3. **Ask me** — I’ll guide you through any question step by step.\n4. **Me** — your plan, goal and subjects.\n\nTap where you want to go:',
+    text: 'Here’s how i-Tutor works:\n\n1. **JAMB Exam** — timed tests like the real CBT.\n2. **Past questions** — try a question and check the answer.\n3. **Ask me** — I’ll guide you through any question step by step.\n4. **Me** — your plan, goal and subjects.\n\nTap where you want to go:',
     links: [PAGES.exam, PAGES.questions, PAGES.home, PAGES.upgrade],
   },
 ];

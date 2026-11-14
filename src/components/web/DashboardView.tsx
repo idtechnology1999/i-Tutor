@@ -8,7 +8,6 @@ import {
   Flame,
   MessageSquareText,
   Play,
-  LockOpen,
   Target,
   GraduationCap,
   Landmark,
@@ -200,8 +199,6 @@ export const DashboardView: React.FC<Props> = ({
       </section>
 
       {/* ----------------------------------------------------- Quick actions */}
-      <CreditCard credits={credits} onUpgrade={onUpgrade} />
-
       <nav className="dash__actions" aria-label="Quick actions">
         <button type="button" onClick={() => onLaunchCBT()}>
           <span className="dash__action-icon dash__action-icon--exam" aria-hidden>
@@ -283,13 +280,13 @@ export const DashboardView: React.FC<Props> = ({
                 <li key={s}>
                   <div className="dash__subj-top">
                     <strong>{subjectLabel(s)}</strong>
-                    {l ? <span className={`ui-chip ui-chip--${l.tone}`}>{l.label}</span> : <span className="ui-chip">Not started</span>}
+                    {l && <span className={`ui-chip ui-chip--${l.tone}`}>{l.label}</span>}
                   </div>
                   <div className={`dash__subj-bar${l ? ` is-${l.tone}` : ''}`} aria-hidden>
                     <i style={{ width: `${mastery ?? 0}%` }} />
                   </div>
                   <div className="dash__subj-foot">
-                    <span>{mastery === null ? 'No practice yet' : `${mastery}% · ${p?.answered ?? 0} questions answered`}</span>
+                    <span>{mastery === null ? 'Not started yet' : `${mastery}% · ${p?.answered ?? 0} questions answered`}</span>
                     <button type="button" onClick={() => onLaunchCBT(s)}>
                       Practise <ArrowRight size={14} aria-hidden />
                     </button>
@@ -383,21 +380,10 @@ export const DashboardView: React.FC<Props> = ({
         </section>
       )}
 
-      {/* --------------------------------------------------------- Upgrade */}
-      {!isPremium && (
-        <section className="dash__upgrade">
-          <span className="dash__upgrade-icon">
-            <LockOpen size={20} aria-hidden />
-          </span>
-          <div>
-            <strong>Get your own personal AI tutor</strong>
-            <p>They’ll solve any question with you, step by step. Free accounts get 5 AI prompts to try it. Premium gives you 300 AI credits every month for ₦2,500.</p>
-          </div>
-          <button type="button" className="ui-btn ui-btn--primary" onClick={onUpgrade}>
-            Upgrade
-          </button>
-        </section>
-      )}
+      {/* ------------------------------------------- AI credits and upgrade
+          Last on the page: practice comes first. For free accounts this card
+          is also the one upgrade prompt (the header has the Upgrade button). */}
+      <CreditCard credits={credits} onUpgrade={onUpgrade} />
     </div>
   );
 };

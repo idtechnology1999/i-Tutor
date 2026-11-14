@@ -81,7 +81,7 @@ const DEFAULT_PROFILE: UserProfile = {
 
 const TITLES: Record<AppView, string> = {
   home: 'i-Tutor — JAMB, WAEC, NECO & Post-UTME practice that teaches',
-  cbt: 'Practice exam — i-Tutor',
+  cbt: 'JAMB Exam — i-Tutor',
   syllabus: 'Past questions — i-Tutor',
   dashboard: 'Home — i-Tutor',
   setup: 'My profile — i-Tutor',

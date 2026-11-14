@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Calculator, ChevronLeft, ChevronRight, MessageSquareText, X } from 'lucide-react';
+import { ArrowLeft, Calculator, ChevronLeft, ChevronRight, MessageSquareText } from 'lucide-react';
 import type { DiagnosticQuestion, UserProfile } from '../../types';
 import { ExamCalculator } from './ExamCalculator';
 import { CMS_SUBJECTS, PRACTICE, toExamQuestion, useCms, useQuestionsReady } from '../../lib/cms';
@@ -550,9 +550,6 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
           <span className="jamb__tools">
             <button type="button" className={showCalculator ? 'is-on' : ''} onClick={() => setShowCalculator((v) => !v)} aria-pressed={showCalculator}>
               <Calculator size={16} aria-hidden /> Calculator
-            </button>
-            <button type="button" onClick={() => setConfirm('exit')}>
-              <X size={16} aria-hidden /> Exit
             </button>
           </span>
         </nav>

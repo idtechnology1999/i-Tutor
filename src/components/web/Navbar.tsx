@@ -35,7 +35,7 @@ interface Props {
    items; Post-UTME stays one tap away on the dashboard. */
 const APP_TABS: { label: string; short: string; view: AppView; icon: typeof House; phone?: boolean }[] = [
   { label: 'Home', short: 'Home', view: 'dashboard', icon: House },
-  { label: 'Practice exam', short: 'Practice', view: 'cbt', icon: ClipboardList },
+  { label: 'JAMB Exam', short: 'Exam', view: 'cbt', icon: ClipboardList },
   { label: 'Past questions', short: 'Questions', view: 'syllabus', icon: BookOpenCheck },
   { label: 'Classroom', short: 'Class', view: 'classroom', icon: GraduationCap },
   { label: 'Post-UTME', short: 'Post-UTME', view: 'postutme', icon: Landmark, phone: false },
