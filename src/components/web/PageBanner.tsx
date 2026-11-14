@@ -18,12 +18,19 @@ interface Props {
   children?: React.ReactNode;
   /** Where to focus the photo, e.g. "50% 30%". */
   focus?: string;
+  /** Flip the photo left to right. */
+  mirror?: boolean;
 }
 
-export const PageBanner: React.FC<Props> = ({ image, imageAlt, title, lead, eyebrow, aside, children, focus }) => (
+export const PageBanner: React.FC<Props> = ({ image, imageAlt, title, lead, eyebrow, aside, children, focus, mirror }) => (
   <section className="lp-banner lp-banner--page">
     <div className="lp-banner__media">
-      <img src={image} alt={imageAlt} style={focus ? { objectPosition: focus } : undefined} decoding="async" />
+      <img
+        src={image}
+        alt={imageAlt}
+        style={focus || mirror ? { ...(focus ? { objectPosition: focus } : {}), ...(mirror ? { transform: 'scaleX(-1)' } : {}) } : undefined}
+        decoding="async"
+      />
       {eyebrow && <p className="lp-banner__eyebrow">{eyebrow}</p>}
       {aside && <div className="lp-banner__join">{aside}</div>}
     </div>

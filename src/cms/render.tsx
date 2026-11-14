@@ -19,7 +19,7 @@ import { NewsSection } from '../components/web/NewsSection';
 import { PageBanner } from '../components/web/PageBanner';
 import { SampleQuestion, ServiceVisual, TeamSection } from '../components/web/HomeWidgets';
 import { BLOCK_DEFS } from './registry';
-import { bool, image, items, lines, link, mediaSrc, photoCredit, str, useCmsEnv } from './read';
+import { bool, image, imageStyle, items, lines, link, mediaSrc, photoCredit, str, useCmsEnv } from './read';
 import { iconFor } from './icons';
 import { Accent, CmsButton, Markdown } from './text';
 import type { BlockData, CmsBlock } from './types';
@@ -41,6 +41,7 @@ const Img: React.FC<{ v: unknown; className?: string; eager?: boolean; width?: n
       src={mediaSrc(im.src)}
       alt={im.alt}
       className={className}
+      style={imageStyle(im)}
       width={width}
       height={height}
       loading={eager ? undefined : 'lazy'}
@@ -117,6 +118,8 @@ const BannerBlock: R = ({ d }) => {
       <PageBanner
         image={mediaSrc(im.src || '/images/students-laptops.jpg')}
         imageAlt={im.alt}
+        focus={im.focus}
+        mirror={im.mirror}
         eyebrow={str(d.eyebrow) || undefined}
         title={<Accent text={str(d.title)} />}
         lead={str(d.lead) || undefined}

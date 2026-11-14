@@ -2,7 +2,20 @@ import React, { useContext, useState } from 'react';
 import { ArrowDown, ArrowUp, ChevronDown, Copy, ImagePlus, Plus, Trash2 } from 'lucide-react';
 import type { FieldSpec } from '../../cms/registry';
 import { ICONS, iconFor } from '../../cms/icons';
-import { image, items, link, mediaSrc, str } from '../../cms/read';
+import { FOCUS_POINTS, image, imageStyle, items, link, mediaSrc, str } from '../../cms/read';
+
+/** Plain names for the nine focus points, for screen readers and hover tips. */
+const FOCUS_NAMES: Record<(typeof FOCUS_POINTS)[number], string> = {
+  'left top': 'Top left',
+  'center top': 'Top',
+  'right top': 'Top right',
+  'left center': 'Left',
+  'center center': 'Middle',
+  'right center': 'Right',
+  'left bottom': 'Bottom left',
+  'center bottom': 'Bottom',
+  'right bottom': 'Bottom right',
+};
 import type { BlockData } from '../../cms/types';
 import { pagePath } from '../../services/pages';
 import { MediaPicker } from './MediaLibrary';
@@ -167,7 +180,7 @@ const ImageField: React.FC<{ spec: FieldSpec; value: unknown; onChange: (v: unkn
     <Label spec={spec} as="div">
       <div className="cms-image-field">
         <button type="button" className="cms-image-field__thumb" onClick={() => setOpen(true)} aria-label={im.src ? 'Change image' : 'Choose image'}>
-          {im.src ? <img src={mediaSrc(im.src)} alt="" /> : <ImagePlus size={26} aria-hidden />}
+          {im.src ? <img src={mediaSrc(im.src)} alt="" style={imageStyle(im)} /> : <ImagePlus size={26} aria-hidden />}
         </button>
         <div className="cms-image-field__side">
           <button type="button" className="adm-btn" onClick={() => setOpen(true)}>
@@ -189,11 +202,45 @@ const ImageField: React.FC<{ spec: FieldSpec; value: unknown; onChange: (v: unkn
           onChange={(e) => onChange({ ...im, alt: e.target.value })}
         />
       )}
+      {im.src && (
+        <div className="cms-image-field__frame">
+          {/* Which part of the photo stays in view when a section crops it
+              (wide banners cut the top and bottom; tall cards cut the sides). */}
+          <div>
+            <span className="cms-image-field__label">Keep this part in view</span>
+            <div className="cms-focus" role="radiogroup" aria-label="Keep this part of the photo in view">
+              {FOCUS_POINTS.map((p) => {
+                const on = (im.focus ?? 'center center') === p;
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    aria-label={FOCUS_NAMES[p]}
+                    title={FOCUS_NAMES[p]}
+                    className={on ? 'is-on' : ''}
+                    onClick={() => onChange({ ...im, focus: p === 'center center' ? undefined : p })}
+                  />
+                );
+              })}
+            </div>
+          </div>
+          <label className="cms-image-field__mirror">
+            <input type="checkbox" checked={Boolean(im.mirror)} onChange={(e) => onChange({ ...im, mirror: e.target.checked || undefined })} />
+            <span>
+              Mirror the photo
+              <small>Flips it left to right, e.g. so a student faces the text. Writing in the photo will read backwards.</small>
+            </span>
+          </label>
+        </div>
+      )}
       {open && (
         <MediaPicker
           notify={notify}
           onClose={() => setOpen(false)}
           onPick={(picked) => {
+            // A new photo starts centred and unflipped.
             onChange({ src: picked.src, alt: picked.alt || im.alt });
             setOpen(false);
           }}

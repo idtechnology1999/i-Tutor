@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react';
+import type { CSSProperties } from 'react';
 import { API_BASE, isLive } from '../services/api';
 import type { BlockData, CmsImage, CmsLink } from './types';
 
@@ -18,10 +19,30 @@ export const lines = (v: unknown): string[] =>
     .map((s) => s.trim())
     .filter(Boolean);
 
+/** The nine points an image can be kept in view by (page builder → image → "Keep this part in view"). */
+export const FOCUS_POINTS = [
+  'left top', 'center top', 'right top',
+  'left center', 'center center', 'right center',
+  'left bottom', 'center bottom', 'right bottom',
+] as const;
+
 export const image = (v: unknown): CmsImage => {
   const o = (typeof v === 'object' && v !== null ? v : {}) as Record<string, unknown>;
-  return { src: str(o.src), alt: str(o.alt) };
+  const focus = str(o.focus);
+  return {
+    src: str(o.src),
+    alt: str(o.alt),
+    // Only the nine known points: nothing else reaches the page's CSS.
+    ...((FOCUS_POINTS as readonly string[]).includes(focus) && focus !== 'center center' ? { focus } : {}),
+    ...(o.mirror === true ? { mirror: true } : {}),
+  };
 };
+
+/** How an image is shown: which part stays in view and which way it faces. */
+export const imageStyle = (im: CmsImage): CSSProperties | undefined =>
+  im.focus || im.mirror
+    ? { ...(im.focus ? { objectPosition: im.focus } : {}), ...(im.mirror ? { transform: 'scaleX(-1)' } : {}) }
+    : undefined;
 
 export const link = (v: unknown): CmsLink => {
   const o = (typeof v === 'object' && v !== null ? v : {}) as Record<string, unknown>;

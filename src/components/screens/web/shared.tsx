@@ -1,7 +1,7 @@
 import React from 'react';
 import { OnboardingStepsContext } from './onboarding-context';
 import { screenText, useScreenText } from '../../../cms/screens';
-import { image as readImage, mediaSrc } from '../../../cms/read';
+import { image as readImage, imageStyle, mediaSrc } from '../../../cms/read';
 import {
   CheckIcon,
   ShieldCheckIcon,
@@ -183,7 +183,14 @@ export const PhotoAside: React.FC<{
         };
   return (
   <figure className="auth-photo">
-    <img src={picked.src ? mediaSrc(picked.src) : src} alt={picked.src ? picked.alt : alt} width={1280} height={960} decoding="async" />
+    <img
+      src={picked.src ? mediaSrc(picked.src) : src}
+      alt={picked.src ? picked.alt : alt}
+      style={picked.src ? imageStyle(picked) : undefined}
+      width={1280}
+      height={960}
+      decoding="async"
+    />
     {card ? (
       <div className="lp-carve-corner auth-photo__badge" aria-hidden>
         <span className="lp-hero__score-label">{card.label}</span>

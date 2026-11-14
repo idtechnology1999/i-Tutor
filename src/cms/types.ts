@@ -15,6 +15,10 @@ export interface CmsBlock {
 export interface CmsImage {
   src: string;
   alt: string;
+  /** The part kept in view when the photo is cropped, as CSS object-position: "center top", "left center"… */
+  focus?: string;
+  /** Flipped left to right, e.g. so a student faces the text. */
+  mirror?: boolean;
 }
 
 /** A button or link. `href` is a path (/upgrade), an anchor (#faq), a full
