@@ -19,7 +19,7 @@ import { NewsSection } from '../components/web/NewsSection';
 import { PageBanner } from '../components/web/PageBanner';
 import { SampleQuestion, ServiceVisual, TeamSection } from '../components/web/HomeWidgets';
 import { BLOCK_DEFS } from './registry';
-import { bool, image, items, lines, link, mediaSrc, str, useCmsEnv } from './read';
+import { bool, image, items, lines, link, mediaSrc, photoCredit, str, useCmsEnv } from './read';
 import { iconFor } from './icons';
 import { Accent, CmsButton, Markdown } from './text';
 import type { BlockData, CmsBlock } from './types';
@@ -266,14 +266,16 @@ const HeroBlock: R = ({ d, id }) => {
         <div className="lp-banner__media" data-reveal="scale">
           <Img v={d.image} eager width={1280} height={960} />
 
-          {bool(d.showStat) && (
+          {/* Only live numbers ({questions}, {students}…): a typed-in figure
+              like "268/400" would be invented, so it isn't shown. */}
+          {bool(d.showStat) && /\{\w+\}/.test(str(d.statValue)) && (
             <div className="lp-carve-corner" aria-hidden>
-              <span className="lp-hero__score-label">{str(d.statLabel)}</span>
+              <span className="lp-hero__score-label">{fillStats(str(d.statLabel), stats)}</span>
               <span className="lp-hero__score-value">
-                {str(d.statValue)}
-                <small>{str(d.statSuffix)}</small>
+                {fillStats(str(d.statValue), stats)}
+                <small>{fillStats(str(d.statSuffix), stats)}</small>
               </span>
-              <span className="lp-hero__score-delta">{str(d.statDelta)}</span>
+              <span className="lp-hero__score-delta">{fillStats(str(d.statDelta), stats)}</span>
             </div>
           )}
 
@@ -371,7 +373,7 @@ const ShowcaseBlock: R = ({ d, id }) => (
         <CmsButton link={link(d.cta)} className="lp-btn lp-btn--primary" icon={arrow} />
       </div>
     </div>
-    {str(d.credit) && <p className="lp-photo-credit">{str(d.credit)}</p>}
+    {photoCredit(image(d.image).src, str(d.credit)) && <p className="lp-photo-credit">{photoCredit(image(d.image).src, str(d.credit))}</p>}
   </section>
 );
 

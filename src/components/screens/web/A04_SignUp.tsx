@@ -102,10 +102,10 @@ export const A04_SignUp: React.FC<Props> = ({
       aside={
         <PhotoAside
           screen="signup"
-          src="/images/jamb-boys-laptop.jpg"
-          alt="Two students in school uniform studying together on a laptop"
+          src="/images/jamb-student-bright.jpg"
+          alt="A smiling student typing on her laptop in a bright lecture hall"
           caption="Practise on a screen that feels like the real CBT hall — then learn from every question you miss."
-          credit="Photo: Roman Odintsov on Pexels"
+          credit="Photo: Yan Krukov on Pexels"
           badge={{ label: 'Free to start', value: '₦0', note: 'No card needed' }}
           // Live numbers from the question bank, never typed in.
           stats={

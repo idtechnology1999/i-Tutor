@@ -231,6 +231,7 @@ export async function deletePage(id: string, password: string) {
       jamb-student-laptop     Kojo Kwarteng, Unsplash KUzlAah2dog
       jamb-boys-laptop        Roman Odintsov, Pexels 11025029
       jamb-student-library    Kampus Production, Pexels 5940710
+      jamb-student-bright     Yan Krukov, Pexels 8197550
       jamb-nursing-students   AB Pixels NG, Pexels 38451625 (Zaria)
       jamb-graduates(-wide)   Shot by Khalid, Pexels 30243808 (Lagos)
       jamb-class-uniform      Tosin Olowoleni, Pexels 34162709
@@ -240,14 +241,12 @@ export const SITE_IMAGES: MediaItem[] = [
   ['jamb-student-laptop.jpg', 'A young student concentrating on his laptop'],
   ['jamb-boys-laptop.jpg', 'Two students in school uniform studying together on a laptop'],
   ['jamb-student-library.jpg', 'A student in glasses studying on a laptop in a library'],
+  ['jamb-student-bright.jpg', 'A smiling student typing on her laptop in a bright lecture hall'],
   ['jamb-class-uniform.jpg', 'Secondary-school students in uniform in a classroom'],
   ['jamb-nursing-students.jpg', 'Smiling nursing students in uniform'],
   ['jamb-graduates.jpg', 'Two graduates in academic caps and gowns'],
   ['jamb-graduates-wide.jpg', 'Two graduates in academic caps and gowns (wide)'],
-  ['student-cbt-focus.jpg', 'A student working at a computer in a school CBT lab'],
-  ['students-laptops.jpg', 'Students with laptops on red-and-white steps'],
   ['teacher-guiding.jpg', 'A teacher explaining something on a computer screen to students'],
-  ['students-at-terminals.jpg', 'Students in white school uniforms working at computers'],
   ['cbt-lab-rows.jpg', 'Rows of computers in a CBT lab'],
   ['student-portrait.jpg', 'A smiling student'],
   ['tutor-session.jpg', 'A tutor helping a student'],

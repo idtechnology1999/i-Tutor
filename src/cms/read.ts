@@ -29,7 +29,37 @@ export const link = (v: unknown): CmsLink => {
 };
 
 /** Uploaded images are stored as /uploads/… on the API server. */
-export const mediaSrc = (src: string) => (src.startsWith('/uploads/') && isLive ? `${API_BASE}${src}` : src);
+/* Older built-in photos, replaced by real photos of Nigerian students
+   (public/images/jamb-…, credits in services/pages.ts). Pages saved in the
+   page builder with an old photo show its replacement, so nobody has to
+   re-pick them by hand. Uploaded images are never touched. */
+const UPGRADED_PHOTOS: Record<string, string> = {
+  '/images/student-cbt-focus.jpg': '/images/jamb-students-smiling.jpg',
+  '/images/students-laptops.jpg': '/images/jamb-student-laptop.jpg',
+  '/images/students-at-terminals.jpg': '/images/jamb-class-uniform.jpg',
+};
+
+/** Who took a built-in photo (after the upgrade above), for its credit line. */
+const PHOTO_CREDITS: Record<string, string> = {
+  '/images/jamb-students-smiling.jpg': 'Photo: amazinggraceu on Pexels',
+  '/images/jamb-student-laptop.jpg': 'Photo: Kojo Kwarteng on Unsplash',
+  '/images/jamb-boys-laptop.jpg': 'Photo: Roman Odintsov on Pexels',
+  '/images/jamb-student-library.jpg': 'Photo: Kampus Production on Pexels',
+  '/images/jamb-student-bright.jpg': 'Photo: Yan Krukov on Pexels',
+  '/images/jamb-class-uniform.jpg': 'Photo: Tosin Olowoleni on Pexels',
+  '/images/jamb-nursing-students.jpg': 'Photo: AB Pixels NG on Pexels',
+  '/images/jamb-graduates.jpg': 'Photo: Shot by Khalid on Pexels',
+  '/images/jamb-graduates-wide.jpg': 'Photo: Shot by Khalid on Pexels',
+};
+
+export const sitePhoto = (src: string) => UPGRADED_PHOTOS[src] ?? src;
+/** The right credit for a built-in photo; otherwise the credit an admin typed. */
+export const photoCredit = (src: string, typed: string) => PHOTO_CREDITS[sitePhoto(src)] ?? typed;
+
+export const mediaSrc = (src: string) => {
+  const s = sitePhoto(src);
+  return s.startsWith('/uploads/') && isLive ? `${API_BASE}${s}` : s;
+};
 
 /** Only links we know how to follow; anything else (javascript:, //host) is dropped. */
 export const safeHref = (href: string) => {
