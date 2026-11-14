@@ -529,7 +529,7 @@ export const SetupWizardView: React.FC<Props> = ({ profile, onUpdateProfile, onF
                       Offline Question Bank Caching
                     </div>
                     <p style={{ fontSize: '13px', color: 'var(--slate-600)', marginTop: '2px' }}>
-                      Stores 2,400+ questions locally so you can practise even when mobile data fluctuates.
+                      Keeps your questions on this device so you can practise even when mobile data fluctuates.
                     </p>
                   </div>
                 </div>

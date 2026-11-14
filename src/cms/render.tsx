@@ -259,7 +259,11 @@ const HeroBlock: R = ({ d, id }) => {
   const primary = link(d.primary);
   const secondary = link(d.secondary);
   const stats = useSiteStats();
-  const pill = fillStats(str(d.pill), stats);
+  // Numbers on the photo must be live: a typed-in count ("2,400+ verified past
+  // questions") would go stale or be wrong, so it shows the real count instead.
+  const rawPill = str(d.pill);
+  const typedNumber = /\d/.test(rawPill) && !/\{\w+\}/.test(rawPill);
+  const pill = fillStats(typedNumber ? '{questions} past questions with answers' : rawPill, stats);
   return (
     <section className="lp-hero lp-hero--banner" id={id}>
       <div className="lp-banner">
