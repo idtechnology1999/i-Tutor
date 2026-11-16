@@ -19,7 +19,10 @@ export async function loadProfile(): Promise<UserProfile | null> {
 /** Saves profile changes. The server ignores `plan` — payments set that. */
 export async function saveProfile(patch: Partial<UserProfile>) {
   if (!isLive) return;
-  const { plan: _ignored, ...rest } = patch;
+  const { plan: _ignored, photo, ...rest } = patch;
   void _ignored;
-  if (Object.keys(rest).length) await api('/api/me', { method: 'PATCH', body: rest });
+  // A new photo is saved by its own upload (services/reviews uploadPhoto); here
+  // only removing it ('') is sent.
+  const body = photo === '' ? { ...rest, photo } : rest;
+  if (Object.keys(body).length) await api('/api/me', { method: 'PATCH', body });
 }
