@@ -72,6 +72,8 @@
 .adm-side__nav {
   display: grid;
   gap: 2px;
+  /* Items stay together at the top, however tall the screen. */
+  align-content: start;
 }
 
 .adm-side__item {
@@ -4065,3 +4067,61 @@
 .pay-mode__keys li { display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem; }
 .pay-mode__keys .is-ok { color: #127a43; }
 .pay-mode__keys .is-missing { color: var(--ink-3); }
+
+/* Settings in sections: menu on the left, one section at a time. */
+.set-page { max-width: 1080px; }
+.set-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+.set-nav {
+  position: sticky;
+  top: 16px;
+  display: grid;
+  gap: 2px;
+  padding: 6px;
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  background: #fff;
+}
+.set-nav__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+.set-nav__item:hover { background: var(--mist); color: var(--ink); }
+.set-nav__item.is-on { background: var(--brand-tint, #e6efee); color: var(--brand); font-weight: 600; }
+.set-nav__item.is-danger { margin-top: 6px; border-top: 1px solid var(--rule); border-radius: 0 0 10px 10px; color: #b42318; }
+.set-nav__item.is-danger.is-on { background: #fdecea; color: #b42318; }
+.set-panel { display: grid; gap: 16px; min-width: 0; animation: ui-fade 200ms ease both; }
+.set-panel__head h2 { margin: 0; font-size: 1.25rem; letter-spacing: -0.01em; }
+.set-panel__head p { margin: 4px 0 0; color: var(--ink-3); }
+.set-panel.is-danger .set-panel__head h2 { color: #b42318; }
+
+/* Phones and tablets: the menu becomes a row of tabs above the section. */
+@media (max-width: 860px) {
+  .set-layout { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .set-nav {
+    position: static;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 4px;
+  }
+  .set-nav::-webkit-scrollbar { display: none; }
+  .set-nav__item { flex: none; min-height: 38px; white-space: nowrap; }
+  .set-nav__item.is-danger { margin-top: 0; border-top: 0; border-radius: 10px; }
+}
