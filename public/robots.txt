@@ -4,4 +4,4 @@ Allow: /
 Disallow: /admin
 Disallow: /cms
 
-Sitemap: https://i-tutor-seven.vercel.app/sitemap.xml
+Sitemap: https://www.i-tutor.com.ng/sitemap.xml

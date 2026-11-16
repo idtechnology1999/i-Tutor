@@ -32,7 +32,7 @@ const fromEnvFile = (name) => {
 const setting = (name) => (process.env[name] ?? '').trim() || fromEnvFile(name);
 
 const DIST = path.resolve('dist');
-const SITE = (setting('SITE_URL') || 'https://i-tutor-seven.vercel.app').replace(/\/+$/, '');
+const SITE = (setting('SITE_URL') || 'https://www.i-tutor.com.ng').replace(/\/+$/, '');
 const API = setting('VITE_API_URL').replace(/\/+$/, '');
 const SAMPLES = 5;
 const MIN_QUESTIONS = 3;
