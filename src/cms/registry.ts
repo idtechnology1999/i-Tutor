@@ -590,7 +590,7 @@ export const BLOCKS: BlockDef[] = [
         blank: { name: 'Plan', price: '₦0', period: '/ month', note: '', features: ['A feature'], cta: { label: 'Choose', href: '/upgrade' }, featured: false, tag: '' },
         fields: [
           { kind: 'text', key: 'name', label: 'Plan name' },
-          { kind: 'text', key: 'price', label: 'Price' },
+          { kind: 'text', key: 'price', label: 'Price', help: 'Type {monthlyPrice} or {quarterPrice} to show the price set in Settings → Plans & prices.' },
           { kind: 'text', key: 'period', label: 'After the price', placeholder: '/ month' },
           { kind: 'text', key: 'note', label: 'Note' },
           ticks('features', 'Features'),
@@ -605,7 +605,7 @@ export const BLOCKS: BlockDef[] = [
       title: 'Simple pricing.',
       plans: [
         { name: 'Free', price: '₦0', period: 'forever', note: '', features: ['Topic practice'], cta: { label: 'Start free', href: 'action:cbt' }, featured: false, tag: '' },
-        { name: 'Premium', price: '₦2,500', period: '/ month', note: '', features: ['Unlimited mocks'], cta: { label: 'Get Premium', href: '/upgrade' }, featured: true, tag: 'Most chosen' },
+        { name: 'Premium', price: '{monthlyPrice}', period: '/ month', note: '', features: ['Unlimited mocks'], cta: { label: 'Get Premium', href: '/upgrade' }, featured: true, tag: 'Most chosen' },
       ],
     },
   },

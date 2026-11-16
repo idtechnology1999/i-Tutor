@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { CREDIT_COST, FREE_PROMPTS, KIND_LABEL, PLAN_CREDITS, creditLevel } from '../../services/credits';
+import { nairaText, usePlanPrices } from '../../services/plans';
 import type { Credits } from '../../services/credits';
 
 /* The AI allowance as a ring: what's left out of the total. Green while
@@ -68,11 +69,12 @@ const Prices = () => (
 
 /** What to do next, if anything. */
 const Action: React.FC<{ c: Credits; onUpgrade?: () => void }> = ({ c, onUpgrade }) => {
+  const prices = usePlanPrices();
   if (!onUpgrade) return null;
   if (c.plan === 'free')
     return (
       <button type="button" className="ui-btn ui-btn--primary ui-btn--block" onClick={onUpgrade}>
-        Get {PLAN_CREDITS} AI credits a month · ₦2,500
+        Get {PLAN_CREDITS} AI credits a month · {nairaText(prices.monthly)}
       </button>
     );
   if (c.left / (c.total || 1) <= 0.25)
@@ -133,6 +135,7 @@ export const CreditRing: React.FC<{ credits: Credits | null; onUpgrade?: () => v
 
 /** The dashboard's card: the big ring, the renewal date and where the credits went. */
 export const CreditCard: React.FC<{ credits: Credits | null; onUpgrade?: () => void }> = ({ credits, onUpgrade }) => {
+  const prices = usePlanPrices();
   if (!credits) return null;
   const premium = credits.plan === 'premium';
   return (
@@ -149,7 +152,7 @@ export const CreditCard: React.FC<{ credits: Credits | null; onUpgrade?: () => v
         <p className="credit-card__note">
           {premium
             ? `Renews on ${date(credits.renewsAt)} with ${PLAN_CREDITS} new credits. Unused credits don’t carry over.`
-            : `These don’t renew. Premium gives you ${PLAN_CREDITS} AI credits every month for ₦2,500.`}
+            : `These don’t renew. Premium gives you ${PLAN_CREDITS} AI credits every month for ${nairaText(prices.monthly)}.`}
         </p>
         <Breakdown c={credits} />
         <Prices />

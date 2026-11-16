@@ -90,3 +90,11 @@ export const getPaymentMode = () => api<PaymentModeInfo>('/api/admin/payments');
 
 export const setPaymentMode = (mode: 'test' | 'live', password: string) =>
   api<PaymentModeInfo>('/api/admin/payments', { method: 'PUT', body: { mode, password } });
+
+/* ---------------------------------------------------------- Plan prices */
+
+/** Premium prices in naira (backend routes/admin/payments.ts → /prices). */
+export const getPlanPricesAdmin = () => api<{ monthly: number; quarter: number }>('/api/admin/payments/prices');
+
+export const savePlanPrices = (prices: { monthly: number; quarter: number }, password: string) =>
+  api<{ monthly: number; quarter: number }>('/api/admin/payments/prices', { method: 'PUT', body: { ...prices, password } });

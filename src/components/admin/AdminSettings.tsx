@@ -8,6 +8,7 @@ import {
   RotateCcw,
   ShieldCheck,
   Sparkles,
+  Tag,
   TriangleAlert,
   Upload,
 } from 'lucide-react';
@@ -19,7 +20,7 @@ import type { AdminNav } from './AdminApp';
 import { PageHead } from './AdminApp';
 import { ExamsCard } from './AdminExams';
 import { BackupCard, ResetCard } from './AdminSystem';
-import { PaymentsCard } from './AdminPayments';
+import { PaymentsCard, PricesCard } from './AdminPayments';
 
 /* Admin → Settings, in sections: a menu on the left (a row of tabs on phones)
    and one section at a time. The open section is in the address
@@ -70,7 +71,7 @@ const PasswordCard: React.FC<{ nav: AdminNav }> = ({ nav }) => {
   );
 };
 
-const SECTION_IDS = ['exams', 'payments', 'ai', 'security', 'data', 'danger'] as const;
+const SECTION_IDS = ['exams', 'payments', 'prices', 'ai', 'security', 'data', 'danger'] as const;
 type SectionId = (typeof SECTION_IDS)[number];
 
 const sectionFromHash = (): SectionId => SECTION_IDS.find((id) => window.location.hash === `#${id}`) ?? 'exams';
@@ -214,6 +215,13 @@ export const AdminSettings: React.FC<{ nav: AdminNav; mode: 'live' | 'demo' }> =
           },
         ]
       : []),
+    {
+      id: 'prices',
+      label: 'Plans & prices',
+      icon: Tag,
+      about: 'How much Premium costs. Checkout and every page that shows a price follow what you set here.',
+      body: <PricesCard nav={nav} live={mode === 'live'} />,
+    },
     { id: 'ai', label: 'AI', icon: Sparkles, about: 'The AI behind imports, practice questions, the tutor and the classroom.', body: aiCard },
     ...(mode === 'live'
       ? [{ id: 'security' as const, label: 'Security', icon: ShieldCheck, about: 'Your own admin password.', body: <PasswordCard nav={nav} /> }]
@@ -238,7 +246,7 @@ export const AdminSettings: React.FC<{ nav: AdminNav; mode: 'live' | 'demo' }> =
 
   return (
     <div className="adm-page set-page">
-      <PageHead title="Settings" sub="How i-Tutor runs: exams, payments, AI, your password and backups." />
+      <PageHead title="Settings" sub="How i-Tutor runs: exams, payments and prices, AI, your password and backups." />
       <div className="set-layout">
         <nav className="set-nav" aria-label="Settings sections">
           {sections.map(({ id, label, icon: Icon, danger }) => (

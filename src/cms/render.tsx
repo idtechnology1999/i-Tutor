@@ -20,6 +20,7 @@ import { PageBanner } from '../components/web/PageBanner';
 import { SampleQuestion, ServiceVisual, TeamSection } from '../components/web/HomeWidgets';
 import { BLOCK_DEFS } from './registry';
 import { bool, image, imageStyle, items, lines, link, mediaSrc, photoCredit, str, useCmsEnv } from './read';
+import { nairaText, usePlanPrices } from '../services/plans';
 import { iconFor } from './icons';
 import { Accent, CmsButton, Markdown } from './text';
 import type { BlockData, CmsBlock } from './types';
@@ -641,6 +642,17 @@ const TableBlock: R = ({ d, id }) => (
   </section>
 );
 
+/* A plan's price follows Admin → Settings → Plans & prices: {monthlyPrice} and
+   {quarterPrice} fill in, and the original typed "₦2,500" / "₦6,500" count as
+   those too, so pages saved before prices were editable stay correct. */
+const PlanPrice: React.FC<{ text: string }> = ({ text }) => {
+  const prices = usePlanPrices();
+  const t = text.trim();
+  if (t === '₦2,500' || t === '₦2500') return <>{nairaText(prices.monthly)}</>;
+  if (t === '₦6,500' || t === '₦6500') return <>{nairaText(prices.quarter)}</>;
+  return <>{t.replace('{monthlyPrice}', nairaText(prices.monthly)).replace('{quarterPrice}', nairaText(prices.quarter))}</>;
+};
+
 const PricingBlock: R = ({ d, id }) => (
   <section className="lp-section lp-section--tint" id={id}>
     <div className="lp-wrap">
@@ -668,7 +680,7 @@ const PricingBlock: R = ({ d, id }) => (
                 <h3>{str(p.name)}</h3>
               )}
               <p className="lp-plan__price">
-                {str(p.price)} <small>{str(p.period)}</small>
+                <PlanPrice text={str(p.price)} /> <small>{str(p.period)}</small>
               </p>
               {str(p.note) && <p className="lp-plan__note">{str(p.note)}</p>}
               <ul>

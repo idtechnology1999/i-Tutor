@@ -4125,3 +4125,10 @@
   .set-nav__item { flex: none; min-height: 38px; white-space: nowrap; }
   .set-nav__item.is-danger { margin-top: 0; border-top: 0; border-radius: 10px; }
 }
+
+/* Settings → Plans & prices */
+.prices__input { display: flex; align-items: center; gap: 8px; }
+.prices__input b { color: var(--ink-2); font-weight: 700; }
+.prices__input input { flex: 1; min-width: 0; border: 0; background: transparent; font: inherit; font-size: 1.05rem; font-weight: 600; outline: none; }
+.prices__field small { display: block; margin-top: 4px; }
+.prices__note { margin-top: 8px; font-size: 0.8125rem; }

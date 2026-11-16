@@ -6,6 +6,7 @@ import { VoiceLesson } from './VoiceLesson';
 import { TutorReply } from './TutorReply';
 import { replyForHistory } from '../../lib/tutor-reply';
 import { FREE_PROMPTS, PLAN_CREDITS, canUse, useCredits } from '../../services/credits';
+import { nairaText, planPricesNow, usePlanPrices } from '../../services/plans';
 import { CreditRing } from './CreditRing';
 import type { SolveRequest, TutorPersona } from '../../data/tutors';
 import type { AppView } from '../../lib/router';
@@ -55,7 +56,7 @@ const PAGES = {
 const GUIDE: Array<{ test: RegExp; text: string; links: NavLink[] }> = [
   {
     test: /\b(pay|payment|upgrade|premium|price|pricing|cost|subscribe|subscription|card|ussd|transfer|activate)\b/,
-    text: 'Premium gives you 300 AI credits every month with me, for ₦2,500. Pick a plan, then pay with your card, a bank transfer or USSD. It switches on straight away.',
+    text: 'Premium gives you 300 AI credits every month with me, for {price}. Pick a plan, then pay with your card, a bank transfer or USSD. It switches on straight away.',
     links: [PAGES.upgrade],
   },
   {
@@ -104,7 +105,9 @@ const guideFor = (query: string) => {
   const q = query.toLowerCase();
   // Subject questions ("explain isomers") are tutoring, not navigation.
   if (/\b(explain|solve|calculate|what is|why|isomer|formula|equation)\b/.test(q)) return null;
-  return GUIDE.find((g) => g.test.test(q)) ?? null;
+  const hit = GUIDE.find((g) => g.test.test(q));
+  // {price}: the monthly price set in Admin → Settings → Plans & prices.
+  return hit ? { ...hit, text: hit.text.replace('{price}', nairaText(planPricesNow().monthly)) } : null;
 };
 
 const PROMPTS = [
@@ -124,6 +127,7 @@ export const AITutorDrawer: React.FC<Props> = ({
   tutor,
   solve,
 }) => {
+  const prices = usePlanPrices();
   const [messages, setMessages] = useState<Message[]>(() => [
     {
       sender: 'tutor',
@@ -293,7 +297,7 @@ export const AITutorDrawer: React.FC<Props> = ({
                 onUpgrade?.();
               }}
             >
-              Unlock voice lessons · from ₦2,500/month
+              Unlock voice lessons · from {nairaText(prices.monthly)}/month
             </button>
             <button type="button" className="ui-link voice__back-link" onClick={() => setVoice(false)}>
               Back to chat
@@ -369,7 +373,7 @@ export const AITutorDrawer: React.FC<Props> = ({
                     onUpgrade?.();
                   }}
                 >
-                  {isPremium ? `Renew now · ${PLAN_CREDITS} more credits` : 'Subscribe · ₦2,500/month'}
+                  {isPremium ? `Renew now · ${PLAN_CREDITS} more credits` : 'Subscribe · ' + nairaText(prices.monthly) + '/month'}
                 </button>
               </div>
             ) : (

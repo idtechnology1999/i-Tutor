@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { nairaText, usePlanPrices } from '../../services/plans';
 import { api, isLive } from '../../services/api';
 import { KIND_LABEL } from '../../services/credits';
 import type { AdminNav } from './AdminApp';
@@ -38,7 +39,8 @@ export const AdminAiUsage: React.FC<{ nav: AdminNav }> = () => {
     };
   }, [span]);
 
-  // What the AI costs per paying student over this period, against ₦2,500 a month.
+  // What the AI costs per paying student over this period, against the monthly price.
+  const prices = usePlanPrices();
   const perPremium = data && data.premiumStudents ? (data.totalNaira / data.premiumStudents) * (30 / data.days) : null;
   const saved = data?.kinds.reduce((n, k) => n + k.saved, 0) ?? 0;
 
@@ -74,7 +76,7 @@ export const AdminAiUsage: React.FC<{ nav: AdminNav }> = () => {
             <div className="ui-card">
               <small>AI cost per Premium student, a month</small>
               <strong>{perPremium === null ? '—' : naira(perPremium)}</strong>
-              <em>of ₦2,500 paid</em>
+              <em>of {nairaText(prices.monthly)} paid</em>
             </div>
             <div className="ui-card">
               <small>Answers served from saved explanations (free)</small>

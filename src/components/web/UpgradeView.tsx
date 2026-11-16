@@ -23,6 +23,8 @@ import { TutorPicker } from './TutorPicker';
 import { PageBanner } from './PageBanner';
 import { tutorById } from '../../data/tutors';
 import { PLAN_CREDITS, creditsPaid, useCredits } from '../../services/credits';
+import { nairaText, usePlanPrices } from '../../services/plans';
+import type { PlanPrices } from '../../services/plans';
 import { CreditCard as AiCreditCard } from './CreditRing';
 
 interface Props {
@@ -44,15 +46,21 @@ interface Props {
 type Method = 'card' | 'transfer' | 'ussd';
 type Step = 'plan' | 'pay' | 'processing' | 'done';
 
-const PLANS: Record<PlanId, { name: string; price: number; per: string; note: string; tag?: string }> = {
-  monthly: { name: '1 month', price: 2500, per: 'per month', note: 'Cancel anytime' },
-  quarter: {
-    name: '3 months',
-    price: 6500,
-    per: 'for 3 months',
-    note: 'Covers a full exam season · save ₦1,000',
-    tag: 'Best value',
-  },
+type PlanCard = { name: string; price: number; per: string; note: string; tag?: string };
+
+/** The two plans at the prices set in Admin → Settings → Plans & prices. */
+const plansFor = (p: PlanPrices): Record<PlanId, PlanCard> => {
+  const saving = p.monthly * 3 - p.quarter;
+  return {
+    monthly: { name: '1 month', price: p.monthly, per: 'per month', note: 'Cancel anytime' },
+    quarter: {
+      name: '3 months',
+      price: p.quarter,
+      per: 'for 3 months',
+      note: saving > 0 ? `Covers a full exam season · save ${nairaText(saving)}` : 'Covers a full exam season',
+      tag: saving > 0 ? 'Best value' : undefined,
+    },
+  };
 };
 
 const BENEFITS = [
@@ -131,6 +139,8 @@ export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor
     return { year: now.getFullYear(), month: now.getMonth() + 1 };
   });
 
+  const prices = usePlanPrices();
+  const PLANS = plansFor(prices);
   const amount = PLANS[plan].price;
   const digits = cardNumber.replace(/\D/g, '');
   const brand = cardBrand(digits);
@@ -313,7 +323,7 @@ export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor
               Unlock your <span>AI tutor</span>
             </>
           }
-          lead="300 AI tutor credits a month, step-by-step help on every past question, unlimited practice and voice lessons. ₦2,500 a month."
+          lead={`300 AI tutor credits a month, step-by-step help on every past question, unlimited practice and voice lessons. ${nairaText(prices.monthly)} a month.`}
         />
       )}
       <div className="pay__steps" aria-label="Progress">

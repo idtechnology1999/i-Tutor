@@ -1,9 +1,107 @@
 import React, { useEffect, useState } from 'react';
-import { Check, CreditCard, LoaderCircle, X } from 'lucide-react';
-import { getPaymentMode, setPaymentMode } from '../../services/system';
+import { Check, CreditCard, LoaderCircle, Tag, X } from 'lucide-react';
+import { getPaymentMode, getPlanPricesAdmin, savePlanPrices, setPaymentMode } from '../../services/system';
 import type { PaymentModeInfo } from '../../services/system';
+import { DEFAULT_PRICES, nairaText, setLocalPlanPrices } from '../../services/plans';
 import type { AdminNav } from './AdminApp';
 import { ConfirmDialog } from './AdminSystem';
+
+/* Admin → Settings → Plans & prices: what Premium costs. Checkout charges these
+   and every page that shows a price follows them. Saving needs the super admin
+   password. */
+export const PricesCard: React.FC<{ nav: AdminNav; live: boolean }> = ({ nav, live }) => {
+  const [saved, setSaved] = useState(DEFAULT_PRICES);
+  const [monthly, setMonthly] = useState(String(DEFAULT_PRICES.monthly));
+  const [quarter, setQuarter] = useState(String(DEFAULT_PRICES.quarter));
+  const [error, setError] = useState('');
+  const [confirming, setConfirming] = useState(false);
+
+  useEffect(() => {
+    if (!live) return;
+    getPlanPricesAdmin()
+      .then((p) => {
+        setSaved(p);
+        setMonthly(String(p.monthly));
+        setQuarter(String(p.quarter));
+      })
+      .catch((e: Error) => setError(e.message));
+  }, [live]);
+
+  const m = Number(monthly.replace(/[^\d]/g, ''));
+  const q = Number(quarter.replace(/[^\d]/g, ''));
+  const valid = m >= 100 && q >= 100 && m <= 1_000_000 && q <= 1_000_000;
+  const changed = m !== saved.monthly || q !== saved.quarter;
+  const saving = m * 3 - q;
+
+  const field = (label: string, value: string, set: (v: string) => void, hint: string) => (
+    <label className="adm-field prices__field">
+      <span>{label}</span>
+      <div className="adm-input adm-input--icon prices__input">
+        <b aria-hidden>₦</b>
+        <input inputMode="numeric" value={value} onChange={(e) => set(e.target.value.replace(/[^\d,]/g, ''))} aria-label={`${label} in naira`} />
+      </div>
+      <small className="adm-muted">{hint}</small>
+    </label>
+  );
+
+  return (
+    <section className="adm-card prices" aria-labelledby="prices-title">
+      <h2 className="adm-card__title" id="prices-title">
+        <Tag size={18} aria-hidden /> Premium prices
+      </h2>
+      <p className="adm-muted">
+        What students pay for Premium. Checkout charges these amounts, and the upgrade page, the home page plans, the credits card and the tutor all
+        show them.
+      </p>
+      <div className="adm-grid-2">
+        {field('1 month', monthly, setMonthly, 'Shown as the monthly price.')}
+        {field('3 months', quarter, setQuarter, saving > 0 ? `Students save ${nairaText(saving)} against 3 single months.` : 'No saving against 3 single months.')}
+      </div>
+      {!valid && <p className="adm-error">Each price must be between ₦100 and ₦1,000,000.</p>}
+      {error && <p className="adm-error">{error}</p>}
+      {!live ? (
+        <p className="adm-muted">Demo mode: prices are saved on the live site only.</p>
+      ) : (
+        <div className="adm-row-actions">
+          <button type="button" className="adm-btn adm-btn--primary" disabled={!valid || !changed} onClick={() => setConfirming(true)}>
+            Save prices
+          </button>
+          {changed && (
+            <button
+              type="button"
+              className="adm-btn"
+              onClick={() => {
+                setMonthly(String(saved.monthly));
+                setQuarter(String(saved.quarter));
+              }}
+            >
+              Undo
+            </button>
+          )}
+        </div>
+      )}
+      <p className="adm-muted prices__note">
+        Students who already paid keep what they paid for. New prices apply to the next payment.
+      </p>
+
+      {confirming && (
+        <ConfirmDialog
+          title="Change Premium prices"
+          message={`From now on: ${nairaText(m)} for 1 month and ${nairaText(q)} for 3 months.`}
+          action="Save prices"
+          onClose={() => setConfirming(false)}
+          onConfirm={async (password) => {
+            const next = await savePlanPrices({ monthly: m, quarter: q }, password);
+            setSaved(next);
+            setLocalPlanPrices(next);
+            setConfirming(false);
+            nav.notify('Prices saved. The site shows them now.');
+          }}
+        />
+      )}
+    </section>
+  );
+};
 
 /* Admin → Settings → Payments: switch Paystack between Test (no real money)
    and Live (real payments). The secret keys stay in the server's .env; this

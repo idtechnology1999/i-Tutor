@@ -255,7 +255,7 @@ export const HOME_BLOCKS: CmsBlock[] = [
         },
         {
           name: 'Premium',
-          price: '₦2,500',
+          price: '{monthlyPrice}',
           period: '/ month',
           note: 'Pay with card, bank transfer or USSD. Cancel anytime.',
           features: ['Unlimited CBT mocks', '300 AI tutor credits every month', 'Personal weekly study plan', 'Topic-level mastery reports', 'Voice lessons with your tutor'],
