@@ -5,6 +5,7 @@ import type { DiagnosticQuestion } from '../../types';
 import type { TutorPersona } from '../../data/tutors';
 import { useTutorThreads } from '../../lib/useTutorThreads';
 import { TutorAvatar, TutorThread } from './TutorThread';
+import { RateUsCard } from './RateUsCard';
 
 /* After an exam: the result, then the student's tutor goes through the paper
    with them one question at a time — the missed ones first — and explains
@@ -31,6 +32,8 @@ interface Props {
   retakeLabel?: string;
   /** The small heading over the title. */
   eyebrow?: string;
+  /** After an exam: ask the student to rate i-Tutor (once; see RateUsCard). */
+  askRating?: boolean;
 }
 
 const ScoreRing: React.FC<{ pct: number }> = ({ pct }) => {
@@ -66,6 +69,7 @@ export const ExamReview: React.FC<Props> = ({
   backLabel = 'Back to dashboard',
   retakeLabel = 'New set of questions',
   eyebrow,
+  askRating = false,
 }) => {
   const isRight = (q: DiagnosticQuestion) => answers[q.id] === q.correctAnswer;
   const isSkipped = (q: DiagnosticQuestion) => !answers[q.id];
@@ -182,6 +186,9 @@ export const ExamReview: React.FC<Props> = ({
           )}
         </div>
       </section>
+
+      {/* Rate i-Tutor: asked once, right after the result. */}
+      {askRating && <RateUsCard />}
 
       {/* ------------------------------------------------------------- Tutor */}
       <section className="ui-card xr-tutor">

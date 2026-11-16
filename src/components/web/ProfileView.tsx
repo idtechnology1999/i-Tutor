@@ -4,6 +4,8 @@ import { ArrowLeft, BadgeCheck, Bell, GraduationCap, LockOpen, LogOut, PencilLin
 import { setReminders, useProgress } from '../../services/progress';
 import type { UserProfile } from '../../types';
 import { SetupWizardView } from './SetupWizardView';
+import { AboutYouCard } from './AboutYouCard';
+import { StudentAvatar } from './StudentAvatar';
 
 interface Props {
   profile: UserProfile;
@@ -38,14 +40,21 @@ export const ProfileView: React.FC<Props> = ({ profile, onUpdateProfile, onUpgra
   return (
     <div className="ui-page profile">
       <header className="profile__head">
-        <span className="profile__avatar" aria-hidden>
-          {profile.fullName.charAt(0).toUpperCase()}
-        </span>
+        {profile.photo || profile.gender ? (
+          <StudentAvatar photo={profile.photo} gender={profile.gender} name={profile.fullName} size={64} />
+        ) : (
+          <span className="profile__avatar" aria-hidden>
+            {profile.fullName.charAt(0).toUpperCase()}
+          </span>
+        )}
         <div>
           <h1>{profile.fullName}</h1>
           <p>{profile.phoneOrEmail}</p>
         </div>
       </header>
+
+      {/* Photo and gender: shown with any review the student writes. */}
+      <AboutYouCard profile={profile} onUpdateProfile={onUpdateProfile} />
 
       <section className={`ui-card profile__plan${isPremium ? ' is-premium' : ''}`}>
         <div>

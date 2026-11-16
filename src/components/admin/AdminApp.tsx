@@ -11,6 +11,7 @@ import {
   ListChecks,
   LogOut,
   Newspaper,
+  Star,
   ScanText,
   ShieldCheck,
   Settings,
@@ -29,6 +30,7 @@ import { AdminQuestions } from './AdminQuestions';
 import { AdminPractice } from './AdminPractice';
 import { AdminImport } from './AdminImport';
 import { AdminNews } from './AdminNews';
+import { AdminReviews } from './AdminReviews';
 import { AdminSettings } from './AdminSettings';
 import { AdminCourses } from './AdminCourses';
 import { AdminPostUtme } from './AdminPostUtme';
@@ -53,6 +55,7 @@ export type Section =
   | 'postutme'
   | 'courses'
   | 'news'
+  | 'reviews'
   | 'cms'
   | 'users'
   | 'ai'
@@ -98,6 +101,7 @@ const NAV: Array<{ id: Section; label: string; icon: typeof LayoutDashboard }> =
   { id: 'postutme', label: 'Post-UTME', icon: Landmark },
   { id: 'courses', label: 'Courses', icon: GraduationCap },
   { id: 'news', label: 'News', icon: Newspaper },
+  { id: 'reviews', label: 'Reviews', icon: Star },
   // Website pages: opens the CMS (/cms), its own full-screen area.
   { id: 'cms', label: 'CMS', icon: LayoutTemplate },
   { id: 'users', label: 'Users', icon: UsersRound },
@@ -117,6 +121,7 @@ const SECTION_PATH: Record<Section, string> = {
   postutme: '/admin/post-utme',
   courses: '/admin/courses',
   news: '/admin/news',
+  reviews: '/admin/reviews',
   cms: '/cms',
   users: '/admin/users',
   ai: '/admin/ai-usage',
@@ -336,6 +341,7 @@ export const AdminApp: React.FC<{
         {section === 'postutme' && <AdminPostUtme nav={nav} />}
         {section === 'courses' && <AdminCourses nav={nav} />}
         {section === 'news' && <AdminNews nav={nav} />}
+        {section === 'reviews' && <AdminReviews nav={nav} mode={mode} />}
         {section === 'users' && <AdminUsers nav={nav} mode={mode} />}
         {section === 'ai' && <AdminAiUsage nav={nav} />}
         {section === 'reports' && <AdminReports nav={nav} me={account ?? null} />}

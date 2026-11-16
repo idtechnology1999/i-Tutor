@@ -490,6 +490,7 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
         onExit={onExit}
         onRetake={() => void start()}
         onUpgrade={onUpgrade}
+        askRating
       />
     );
   }

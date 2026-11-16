@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { BlockList } from '../../cms/render';
+import type { CmsBlock } from '../../cms/types';
+
+const REVIEWS_BLOCK: CmsBlock = { id: 'home-reviews', type: 'reviews', data: { kicker: 'Student reviews', title: 'What students say about *i-Tutor.*', body: '' } };
+const withReviews = (blocks: CmsBlock[]): CmsBlock[] => {
+  if (blocks.some((b) => b.type === 'reviews')) return blocks;
+  const at = blocks.findIndex((b) => b.type === 'pricing' || b.type === 'faq');
+  return at < 0 ? [...blocks, REVIEWS_BLOCK] : [...blocks.slice(0, at), REVIEWS_BLOCK, ...blocks.slice(at)];
+};
 import { HOME_BLOCKS } from '../../cms/home';
 import { usePublicPage } from '../../cms/usePage';
 import { HOME_SLUG } from '../../services/pages';
@@ -41,7 +49,10 @@ export const HomePageView: React.FC = () => {
 
   // While the first visit loads, keep the space instead of flashing the built-in page.
   if (state.status === 'loading') return <div className="lp cms-loading" aria-busy="true" />;
-  const blocks = state.status === 'ready' ? state.page.blocks : HOME_BLOCKS;
+  const saved = state.status === 'ready' ? state.page.blocks : HOME_BLOCKS;
+  // Student reviews: a home page saved before the reviews section existed gets it
+  // just before the plans (or the FAQ). It shows only when there are approved reviews.
+  const blocks = withReviews(saved);
 
   return (
     <div className="lp">

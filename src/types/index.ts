@@ -54,6 +54,10 @@ export interface UserProfile {
   plan?: 'free' | 'premium';
   /** Premium: the personal AI tutor the student picked (see data/tutors). */
   tutorId?: string;
+  /** For the default avatar on reviews when there is no photo. */
+  gender?: 'female' | 'male' | '';
+  /** The student's own photo, /uploads/… */
+  photo?: string;
 }
 
 export type NetworkMode = '4G' | 'SLOW_3G' | 'OFFLINE';

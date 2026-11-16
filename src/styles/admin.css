@@ -4132,3 +4132,17 @@
 .prices__input input { flex: 1; min-width: 0; border: 0; background: transparent; font: inherit; font-size: 1.05rem; font-weight: 600; outline: none; }
 .prices__field small { display: block; margin-top: 4px; }
 .prices__note { margin-top: 8px; font-size: 0.8125rem; }
+
+/* Admin → Reviews */
+.rvx-tabs { display: inline-flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--mist); margin-bottom: 16px; }
+.rvx-tabs button { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 14px; border: 0; border-radius: 9px; background: transparent; font: inherit; font-weight: 500; color: var(--ink-2); cursor: pointer; }
+.rvx-tabs button.is-on { background: #fff; color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
+.rvx-tabs__n { min-width: 20px; padding: 0 6px; border-radius: 999px; background: var(--brand); color: #fff; font-size: 0.75rem; line-height: 20px; text-align: center; }
+.rvx-list { display: grid; gap: 14px; }
+.rvx__who { display: flex; align-items: center; gap: 12px; }
+.rvx__who div { display: grid; flex: 1; min-width: 0; }
+.rvx__who small { color: var(--ink-3); }
+.rvx__stars { display: inline-flex; gap: 2px; color: #d5dcdb; }
+.rvx__stars .is-on { color: #f5a524; fill: #f5a524; }
+.rvx__text { margin: 12px 0 14px; line-height: 1.6; }
+.rvx-empty { color: var(--ink-3); }

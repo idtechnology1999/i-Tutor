@@ -17,6 +17,7 @@ import {
   Presentation,
   Rows3,
   Sparkles,
+  Star,
   Table2,
   UsersRound,
   Video,
@@ -617,6 +618,15 @@ export const BLOCKS: BlockDef[] = [
     icon: UsersRound,
     fields: [kicker, title],
     defaults: { kicker: 'Meet the team', title: 'The people behind *i-Tutor.*' },
+  },
+  {
+    type: 'reviews',
+    label: 'Student reviews',
+    description: 'A sliding carousel of reviews students sent after their exams. Only reviews you approved in Admin → Reviews appear; it stays hidden until there is one.',
+    category: 'Site sections',
+    icon: Star,
+    fields: [kicker, title, body()],
+    defaults: { kicker: 'Student reviews', title: 'What students say about *i-Tutor.*', body: '' },
   },
   {
     type: 'faq',

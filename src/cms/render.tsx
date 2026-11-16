@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ArrowRight,
+  BookOpenCheck,
   Building2,
   ChartNoAxesColumnIncreasing,
   Check,
@@ -8,7 +9,6 @@ import {
   GraduationCap,
   Landmark,
   MessageSquareText,
-  WifiOff,
 } from 'lucide-react';
 import { initMotion } from '../lib/motion';
 import { allExams, isLiveExam, useExams } from '../lib/exams';
@@ -16,6 +16,7 @@ import { useScrollProgress } from '../lib/ui';
 import { CbtPreview, TutorPreview } from '../components/web/ProductPreviews';
 import { ServiceSection } from '../components/web/ServiceSection';
 import { NewsSection } from '../components/web/NewsSection';
+import { ReviewsCarousel } from '../components/web/ReviewsCarousel';
 import { PageBanner } from '../components/web/PageBanner';
 import { SampleQuestion, ServiceVisual, TeamSection } from '../components/web/HomeWidgets';
 import { BLOCK_DEFS } from './registry';
@@ -32,6 +33,18 @@ import { fillStats, useSiteStats } from '../lib/site-stats';
 type R = React.FC<{ d: BlockData; id?: string }>;
 
 const arrow = <ArrowRight size={18} aria-hidden />;
+
+/* Claims the site no longer makes. Pages saved in the page builder before they
+   were dropped still hold them, so they're left out here:
+   - offline study ("Works offline", "Does it work without data?"), which isn't offered;
+   - "checked by two independent subject teachers": answers are worked out and
+     explained, not reviewed by two teachers. */
+const offlineClaim = (s: string) => /\boffline\b|without data|no connection/i.test(s);
+const honestAnswer = (s: string) =>
+  s.replace(
+    /Each one is transcribed, then checked by two independent subject teachers\./,
+    'Each one comes with its correct answer and an explanation of why.',
+  );
 const PANELS = new Set(['mist', 'orange', 'orange-solid', 'ink']);
 
 const Img: React.FC<{ v: unknown; className?: string; eager?: boolean; width?: number; height?: number }> = ({ v, className, eager, width, height }) => {
@@ -369,7 +382,9 @@ const ShowcaseBlock: R = ({ d, id }) => (
       </div>
       <div className="lp-carve-br">
         <ul className="lp-carve-chips">
-          {items(d.chips).map((c, i) => {
+          {items(d.chips)
+            .filter((c) => str(c.icon) !== 'offline' && !offlineClaim(str(c.label)))
+            .map((c, i) => {
             const Icon = iconFor(c.icon);
             return (
               <li key={i}>
@@ -397,7 +412,7 @@ const ServiceBlock: R = ({ d, id }) => {
       title={<Accent text={str(d.title)} />}
       lead={str(d.lead)}
       when={str(d.when) || undefined}
-      points={lines(d.points)}
+      points={lines(d.points).filter((p) => !offlineClaim(p))}
       panel={(PANELS.has(panel) ? panel : 'orange') as 'orange'}
       deco={(['steps-a', 'steps-b', 'steps-c'].includes(str(d.deco)) ? str(d.deco) : 'steps-b') as 'steps-a'}
       flip={bool(d.flip)}
@@ -510,17 +525,26 @@ const FeaturesBlock: R = ({ d, id }) => (
             </div>
           </div>
         </div>
-        <div className="lp-mini" data-reveal data-reveal-delay={70}>
-          <WifiOff size={22} aria-hidden />
-          <h4>{str(d.m2Title)}</h4>
-          <p>{str(d.m2Body)}</p>
-          <div className="lp-download" aria-hidden>
-            <span>Physics pack · 18 MB</span>
-            <span className="lp-download__ok">
-              <Check size={14} /> Ready offline
-            </span>
+        {offlineClaim(str(d.m2Title) + str(d.m2Body)) ? (
+          // The old "Study without data" card: offline study isn't offered, so a true card stands in.
+          <div className="lp-mini" data-reveal data-reveal-delay={70}>
+            <BookOpenCheck size={22} aria-hidden />
+            <h4>Every answer explained</h4>
+            <p>Real JAMB past questions, each with the correct answer and a clear explanation of why.</p>
+            <div className="lp-download" aria-hidden>
+              <span>English · Maths · Sciences · Arts</span>
+              <span className="lp-download__ok">
+                <Check size={14} /> Answers explained
+              </span>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="lp-mini" data-reveal data-reveal-delay={70}>
+            <BookOpenCheck size={22} aria-hidden />
+            <h4>{str(d.m2Title)}</h4>
+            <p>{str(d.m2Body)}</p>
+          </div>
+        )}
         <div className="lp-mini" data-reveal data-reveal-delay={140}>
           <Building2 size={22} aria-hidden />
           <h4>{str(d.m3Title)}</h4>
@@ -704,6 +728,20 @@ const TeamBlock: R = ({ d, id }) => {
   return <TeamSection id={id} kicker={str(d.kicker)} title={str(d.title)} editing={editing} />;
 };
 
+/** Students' approved reviews in a carousel; hidden until there is one. */
+const ReviewsBlock: R = ({ d, id }) => (
+  <div id={id}>
+    <ReviewsCarousel
+      header={
+        <>
+          <Head d={d} panel={false} center />
+          {str(d.body) && <p className="lp-body rv__lead">{str(d.body)}</p>}
+        </>
+      }
+    />
+  </div>
+);
+
 const FaqBlock: R = ({ d, id }) => {
   const [open, setOpen] = useState(0);
   const panel = str(d.panel, 'orange');
@@ -720,7 +758,9 @@ const FaqBlock: R = ({ d, id }) => {
           )}
         </header>
         <div className="lp-faq__list">
-          {items(d.items).map((item, index) => {
+          {items(d.items)
+            .filter((item) => !offlineClaim(str(item.q)))
+            .map((item, index) => {
             const isOpen = open === index;
             return (
               <div className={`lp-faq__item ${isOpen ? 'is-open' : ''}`} key={index}>
@@ -731,7 +771,7 @@ const FaqBlock: R = ({ d, id }) => {
                 </button>
                 <div className="lp-faq__answer" inert={!isOpen}>
                   <div>
-                    <p>{str(item.a)}</p>
+                    <p>{honestAnswer(str(item.a))}</p>
                   </div>
                 </div>
               </div>
@@ -787,6 +827,7 @@ const RENDERERS: Record<string, R> = {
   table: TableBlock,
   pricing: PricingBlock,
   team: TeamBlock,
+  reviews: ReviewsBlock,
   faq: FaqBlock,
   cta: CtaBlock,
   news: NewsBlock,

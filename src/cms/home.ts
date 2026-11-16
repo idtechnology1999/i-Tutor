@@ -20,8 +20,8 @@ export const FEATURES_DEFAULTS: BlockData = {
   tutorLink: { label: 'Ask the tutor something', href: 'action:tutor' },
   m1Title: 'Know your weak topics',
   m1Body: 'Mastery for every topic and subtopic, updated after each session.',
-  m2Title: 'Study without data',
-  m2Body: 'Download a subject once. Mocks run fully offline and sync when you reconnect.',
+  m2Title: 'Every answer explained',
+  m2Body: 'Real JAMB past questions, each with the correct answer and a clear explanation of why.',
   m3Title: 'Admission news you can trust',
   m3Body: 'Cut-offs, deadlines and Post-UTME dates — each with its official source and the date we last checked it.',
   m3Link: { label: 'See latest updates', href: '/dashboard' },
@@ -92,7 +92,6 @@ export const HOME_BLOCKS: CmsBlock[] = [
       chips: [
         { icon: 'chart', label: 'Real CBT practice' },
         { icon: 'chat', label: 'AI tutor, any time' },
-        { icon: 'offline', label: 'Works offline' },
       ],
       cta: { label: 'Start free', href: 'action:cbt' },
       credit: 'Photo: Kojo Kwarteng on Unsplash',
@@ -148,7 +147,7 @@ export const HOME_BLOCKS: CmsBlock[] = [
     title: 'For *technical and business* students.',
     lead: 'National Business and Technical Examinations Board certificate exams. Practise your subjects and get help from the AI tutor.',
     when: 'May/June and Nov/Dec series',
-    points: ['Practice built around your subjects', 'Past questions as they are added', 'Study offline once downloaded'],
+    points: ['Practice built around your subjects', 'Past questions as they are added', 'Explanations for every answer'],
     panel: 'orange',
     deco: 'steps-c',
     cta: 'Start NABTEB practice',
@@ -282,12 +281,8 @@ export const HOME_BLOCKS: CmsBlock[] = [
           a: 'No. The tutor asks guiding questions and gives hints until you reach the answer yourself. If you are really stuck it shows a worked step, but it never simply names the option letter.',
         },
         {
-          q: 'Does it work without data?',
-          a: 'Yes. Download a subject pack once and the full CBT runs in your browser with no connection. Your attempts are saved on the device and sync when you are back online.',
-        },
-        {
           q: 'Where do the past questions come from?',
-          a: 'From official JAMB, WAEC, NECO and institutional papers. Each one is transcribed, then checked by two independent subject teachers. You can see the year and source on every question.',
+          a: 'From official JAMB, WAEC, NECO and institutional papers. Each one comes with its correct answer and an explanation of why. You can see the year and source on every question.',
         },
         {
           q: 'Which subjects are available?',

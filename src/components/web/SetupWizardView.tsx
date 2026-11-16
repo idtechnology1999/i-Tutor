@@ -1,3 +1,4 @@
+import { AboutYouCard } from './AboutYouCard';
 import React, { useState } from 'react';
 import { ExamPicker } from './ExamPicker';
 import { examsOf, hasSchoolCert, toggleExam } from '../../lib/student-exams';
@@ -108,7 +109,7 @@ export const SetupWizardView: React.FC<Props> = ({ profile, onUpdateProfile, onF
           </div>
 
           <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)', borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '16px' }}>
-            🔒 All study data is preserved locally. Works seamlessly on low-bandwidth and offline connections.
+            🔒 Your choices are saved to your account, so you can change them any time.
           </div>
         </aside>
 
@@ -128,6 +129,8 @@ export const SetupWizardView: React.FC<Props> = ({ profile, onUpdateProfile, onF
                   Tick all that apply — you can change this any time.
                 </p>
               </div>
+
+              <AboutYouCard profile={profile} onUpdateProfile={onUpdateProfile} />
 
               <ExamPicker
                 selected={examsOf(profile)}
