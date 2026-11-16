@@ -59,7 +59,10 @@ const storedTutor = () => {
   }
 };
 
-const DEFAULT_PROFILE: UserProfile = {
+/* The sample student ("Amina") exists only for demo mode, where there is no
+   server. On the live site everyone starts blank: visitors never see her, and
+   a new student's sign-up isn't pre-filled with her choices. */
+const SAMPLE_PROFILE: UserProfile = {
   fullName: 'Amina Chinedu',
   phoneOrEmail: '0801 234 5678',
   track: 'both',
@@ -78,6 +81,28 @@ const DEFAULT_PROFILE: UserProfile = {
   diagnosticScore: 78,
   plan: 'free',
 };
+
+const BLANK_PROFILE: UserProfile = {
+  fullName: '',
+  phoneOrEmail: '',
+  track: 'jamb',
+  exams: ['UTME'],
+  selectedSubjects: [],
+  targetInstitution: '',
+  targetInstitutionType: 'Federal',
+  targetCourse: '',
+  targetFaculty: '',
+  examMonth: '',
+  targetScore: 0,
+  dailyCommitment: '1hour',
+  notificationsEnabled: false,
+  offlineCacheEnabled: false,
+  diagnosticCompleted: false,
+  diagnosticScore: 0,
+  plan: 'free',
+};
+
+const DEFAULT_PROFILE: UserProfile = isLive ? BLANK_PROFILE : SAMPLE_PROFILE;
 
 const TITLES: Record<AppView, string> = {
   home: 'i-Tutor — JAMB practice that teaches',
@@ -105,6 +130,11 @@ const TITLES: Record<AppView, string> = {
   page: 'i-Tutor',
 };
 
+/** Pages only a signed-in student may open (live site). */
+const STUDENT_ONLY: ReadonlySet<AppView> = new Set<AppView>(['dashboard', 'cbt', 'syllabus', 'classroom', 'course', 'postutme', 'upgrade', 'setup']);
+/** Where a visitor was going before being asked to sign up or log in. */
+const NEXT_KEY = 'itutor-after-login';
+
 export function App() {
   const { view: activeView, path, navigate } = useRouter();
   const [profile, setProfile] = useState<UserProfile>(() => ({ ...DEFAULT_PROFILE, plan: storedPlan(), tutorId: storedTutor() }));
@@ -112,6 +142,9 @@ export function App() {
   // candidate actually went through A04/A05 rather than on the profile being
   // non-empty.
   const [hasAccount, setHasAccount] = useState(false);
+  // Live: whether we've asked the server who is signed in yet. Until then the
+  // student pages show a loading screen, never the built-in sample profile.
+  const [authChecked, setAuthChecked] = useState(!isLive);
   const [isTutorOpen, setIsTutorOpen] = useState(false);
   // The tutor drawer's code is fetched on first open and kept after that.
   const [tutorLoaded, setTutorLoaded] = useState(false);
@@ -124,6 +157,33 @@ export function App() {
   const inApp = isAppView(activeView);
 
   const goTo = (view: AppView) => navigate(pathForView(view));
+
+  // Student pages need a signed-in student on the live site: visitors are sent
+  // to sign up (which links to log in), then brought back to the page they
+  // wanted, e.g. /upgrade to pay. Demo mode keeps its sample student.
+  const needsLogin = isLive && STUDENT_ONLY.has(activeView);
+  const waitingForLogin = needsLogin && (!authChecked || !hasAccount);
+  useEffect(() => {
+    if (!needsLogin || !authChecked || hasAccount) return;
+    try {
+      window.sessionStorage.setItem(NEXT_KEY, window.location.pathname + window.location.search);
+    } catch {
+      /* storage blocked: they land on the dashboard instead */
+    }
+    navigate(pathForView('signup'), { replace: true });
+  }, [needsLogin, authChecked, hasAccount, navigate]);
+  useEffect(() => {
+    // Signed in and past sign-up/onboarding: back to where they were going.
+    if (!hasAccount || isAccountFlowView(activeView)) return;
+    let next = '';
+    try {
+      next = window.sessionStorage.getItem(NEXT_KEY) ?? '';
+      window.sessionStorage.removeItem(NEXT_KEY);
+    } catch {
+      /* nothing saved */
+    }
+    if (next && next !== window.location.pathname + window.location.search) navigate(next, { replace: true });
+  }, [hasAccount, activeView, navigate]);
 
   // The exams switched on in Admin → Settings → Exams (admins load all of them in AdminApp).
   const examList = useExams();
@@ -228,12 +288,14 @@ export function App() {
 
   // With a backend, the signed-in student (incl. their real plan) comes from the server.
   const refreshProfile = () =>
-    loadProfile().then((me) => {
-      if (me) {
-        setProfile(me);
-        setHasAccount(true);
-      }
-    });
+    loadProfile()
+      .then((me) => {
+        if (me) {
+          setProfile(me);
+          setHasAccount(true);
+        }
+      })
+      .finally(() => setAuthChecked(true));
 
   useEffect(() => {
     if (isLive) {
@@ -286,6 +348,10 @@ export function App() {
         <AdminApp path={path} navigate={navigate} onExit={() => goTo('home')} />
       </Suspense>
     );
+
+  // A student page while we check who is signed in (or on the way to sign-up):
+  // a plain loading screen, never the built-in sample student.
+  if (waitingForLogin) return <div className="page-loading" aria-busy="true" />;
 
   return (
     <div className="app-container">
