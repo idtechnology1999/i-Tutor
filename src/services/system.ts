@@ -74,3 +74,19 @@ export const resetExam = (exam: string, password: string, confirm: string) =>
     body: { password, confirm },
     timeout: 300_000,
   });
+
+/* ---------------------------------------------------------- Payments mode */
+
+/** Paystack test or live (backend routes/admin/payments.ts). Keys never come here, only whether each is installed. */
+export interface PaymentModeInfo {
+  mode: 'test' | 'live';
+  testKey: boolean;
+  liveKey: boolean;
+  changedBy: string;
+  changedAt: string | null;
+}
+
+export const getPaymentMode = () => api<PaymentModeInfo>('/api/admin/payments');
+
+export const setPaymentMode = (mode: 'test' | 'live', password: string) =>
+  api<PaymentModeInfo>('/api/admin/payments', { method: 'PUT', body: { mode, password } });

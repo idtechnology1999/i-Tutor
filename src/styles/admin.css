@@ -4015,3 +4015,53 @@
   gap: 10px;
   align-items: flex-start;
 }
+
+/* Settings → Payments: Paystack test or live. */
+.pay-mode__now {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 4px 0 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--rule);
+}
+.pay-mode__now p { margin: 0; line-height: 1.5; }
+.pay-mode__now.is-test { background: #fff8eb; border-color: #f2d49b; }
+.pay-mode__now.is-live { background: #ecf8f1; border-color: #9fd8b6; }
+.pay-mode__badge {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  color: #fff;
+}
+.is-test .pay-mode__badge { background: #b26a00; }
+.is-live .pay-mode__badge { background: #127a43; }
+.pay-mode__switch {
+  display: inline-flex;
+  padding: 4px;
+  gap: 4px;
+  border-radius: 12px;
+  background: var(--mist);
+}
+.pay-mode__switch button {
+  min-width: 96px;
+  min-height: 40px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pay-mode__switch button.is-on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); cursor: default; }
+.pay-mode__switch button.is-on.is-live { background: #127a43; color: #fff; }
+.pay-mode__switch button:disabled { opacity: 1; }
+.pay-mode__keys { list-style: none; display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 14px 0 6px; padding: 0; }
+.pay-mode__keys li { display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem; }
+.pay-mode__keys .is-ok { color: #127a43; }
+.pay-mode__keys .is-missing { color: var(--ink-3); }

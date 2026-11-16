@@ -7,6 +7,7 @@ import type { AdminNav } from './AdminApp';
 import { PageHead } from './AdminApp';
 import { ExamsCard } from './AdminExams';
 import { BackupCard, ResetCard } from './AdminSystem';
+import { PaymentsCard } from './AdminPayments';
 
 /** Any admin can change their own password here (forgotten ones: the sign-in screen). */
 const PasswordCard: React.FC<{ nav: AdminNav }> = ({ nav }) => {
@@ -104,6 +105,9 @@ export const AdminSettings: React.FC<{ nav: AdminNav; mode: 'live' | 'demo' }> =
       <ExamsCard nav={nav} />
 
       {mode === 'live' && <PasswordCard nav={nav} />}
+
+      {/* Paystack test or live (live site only: demo mode takes no payments). */}
+      {mode === 'live' && <PaymentsCard nav={nav} />}
 
       <section className="adm-card">
         <h2 className="adm-card__title">AI connection</h2>
