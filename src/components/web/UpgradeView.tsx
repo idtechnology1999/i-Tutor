@@ -447,6 +447,24 @@ export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor
             ))}
           </div>
 
+          {/* Live: details are entered on Paystack's secure page, never here. For a
+              transfer, Paystack shows a real account number made for this payment. */}
+          {isLive ? (
+            <div className="pay__form">
+              <p className="pay__help">
+                {method === 'card'
+                  ? 'You’ll enter your card details on Paystack’s secure page. i-Tutor never sees your card number.'
+                  : method === 'transfer'
+                    ? 'Paystack will show you an account number for this payment. Send exactly the amount shown from your bank app; Premium switches on as soon as it arrives.'
+                    : 'Paystack will show you the USSD code for your bank. Dial it on the phone linked to your account.'}
+              </p>
+              <button type="button" className="ui-btn ui-btn--primary ui-btn--block ui-btn--lg" onClick={confirmPayment}>
+                <Lock size={18} aria-hidden /> Continue to secure payment · {naira(amount)}
+              </button>
+              <p className="pay__fine">Secured by Paystack. You’ll come back here when it’s done.</p>
+            </div>
+          ) : (
+            <>
           {method === 'card' && (
             <form className="pay__form" onSubmit={onPayCard} noValidate>
               <label className="pay__field">
@@ -575,6 +593,8 @@ export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor
                 I’ve completed the USSD payment
               </button>
             </div>
+          )}
+            </>
           )}
         </section>
       )}
