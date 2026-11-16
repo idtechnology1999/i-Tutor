@@ -80,7 +80,7 @@ const DEFAULT_PROFILE: UserProfile = {
 };
 
 const TITLES: Record<AppView, string> = {
-  home: 'i-Tutor — JAMB, WAEC, NECO & Post-UTME practice that teaches',
+  home: 'i-Tutor — JAMB practice that teaches',
   cbt: 'JAMB Exam — i-Tutor',
   syllabus: 'Past questions — i-Tutor',
   dashboard: 'Home — i-Tutor',
@@ -456,7 +456,7 @@ export function App() {
         <footer className="app-footer">
           <div className="container app-footer__inner">
             <span>
-              <strong>i-Tutor</strong> · JAMB, WAEC, NECO &amp; Post-UTME practice
+              <strong>i-Tutor</strong> · {liveExamNames() || 'JAMB'} practice
             </span>
             <span>© 2026 i-Tutor · Not affiliated with JAMB</span>
           </div>

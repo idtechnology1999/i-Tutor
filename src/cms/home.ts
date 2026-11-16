@@ -175,7 +175,7 @@ export const HOME_BLOCKS: CmsBlock[] = [
       panel: 'orange-solid',
       items: [
         { icon: 'join', title: 'Create your account', body: 'Email or Google. Two minutes, works on any phone browser.' },
-        { icon: 'target', title: 'Set your exam goal', body: 'JAMB, WAEC, NECO, GCE or Post-UTME — pick your exams, subjects and target course.' },
+        { icon: 'target', title: 'Set your exam goal', body: 'Pick your exams, subjects and target course.' },
         { icon: 'pen', title: 'Practise like the real hall', body: 'Timed CBT mocks with the same layout, navigator and calculator.' },
         { icon: 'idea', title: 'Learn from every mistake', body: 'Each wrong answer opens a guided session that finds the gap.' },
       ],
@@ -194,7 +194,7 @@ export const HOME_BLOCKS: CmsBlock[] = [
           tone: 'green',
           icon: 'badge',
           label: 'Verified Past Question',
-          body: 'Transcribed from an official JAMB, WAEC, NECO or institutional paper and checked by two subject teachers before it goes live.',
+          body: 'Taken from a real past JAMB paper, with the year shown, the correct answer and an explanation.',
         },
         {
           tone: 'blue',
@@ -282,7 +282,7 @@ export const HOME_BLOCKS: CmsBlock[] = [
         },
         {
           q: 'Where do the past questions come from?',
-          a: 'From official JAMB, WAEC, NECO and institutional papers. Each one comes with its correct answer and an explanation of why. You can see the year and source on every question.',
+          a: 'From real past JAMB papers. Each one comes with its correct answer and an explanation of why. You can see the year and source on every question.',
         },
         {
           q: 'Which subjects are available?',

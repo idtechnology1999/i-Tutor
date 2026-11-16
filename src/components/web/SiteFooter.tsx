@@ -2,6 +2,7 @@ import React from 'react';
 import { Flag } from 'lucide-react';
 import { BrandMark } from './BrandMark';
 import { CmsAnchor } from '../../cms/text';
+import { liveExamNames, useExams } from '../../lib/exams';
 
 /* The full website footer, under the homepage and every CMS page. */
 
@@ -36,13 +37,17 @@ const FOOTER_COLUMNS: Array<{ heading: string; items: Array<{ label: string; hre
   },
 ];
 
-export const SiteFooter: React.FC = () => (
+export const SiteFooter: React.FC = () => {
+  // Only the exams switched on in Admin → Settings → Exams.
+  useExams();
+  const exams = liveExamNames() || 'JAMB';
+  return (
   <footer className="lp-footer">
     <div className="lp-wrap">
       <div className="lp-footer__grid">
         <div className="lp-footer__brand">
           <BrandMark />
-          <p>Exam practice and tutoring for JAMB, WAEC, NECO, GCE, NABTEB and Post-UTME candidates. Built in Lagos.</p>
+          <p>Exam practice and tutoring for {exams} candidates. Built in Lagos.</p>
           <ul className="lp-footer__subjects">
             {SUBJECTS.map((s) => (
               <li key={s}>{s}</li>
@@ -68,7 +73,7 @@ export const SiteFooter: React.FC = () => (
           <Flag size={14} aria-hidden /> Not affiliated with JAMB
         </span>
         <span className="lp-footer__credit">
-          Photos: James Rhoda,{' '}
+          Photos: Pexels and Unsplash photographers; James Rhoda,{' '}
           <a href="https://commons.wikimedia.org/wiki/Category:Reading_Wikipedia_in_the_Classroom" target="_blank" rel="noreferrer">
             Wikimedia Commons
           </a>
@@ -77,4 +82,5 @@ export const SiteFooter: React.FC = () => (
       </div>
     </div>
   </footer>
-);
+  );
+};

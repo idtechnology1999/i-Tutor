@@ -11,7 +11,7 @@ import {
   MessageSquareText,
 } from 'lucide-react';
 import { initMotion } from '../lib/motion';
-import { allExams, isLiveExam, useExams } from '../lib/exams';
+import { allExams, isLiveExam, liveExamNames, useExams } from '../lib/exams';
 import { useScrollProgress } from '../lib/ui';
 import { CbtPreview, TutorPreview } from '../components/web/ProductPreviews';
 import { ServiceSection } from '../components/web/ServiceSection';
@@ -41,10 +41,15 @@ const arrow = <ArrowRight size={18} aria-hidden />;
      explained, not reviewed by two teachers. */
 const offlineClaim = (s: string) => /\boffline\b|without data|no connection/i.test(s);
 const honestAnswer = (s: string) =>
-  s.replace(
-    /Each one is transcribed, then checked by two independent subject teachers\./,
-    'Each one comes with its correct answer and an explanation of why.',
-  );
+  s
+    // Name only the exams switched on in Admin → Settings → Exams.
+    .replace(/From official JAMB, WAEC, NECO and institutional papers\./, () => `From real past ${liveExamNames() || 'JAMB'} papers.`)
+    .replace(/JAMB, WAEC, NECO, GCE or Post-UTME — pick your exams/, 'Pick your exams')
+    .replace(/Each one is transcribed, then checked by two independent subject teachers\./, 'Each one comes with its correct answer and an explanation of why.')
+    .replace(
+      /Transcribed from an official JAMB, WAEC, NECO or institutional paper and checked by two subject teachers before it goes live\./,
+      'Taken from a real past JAMB paper, with the year shown, the correct answer and an explanation.',
+    );
 const PANELS = new Set(['mist', 'orange', 'orange-solid', 'ink']);
 
 const Img: React.FC<{ v: unknown; className?: string; eager?: boolean; width?: number; height?: number }> = ({ v, className, eager, width, height }) => {
@@ -573,7 +578,7 @@ const StepsBlock: R = ({ d, id }) => {
                 <span className="lp-steps__num">{String(index + 1).padStart(2, '0')}</span>
                 <Icon size={22} aria-hidden />
                 <h3>{str(step.title)}</h3>
-                <p>{str(step.body)}</p>
+                <p>{honestAnswer(str(step.body))}</p>
               </li>
             );
           })}
@@ -607,7 +612,7 @@ const TrustBlock: R = ({ d, id }) => (
                 <Icon size={14} aria-hidden />
                 {str(item.label)}
               </span>
-              <p>{str(item.body)}</p>
+              <p>{honestAnswer(str(item.body))}</p>
             </div>
           );
         })}
