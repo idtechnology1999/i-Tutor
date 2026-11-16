@@ -682,7 +682,32 @@ const PlanPrice: React.FC<{ text: string }> = ({ text }) => {
   return <>{t.replace('{monthlyPrice}', nairaText(prices.monthly)).replace('{quarterPrice}', nairaText(prices.quarter))}</>;
 };
 
-const PricingBlock: R = ({ d, id }) => (
+/* The 3-month plan, added next to Premium when the page's plans don't include
+   it (pages saved before it existed). Its price and saving follow Admin →
+   Settings → Plans & prices. */
+const isQuarterPlan = (p: BlockData) => /\{quarterPrice\}|₦\s?6,?500\b/.test(str(p.price)) || /3\s*months?|quarter/i.test(str(p.name));
+const quarterPlan = (monthly: number, quarter: number): BlockData => {
+  const saving = monthly * 3 - quarter;
+  return {
+    name: '3 months',
+    price: '{quarterPrice}',
+    period: '/ 3 months',
+    note: saving > 0 ? `One payment for a full exam season. Save ${nairaText(saving)} against paying monthly.` : 'One payment for a full exam season.',
+    features: ['Everything in Premium, for 3 months', '300 AI tutor credits every month', 'Covers JAMB preparation to exam day'],
+    cta: { label: 'Get 3 months', href: '/upgrade' },
+    featured: false,
+    tag: saving > 0 ? 'Best value' : '',
+  };
+};
+
+const PricingBlock: R = ({ d, id }) => {
+  const prices = usePlanPrices();
+  const saved = items(d.plans);
+  const featuredAt = saved.findIndex((p) => bool(p.featured));
+  const plans = saved.some(isQuarterPlan)
+    ? saved
+    : [...saved.slice(0, featuredAt + 1 || saved.length), quarterPlan(prices.monthly, prices.quarter), ...saved.slice(featuredAt + 1 || saved.length)];
+  return (
   <section className="lp-section lp-section--tint" id={id}>
     <div className="lp-wrap">
       <header className="lp-head lp-head--center">
@@ -696,11 +721,11 @@ const PricingBlock: R = ({ d, id }) => (
         </h2>
       </header>
       <div className="lp-plans">
-        {items(d.plans).map((p, i) => {
+        {plans.map((p, i) => {
           const featured = bool(p.featured);
           return (
             <div className={`lp-plan${featured ? ' lp-plan--featured' : ''}`} key={i} data-reveal data-reveal-delay={i * 80}>
-              {featured && str(p.tag) ? (
+              {str(p.tag) ? (
                 <div className="lp-plan__top">
                   <h3>{str(p.name)}</h3>
                   <span className="lp-plan__tag">{str(p.tag)}</span>
@@ -726,7 +751,8 @@ const PricingBlock: R = ({ d, id }) => (
       </div>
     </div>
   </section>
-);
+  );
+};
 
 const TeamBlock: R = ({ d, id }) => {
   const { editing } = useCmsEnv();

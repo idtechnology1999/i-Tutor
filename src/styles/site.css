@@ -1256,7 +1256,8 @@
 
 .lp-plans {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 420px));
+  /* Two or three plans side by side (Free, Premium, 3 months). */
+  grid-template-columns: repeat(auto-fit, minmax(260px, 356px));
   justify-content: center;
   gap: 20px;
 }
