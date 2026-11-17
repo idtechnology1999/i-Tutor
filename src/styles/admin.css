@@ -4146,3 +4146,5 @@
 .rvx__stars .is-on { color: #f5a524; fill: #f5a524; }
 .rvx__text { margin: 12px 0 14px; line-height: 1.6; }
 .rvx-empty { color: var(--ink-3); }
+.prices__group { margin: 18px 0 8px; font-size: 0.95rem; color: var(--ink); }
+.prices__unit { color: var(--ink-3); font-size: 0.8rem; white-space: nowrap; }

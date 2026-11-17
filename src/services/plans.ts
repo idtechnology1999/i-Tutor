@@ -10,9 +10,15 @@ export interface PlanPrices {
   monthly: number;
   /** 3 months. */
   quarter: number;
+  /** AI credits a 1-month payment gives. */
+  monthlyCredits: number;
+  /** AI credits a 3-month payment gives (all at once). */
+  quarterCredits: number;
+  /** AI prompts a free account may use in total. */
+  freePrompts: number;
 }
 
-export const DEFAULT_PRICES: PlanPrices = { monthly: 2500, quarter: 6500 };
+export const DEFAULT_PRICES: PlanPrices = { monthly: 2500, quarter: 6500, monthlyCredits: 300, quarterCredits: 900, freePrompts: 5 };
 
 /** ₦2,500 */
 export const nairaText = (n: number) => `₦${Math.round(n).toLocaleString('en-NG')}`;
@@ -26,7 +32,7 @@ export const loadPlanPrices = () =>
     ? Promise.resolve(DEFAULT_PRICES)
     : api<PlanPrices>('/api/plans', { timeout: 8000 })
         .then((p) => {
-          current = { monthly: p.monthly || DEFAULT_PRICES.monthly, quarter: p.quarter || DEFAULT_PRICES.quarter };
+          current = { ...DEFAULT_PRICES, ...p };
           listeners.forEach((l) => l(current));
           return current;
         })
@@ -53,3 +59,9 @@ export function usePlanPrices(): PlanPrices {
 
 /** The prices known right now (for text built outside a component). */
 export const planPricesNow = () => current;
+
+/** Called whenever the plans change (credits.ts keeps its numbers in step). */
+export const onPlanPrices = (listener: (p: PlanPrices) => void) => {
+  listeners.add(listener);
+  listener(current);
+};

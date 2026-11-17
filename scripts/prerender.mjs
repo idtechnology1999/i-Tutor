@@ -96,7 +96,7 @@ ${ld ? `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\
 <body>
 <header class="top"><a class="logo" href="/">i-Tutor</a><a class="btn" href="/register">Practise free</a></header>
 <main>${body}</main>
-<footer>© ${new Date().getFullYear()} i-Tutor · <a href="/past-questions">Past questions</a> · <a href="/">Home</a></footer>
+<footer>© ${new Date().getFullYear()} i-Tutor, a subsidiary of IDTECH · <a href="/past-questions">Past questions</a> · <a href="/">Home</a></footer>
 </body>
 </html>
 `;

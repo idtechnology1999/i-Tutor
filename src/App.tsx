@@ -524,7 +524,7 @@ export function App() {
             <span>
               <strong>i-Tutor</strong> · {liveExamNames() || 'JAMB'} practice
             </span>
-            <span>© 2026 i-Tutor · Not affiliated with JAMB</span>
+            <span>© {new Date().getFullYear()} i-Tutor, a subsidiary of IDTECH · Not affiliated with JAMB</span>
           </div>
         </footer>
       )}

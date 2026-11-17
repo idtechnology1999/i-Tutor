@@ -6,6 +6,7 @@ import type { UserProfile } from '../../types';
 import { SetupWizardView } from './SetupWizardView';
 import { AboutYouCard } from './AboutYouCard';
 import { StudentAvatar } from './StudentAvatar';
+import { FREE_PROMPTS, PLAN_CREDITS } from '../../services/credits';
 
 interface Props {
   profile: UserProfile;
@@ -68,7 +69,7 @@ export const ProfileView: React.FC<Props> = ({ profile, onUpdateProfile, onUpgra
               'Free'
             )}
           </strong>
-          <p>{isPremium ? '300 AI tutor credits every month.' : '5 free AI tutor prompts to try it.'}</p>
+          <p>{isPremium ? `${PLAN_CREDITS} AI tutor credits every month.` : `${FREE_PROMPTS} free AI tutor prompts to try it.`}</p>
         </div>
         {!isPremium && (
           <button type="button" className="ui-btn ui-btn--primary" onClick={onUpgrade}>

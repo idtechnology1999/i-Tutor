@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { ApiError, api, isLive } from './api';
+import { onPlanPrices } from './plans';
 
 /* The student's AI allowance (the progress ring). The server decides and
    enforces it (backend lib/quota.ts); this keeps a copy for display and
@@ -8,8 +9,11 @@ import { ApiError, api, isLive } from './api';
    - Free: 5 AI prompts for life.
    - Premium: 300 credits a month; bigger jobs cost more. */
 
-export const FREE_PROMPTS = 5;
-export const PLAN_CREDITS = 300;
+/* The free prompts and a month's credits, as set in Admin → Settings → Plans &
+   prices. They start at the original values and update when the settings load;
+   every page reading them shows the admin's numbers. */
+export let FREE_PROMPTS = 5;
+export let PLAN_CREDITS = 300;
 
 /** Keep in step with CREDIT_COST in the backend's lib/quota.ts. */
 export const CREDIT_COST = { chat: 1, explain: 1, hint: 1, similar: 1, board: 2, lesson: 3 } as const;
@@ -130,8 +134,14 @@ export const costOf = (kind: AiKind, credits: Credits | null = state) => (credit
 /** Whether there's enough left (unknown counts as yes: the server has the final say). */
 export const canUse = (kind: AiKind, credits: Credits | null = state) => !credits || credits.left >= costOf(kind, credits);
 
-export const OUT_OF_FREE = `You’ve used your ${FREE_PROMPTS} free AI prompts. Subscribe to Premium for ${PLAN_CREDITS} AI credits a month.`;
-export const OUT_OF_CREDITS = `You’ve used this month’s AI credits. Renew now for ${PLAN_CREDITS} more, or wait for your next renewal.`;
+export let OUT_OF_FREE = '';
+export let OUT_OF_CREDITS = '';
+onPlanPrices((p) => {
+  FREE_PROMPTS = p.freePrompts;
+  PLAN_CREDITS = p.monthlyCredits;
+  OUT_OF_FREE = `You’ve used your ${FREE_PROMPTS} free AI prompts. Subscribe to Premium for ${PLAN_CREDITS} AI credits a month.`;
+  OUT_OF_CREDITS = `You’ve used this month’s AI credits. Renew now for ${PLAN_CREDITS} more, or wait for your next renewal.`;
+});
 
 /** The server (or demo mode) said the allowance is used up. */
 export const isOutOfCredits = (error: unknown) => error instanceof ApiError && error.status === 402;

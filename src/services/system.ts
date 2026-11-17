@@ -1,5 +1,6 @@
 import { API_BASE, api } from './api';
 import { PIECE, sendPiece } from './upload-piece';
+import type { PlanPrices } from './plans';
 
 /* Whole-system backup and restore, and resetting one exam (backend
    routes/admin/system.ts). Everything needs the super admin password. Files
@@ -94,7 +95,7 @@ export const setPaymentMode = (mode: 'test' | 'live', password: string) =>
 /* ---------------------------------------------------------- Plan prices */
 
 /** Premium prices in naira (backend routes/admin/payments.ts → /prices). */
-export const getPlanPricesAdmin = () => api<{ monthly: number; quarter: number }>('/api/admin/payments/prices');
+export const getPlanPricesAdmin = () => api<PlanPrices>('/api/admin/payments/prices');
 
-export const savePlanPrices = (prices: { monthly: number; quarter: number }, password: string) =>
-  api<{ monthly: number; quarter: number }>('/api/admin/payments/prices', { method: 'PUT', body: { ...prices, password } });
+export const savePlanPrices = (prices: PlanPrices, password: string) =>
+  api<PlanPrices>('/api/admin/payments/prices', { method: 'PUT', body: { ...prices, password } });

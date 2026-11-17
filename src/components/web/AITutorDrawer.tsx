@@ -56,7 +56,7 @@ const PAGES = {
 const GUIDE: Array<{ test: RegExp; text: string; links: NavLink[] }> = [
   {
     test: /\b(pay|payment|upgrade|premium|price|pricing|cost|subscribe|subscription|card|ussd|transfer|activate)\b/,
-    text: 'Premium gives you 300 AI credits every month with me, for {price}. Pick a plan, then pay with your card, a bank transfer or USSD. It switches on straight away.',
+    text: 'Premium gives you {credits} AI credits every month with me, for {price}. Pick a plan, then pay with your card, a bank transfer or USSD. It switches on straight away.',
     links: [PAGES.upgrade],
   },
   {
@@ -107,7 +107,7 @@ const guideFor = (query: string) => {
   if (/\b(explain|solve|calculate|what is|why|isomer|formula|equation)\b/.test(q)) return null;
   const hit = GUIDE.find((g) => g.test.test(q));
   // {price}: the monthly price set in Admin → Settings → Plans & prices.
-  return hit ? { ...hit, text: hit.text.replace('{price}', nairaText(planPricesNow().monthly)) } : null;
+  return hit ? { ...hit, text: hit.text.replace('{price}', nairaText(planPricesNow().monthly)).replace('{credits}', String(planPricesNow().monthlyCredits)) } : null;
 };
 
 const PROMPTS = [

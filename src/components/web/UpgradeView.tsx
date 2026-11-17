@@ -52,19 +52,19 @@ type PlanCard = { name: string; price: number; per: string; note: string; tag?: 
 const plansFor = (p: PlanPrices): Record<PlanId, PlanCard> => {
   const saving = p.monthly * 3 - p.quarter;
   return {
-    monthly: { name: '1 month', price: p.monthly, per: 'per month', note: '300 AI credits · no automatic charges' },
+    monthly: { name: '1 month', price: p.monthly, per: 'per month', note: `${p.monthlyCredits} AI credits · no automatic charges` },
     quarter: {
       name: '3 months',
       price: p.quarter,
       per: 'for 3 months',
-      note: saving > 0 ? `900 AI credits for a full exam season · save ${nairaText(saving)}` : '900 AI credits for a full exam season',
+      note: saving > 0 ? `${p.quarterCredits} AI credits for a full exam season · save ${nairaText(saving)}` : `${p.quarterCredits} AI credits for a full exam season`,
       tag: saving > 0 ? 'Best value' : undefined,
     },
   };
 };
 
 const BENEFITS = [
-  { icon: InfinityIcon, text: '300 AI tutor credits every month (practice and past questions unlimited)' },
+  { icon: InfinityIcon, text: '{credits} AI tutor credits every month (practice and past questions unlimited)' },
   { icon: MessageSquareText, text: 'Step-by-step help on every past question' },
   { icon: CalendarCheck, text: 'A personal weekly study plan' },
   { icon: ChartNoAxesColumnIncreasing, text: 'Detailed reports on your weak topics' },
@@ -323,7 +323,7 @@ export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor
               Unlock your <span>AI tutor</span>
             </>
           }
-          lead={`300 AI tutor credits a month, step-by-step help on every past question, unlimited practice and voice lessons. ${nairaText(prices.monthly)} a month.`}
+          lead={`${prices.monthlyCredits} AI tutor credits a month, step-by-step help on every past question, unlimited practice and voice lessons. ${nairaText(prices.monthly)} a month.`}
         />
       )}
       <div className="pay__steps" aria-label="Progress">
@@ -345,7 +345,7 @@ export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor
           <section className="pay__card">
             <h2>Choose your plan</h2>
             <p className="pay__lead">
-              Free accounts get 5 AI prompts to try the tutor. Premium gives you 300 AI credits every month.
+              Free accounts get {prices.freePrompts} AI prompts to try the tutor. Premium gives you {prices.monthlyCredits} AI credits every month.
             </p>
 
             <div className="pay__plans" role="radiogroup" aria-label="Choose a plan">
@@ -392,7 +392,7 @@ export const UpgradeView: React.FC<Props> = ({ profile, onActivated, onOpenTutor
                   <span>
                     <Icon size={18} aria-hidden />
                   </span>
-                  {text}
+                  {text.replace('{credits}', String(prices.monthlyCredits))}
                 </li>
               ))}
             </ul>

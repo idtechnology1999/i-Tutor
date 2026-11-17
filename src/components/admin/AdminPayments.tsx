@@ -3,16 +3,28 @@ import { Check, CreditCard, LoaderCircle, Tag, X } from 'lucide-react';
 import { getPaymentMode, getPlanPricesAdmin, savePlanPrices, setPaymentMode } from '../../services/system';
 import type { PaymentModeInfo } from '../../services/system';
 import { DEFAULT_PRICES, nairaText, setLocalPlanPrices } from '../../services/plans';
+import type { PlanPrices } from '../../services/plans';
 import type { AdminNav } from './AdminApp';
 import { ConfirmDialog } from './AdminSystem';
 
-/* Admin → Settings → Plans & prices: what Premium costs. Checkout charges these
-   and every page that shows a price follows them. Saving needs the super admin
-   password. */
+/* Admin → Settings → Plans & prices: what Premium costs and the AI credits each
+   plan gives, plus the free prompts. Checkout charges these prices, payments
+   give these credits, and every page that shows them follows. Saving needs the
+   super admin password. */
+type PlanKey = keyof PlanPrices;
+const RANGE: Record<PlanKey, [number, number]> = {
+  monthly: [100, 1_000_000],
+  quarter: [100, 1_000_000],
+  monthlyCredits: [1, 100_000],
+  quarterCredits: [1, 100_000],
+  freePrompts: [0, 1_000],
+};
+const KEYS = Object.keys(RANGE) as PlanKey[];
+const asText = (p: PlanPrices) => Object.fromEntries(KEYS.map((k) => [k, String(p[k])])) as Record<PlanKey, string>;
+
 export const PricesCard: React.FC<{ nav: AdminNav; live: boolean }> = ({ nav, live }) => {
-  const [saved, setSaved] = useState(DEFAULT_PRICES);
-  const [monthly, setMonthly] = useState(String(DEFAULT_PRICES.monthly));
-  const [quarter, setQuarter] = useState(String(DEFAULT_PRICES.quarter));
+  const [saved, setSaved] = useState<PlanPrices>(DEFAULT_PRICES);
+  const [form, setForm] = useState<Record<PlanKey, string>>(asText(DEFAULT_PRICES));
   const [error, setError] = useState('');
   const [confirming, setConfirming] = useState(false);
 
@@ -20,25 +32,31 @@ export const PricesCard: React.FC<{ nav: AdminNav; live: boolean }> = ({ nav, li
     if (!live) return;
     getPlanPricesAdmin()
       .then((p) => {
-        setSaved(p);
-        setMonthly(String(p.monthly));
-        setQuarter(String(p.quarter));
+        const full = { ...DEFAULT_PRICES, ...p };
+        setSaved(full);
+        setForm(asText(full));
       })
       .catch((e: Error) => setError(e.message));
   }, [live]);
 
-  const m = Number(monthly.replace(/[^\d]/g, ''));
-  const q = Number(quarter.replace(/[^\d]/g, ''));
-  const valid = m >= 100 && q >= 100 && m <= 1_000_000 && q <= 1_000_000;
-  const changed = m !== saved.monthly || q !== saved.quarter;
-  const saving = m * 3 - q;
+  const v = Object.fromEntries(KEYS.map((k) => [k, Number(form[k].replace(/[^\d]/g, ''))])) as unknown as PlanPrices;
+  const valid = KEYS.every((k) => form[k].trim() !== '' && v[k] >= RANGE[k][0] && v[k] <= RANGE[k][1]);
+  const changed = KEYS.some((k) => v[k] !== saved[k]);
+  const saving = v.monthly * 3 - v.quarter;
+  const perCredit = (naira: number, credits: number) => (credits > 0 ? `about ${nairaText(naira / credits)} per credit` : '');
 
-  const field = (label: string, value: string, set: (v: string) => void, hint: string) => (
+  const field = (k: PlanKey, label: string, unit: 'naira' | 'credits' | 'prompts', hint: string) => (
     <label className="adm-field prices__field">
       <span>{label}</span>
       <div className="adm-input adm-input--icon prices__input">
-        <b aria-hidden>₦</b>
-        <input inputMode="numeric" value={value} onChange={(e) => set(e.target.value.replace(/[^\d,]/g, ''))} aria-label={`${label} in naira`} />
+        {unit === 'naira' && <b aria-hidden>₦</b>}
+        <input
+          inputMode="numeric"
+          value={form[k]}
+          onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.value.replace(/[^\d,]/g, '') }))}
+          aria-label={`${label}${unit === 'naira' ? ' in naira' : ''}`}
+        />
+        {unit !== 'naira' && <small className="prices__unit">{unit}</small>}
       </div>
       <small className="adm-muted">{hint}</small>
     </label>
@@ -47,55 +65,64 @@ export const PricesCard: React.FC<{ nav: AdminNav; live: boolean }> = ({ nav, li
   return (
     <section className="adm-card prices" aria-labelledby="prices-title">
       <h2 className="adm-card__title" id="prices-title">
-        <Tag size={18} aria-hidden /> Premium prices
+        <Tag size={18} aria-hidden /> Plans, prices and AI credits
       </h2>
       <p className="adm-muted">
-        What students pay for Premium. Checkout charges these amounts, and the upgrade page, the home page plans, the credits card and the tutor all
-        show them.
+        What students pay for Premium and the AI credits they get. Checkout charges these prices, a payment gives these credits, and the upgrade
+        page, home page plans, credits card and tutor all show them. Past questions and mock exams stay unlimited on every plan.
       </p>
+
+      <h3 className="prices__group">1 month</h3>
       <div className="adm-grid-2">
-        {field('1 month', monthly, setMonthly, 'Shown as the monthly price.')}
-        {field('3 months', quarter, setQuarter, saving > 0 ? `Students save ${nairaText(saving)} against 3 single months.` : 'No saving against 3 single months.')}
+        {field('monthly', 'Price', 'naira', 'Shown as the monthly price.')}
+        {field('monthlyCredits', 'AI credits', 'credits', perCredit(v.monthly, v.monthlyCredits) || 'Credits for 30 days.')}
       </div>
-      {!valid && <p className="adm-error">Each price must be between ₦100 and ₦1,000,000.</p>}
+
+      <h3 className="prices__group">3 months</h3>
+      <div className="adm-grid-2">
+        {field('quarter', 'Price', 'naira', saving > 0 ? `Students save ${nairaText(saving)} against 3 single months.` : 'No saving against 3 single months.')}
+        {field('quarterCredits', 'AI credits', 'credits', `${perCredit(v.quarter, v.quarterCredits)}${v.quarterCredits !== v.monthlyCredits * 3 ? ` · 3 single months give ${v.monthlyCredits * 3}` : ' · same as 3 single months'}`)}
+      </div>
+
+      <h3 className="prices__group">Free accounts</h3>
+      <div className="adm-grid-2">
+        {field('freePrompts', 'Free AI prompts', 'prompts', 'In total, to try the tutor. They don’t renew.')}
+      </div>
+
+      {!valid && <p className="adm-error">Prices must be ₦100–₦1,000,000, credits 1–100,000 and free prompts 0–1,000.</p>}
       {error && <p className="adm-error">{error}</p>}
       {!live ? (
-        <p className="adm-muted">Demo mode: prices are saved on the live site only.</p>
+        <p className="adm-muted">Demo mode: plans are saved on the live site only.</p>
       ) : (
         <div className="adm-row-actions">
           <button type="button" className="adm-btn adm-btn--primary" disabled={!valid || !changed} onClick={() => setConfirming(true)}>
-            Save prices
+            Save plans
           </button>
           {changed && (
-            <button
-              type="button"
-              className="adm-btn"
-              onClick={() => {
-                setMonthly(String(saved.monthly));
-                setQuarter(String(saved.quarter));
-              }}
-            >
+            <button type="button" className="adm-btn" onClick={() => setForm(asText(saved))}>
               Undo
             </button>
           )}
         </div>
       )}
       <p className="adm-muted prices__note">
-        Students who already paid keep what they paid for. New prices apply to the next payment.
+        Students who already paid keep what they paid for. New prices and credits apply to the next payment; a change to free prompts applies to
+        free accounts at once.
       </p>
 
       {confirming && (
         <ConfirmDialog
-          title="Change Premium prices"
-          message={`From now on: ${nairaText(m)} for 1 month and ${nairaText(q)} for 3 months.`}
-          action="Save prices"
+          title="Change plans"
+          message={`From now on: 1 month ${nairaText(v.monthly)} with ${v.monthlyCredits} AI credits; 3 months ${nairaText(v.quarter)} with ${v.quarterCredits} AI credits; ${v.freePrompts} free AI prompts.`}
+          action="Save plans"
           onClose={() => setConfirming(false)}
           onConfirm={async (password) => {
-            const next = await savePlanPrices({ monthly: m, quarter: q }, password);
+            const next = { ...DEFAULT_PRICES, ...(await savePlanPrices(v, password)) };
             setSaved(next);
+            setForm(asText(next));
             setLocalPlanPrices(next);
             setConfirming(false);
-            nav.notify('Prices saved. The site shows them now.');
+            nav.notify('Plans saved. The site shows them now.');
           }}
         />
       )}

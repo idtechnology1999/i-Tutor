@@ -68,14 +68,16 @@ export const SiteFooter: React.FC = () => {
         ))}
       </div>
       <div className="lp-footer__base">
-        <span>&copy; 2026 i-Tutor</span>
+        <span>&copy; {new Date().getFullYear()} i-Tutor, a subsidiary of IDTECH</span>
         <span>
           <Flag size={14} aria-hidden /> Not affiliated with JAMB
         </span>
+        {/* Required by the photo's licence (CC BY-SA): the CBT-lab classroom photos
+            are James Rhoda's. Pexels and Unsplash photos need no credit. */}
         <span className="lp-footer__credit">
-          Photos: Pexels and Unsplash photographers; James Rhoda,{' '}
+          Some photos:{' '}
           <a href="https://commons.wikimedia.org/wiki/Category:Reading_Wikipedia_in_the_Classroom" target="_blank" rel="noreferrer">
-            Wikimedia Commons
+            James Rhoda
           </a>
           , CC BY-SA 4.0
         </span>

@@ -22,6 +22,7 @@ import { SampleQuestion, ServiceVisual, TeamSection } from '../components/web/Ho
 import { BLOCK_DEFS } from './registry';
 import { bool, image, imageStyle, items, lines, link, mediaSrc, photoCredit, str, useCmsEnv } from './read';
 import { nairaText, usePlanPrices } from '../services/plans';
+import type { PlanPrices } from '../services/plans';
 import { iconFor } from './icons';
 import { Accent, CmsButton, Markdown } from './text';
 import type { BlockData, CmsBlock } from './types';
@@ -699,18 +700,23 @@ const TRUE_PLAN_LINES: Record<string, string> = {
   'Topic-level mastery reports': 'Progress on every subject and topic',
   'Personal weekly study plan': 'A daily practice plan',
 };
-const trueLine = (line: string) => TRUE_PLAN_LINES[line.trim()] ?? line;
+/** The true line, with the credit numbers from Admin → Settings → Plans & prices. */
+const trueLine = (line: string, p: PlanPrices) =>
+  (TRUE_PLAN_LINES[line.trim()] ?? line)
+    .replace(/^5 free AI tutor prompts/, `${p.freePrompts} free AI tutor prompts`)
+    .replace(/^300 AI tutor credits every month/, `${p.monthlyCredits} AI tutor credits every month`);
 const trueNote = (note: string) => note.replace('Cancel anytime.', 'No automatic charges: you choose when to renew.');
 
 const isQuarterPlan = (p: BlockData) => /\{quarterPrice\}|₦\s?6,?500\b/.test(str(p.price)) || /3\s*months?|quarter/i.test(str(p.name));
-const quarterPlan = (monthly: number, quarter: number): BlockData => {
+const quarterPlan = (p: PlanPrices): BlockData => {
+  const { monthly, quarter } = p;
   const saving = monthly * 3 - quarter;
   return {
     name: '3 months',
     price: '{quarterPrice}',
     period: '/ 3 months',
     note: saving > 0 ? `One payment for a full exam season. Save ${nairaText(saving)} against paying monthly.` : 'One payment for a full exam season.',
-    features: ['Everything in Premium, for 3 months', '900 AI tutor credits to use any time in the 3 months', 'Covers JAMB preparation to exam day'],
+    features: ['Everything in Premium, for 3 months', `${p.quarterCredits} AI tutor credits to use any time in the 3 months`, 'Covers JAMB preparation to exam day'],
     cta: { label: 'Get 3 months', href: '/upgrade' },
     featured: false,
     tag: saving > 0 ? 'Best value' : '',
@@ -723,7 +729,7 @@ const PricingBlock: R = ({ d, id }) => {
   const featuredAt = saved.findIndex((p) => bool(p.featured));
   const plans = saved.some(isQuarterPlan)
     ? saved
-    : [...saved.slice(0, featuredAt + 1 || saved.length), quarterPlan(prices.monthly, prices.quarter), ...saved.slice(featuredAt + 1 || saved.length)];
+    : [...saved.slice(0, featuredAt + 1 || saved.length), quarterPlan(prices), ...saved.slice(featuredAt + 1 || saved.length)];
   return (
   <section className="lp-section lp-section--tint" id={id}>
     <div className="lp-wrap">
@@ -757,7 +763,7 @@ const PricingBlock: R = ({ d, id }) => {
               <ul>
                 {lines(p.features).map((f, j) => (
                   <li key={j}>
-                    <Check size={16} aria-hidden /> {trueLine(f)}
+                    <Check size={16} aria-hidden /> {trueLine(f, prices)}
                   </li>
                 ))}
               </ul>
