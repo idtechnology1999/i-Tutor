@@ -52,12 +52,12 @@ type PlanCard = { name: string; price: number; per: string; note: string; tag?: 
 const plansFor = (p: PlanPrices): Record<PlanId, PlanCard> => {
   const saving = p.monthly * 3 - p.quarter;
   return {
-    monthly: { name: '1 month', price: p.monthly, per: 'per month', note: 'Cancel anytime' },
+    monthly: { name: '1 month', price: p.monthly, per: 'per month', note: '300 AI credits · no automatic charges' },
     quarter: {
       name: '3 months',
       price: p.quarter,
       per: 'for 3 months',
-      note: saving > 0 ? `Covers a full exam season · save ${nairaText(saving)}` : 'Covers a full exam season',
+      note: saving > 0 ? `900 AI credits for a full exam season · save ${nairaText(saving)}` : '900 AI credits for a full exam season',
       tag: saving > 0 ? 'Best value' : undefined,
     },
   };

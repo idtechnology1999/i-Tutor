@@ -685,6 +685,23 @@ const PlanPrice: React.FC<{ text: string }> = ({ text }) => {
 /* The 3-month plan, added next to Premium when the page's plans don't include
    it (pages saved before it existed). Its price and saving follow Admin →
    Settings → Plans & prices. */
+/* Plan lines that don't match what the plans give (pages saved earlier still
+   hold them): each becomes the true line. Free gets 5 AI prompts in total and
+   unlimited practice and mocks; Premium gets 300 AI credits a month, not
+   unlimited AI or voice minutes; payments don't renew by themselves. */
+const TRUE_PLAN_LINES: Record<string, string> = {
+  'Two full CBT mocks a week': 'Unlimited JAMB mock exams',
+  '5 tutor explanations a day': '5 free AI tutor prompts to try it',
+  'Verified admission updates': 'Admission news and updates',
+  'Unlimited CBT mocks': 'Everything in Free',
+  'Unlimited tutor explanations': '300 AI tutor credits every month',
+  '60 voice-tutor minutes a month': 'Voice lessons with your tutor',
+  'Topic-level mastery reports': 'Progress on every subject and topic',
+  'Personal weekly study plan': 'A daily practice plan',
+};
+const trueLine = (line: string) => TRUE_PLAN_LINES[line.trim()] ?? line;
+const trueNote = (note: string) => note.replace('Cancel anytime.', 'No automatic charges: you choose when to renew.');
+
 const isQuarterPlan = (p: BlockData) => /\{quarterPrice\}|₦\s?6,?500\b/.test(str(p.price)) || /3\s*months?|quarter/i.test(str(p.name));
 const quarterPlan = (monthly: number, quarter: number): BlockData => {
   const saving = monthly * 3 - quarter;
@@ -693,7 +710,7 @@ const quarterPlan = (monthly: number, quarter: number): BlockData => {
     price: '{quarterPrice}',
     period: '/ 3 months',
     note: saving > 0 ? `One payment for a full exam season. Save ${nairaText(saving)} against paying monthly.` : 'One payment for a full exam season.',
-    features: ['Everything in Premium, for 3 months', '300 AI tutor credits every month', 'Covers JAMB preparation to exam day'],
+    features: ['Everything in Premium, for 3 months', '900 AI tutor credits to use any time in the 3 months', 'Covers JAMB preparation to exam day'],
     cta: { label: 'Get 3 months', href: '/upgrade' },
     featured: false,
     tag: saving > 0 ? 'Best value' : '',
@@ -736,11 +753,11 @@ const PricingBlock: R = ({ d, id }) => {
               <p className="lp-plan__price">
                 <PlanPrice text={str(p.price)} /> <small>{str(p.period)}</small>
               </p>
-              {str(p.note) && <p className="lp-plan__note">{str(p.note)}</p>}
+              {str(p.note) && <p className="lp-plan__note">{trueNote(str(p.note))}</p>}
               <ul>
                 {lines(p.features).map((f, j) => (
                   <li key={j}>
-                    <Check size={16} aria-hidden /> {f}
+                    <Check size={16} aria-hidden /> {trueLine(f)}
                   </li>
                 ))}
               </ul>
