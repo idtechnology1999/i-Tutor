@@ -4009,3 +4009,110 @@ body.cbt-active {
 }
 .about-you__gender button.is-on { border-color: var(--brand); background: var(--brand-tint, #e6efee); color: var(--brand); font-weight: 600; }
 .about-you__error { color: var(--bad, #b42318); font-size: 0.85rem; margin: 8px 0 0; }
+
+/* Rate i-Tutor pop-up: fades in over a blurred page; a centred card on
+   computers, a sheet sliding up from the bottom on phones. */
+.rate-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(11, 31, 30, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: rate-fade 240ms ease both;
+}
+.rate-modal__panel {
+  position: relative;
+  width: min(460px, 100%);
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  padding: 30px 28px 24px;
+  border-radius: 26px;
+  background: #fff;
+  text-align: center;
+  box-shadow: 0 30px 80px -24px rgba(11, 31, 30, 0.55);
+  animation: rate-pop 360ms cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+}
+.rate-modal.is-closing { animation: rate-fade-out 220ms ease both; }
+.rate-modal.is-closing .rate-modal__panel { animation: rate-pop-out 220ms ease both; }
+.rate-modal__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--mist, #eef3f2);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.rate-modal__close:hover { background: #e2e9e8; color: var(--ink); }
+.rate-modal__badge {
+  display: inline-grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  margin-bottom: 10px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #fff1d6, #ffe1b0);
+  color: #e08a00;
+}
+.rate-modal__badge svg { fill: #f5a524; color: #f5a524; }
+.rate-modal__badge.is-thanks { background: linear-gradient(135deg, #e3f6ea, #c9ecd8); }
+.rate-modal__badge.is-thanks svg { fill: #127a43; color: #127a43; }
+.rate-modal h2 { margin: 0; font-size: 1.45rem; letter-spacing: -0.01em; }
+.rate-modal__lead,
+.rate-modal__thanks p { margin: 6px auto 18px; max-width: 32ch; color: var(--ink-3); line-height: 1.5; }
+.rate-modal .rate-us__stars { justify-content: center; gap: 2px; }
+.rate-modal .rate-us__stars button { width: 50px; height: 50px; }
+.rate-modal .rate-us__stars button.is-on { animation: rate-star 260ms ease; }
+.rate-modal__word { min-height: 1.4em; margin: 4px 0 14px; font-weight: 600; color: #b26a00; }
+.rate-modal .rate-us__text { text-align: left; }
+.rate-modal__count { margin-top: 4px; text-align: right; font-size: 0.8rem; color: var(--ink-3); }
+.rate-modal .rate-us__error { margin-top: 6px; text-align: left; }
+.rate-modal__actions { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; margin-top: 16px; }
+.rate-modal__thanks { padding-top: 6px; }
+.rate-modal__thanks .ui-btn { margin-top: 4px; }
+
+@keyframes rate-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes rate-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes rate-pop { from { opacity: 0; transform: translateY(14px) scale(0.94); } to { opacity: 1; transform: none; } }
+@keyframes rate-pop-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(10px) scale(0.97); } }
+@keyframes rate-star { 0% { transform: scale(1); } 50% { transform: scale(1.22); } 100% { transform: scale(1); } }
+@keyframes rate-sheet { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes rate-sheet-out { from { transform: none; } to { transform: translateY(100%); } }
+
+/* Phones: a sheet from the bottom, within thumb reach. */
+@media (max-width: 560px) {
+  .rate-modal { place-items: end center; padding: 0; }
+  .rate-modal__panel {
+    width: 100%;
+    max-height: 92dvh;
+    padding: 26px 20px calc(20px + env(safe-area-inset-bottom));
+    border-radius: 26px 26px 0 0;
+    animation: rate-sheet 340ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+  }
+  .rate-modal.is-closing .rate-modal__panel { animation: rate-sheet-out 220ms ease both; }
+  .rate-modal__panel::before {
+    content: '';
+    display: block;
+    width: 44px;
+    height: 5px;
+    margin: -12px auto 14px;
+    border-radius: 999px;
+    background: #d8e0df;
+  }
+  .rate-modal .rate-us__stars button { width: 48px; height: 48px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rate-modal,
+  .rate-modal__panel,
+  .rate-modal .rate-us__stars button.is-on { animation: none !important; }
+}

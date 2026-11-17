@@ -1,13 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { Heart, Star } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { Heart, Star, X } from 'lucide-react';
 import { getMyReview, sendReview } from '../../services/reviews';
 
-/* "Rate i-Tutor", shown under an exam result. Asked once: hidden when the
-   student has already sent a review, or tapped "Not now" in the last 14 days.
-   Reviews wait for an admin's approval before they appear on the website. */
+/* "Rate i-Tutor": a pop-up over the exam result, a moment after the score
+   shows. A centred card on computers, a sheet that slides up on phones.
+   Asked once: hidden when the student has already sent a review, or closed it
+   ("Not now", ✕, Esc or tapping outside) in the last 14 days. Reviews wait
+   for an admin's approval before they appear on the website. */
 
 const LATER_KEY = 'itutor-review-later';
 const LATER_MS = 14 * 24 * 3600 * 1000;
+/** Let the student take in their score before asking. */
+const DELAY_MS = 1500;
 const WORDS = ['', 'Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
 
 const askedRecently = () => {
@@ -19,35 +24,62 @@ const askedRecently = () => {
 };
 
 export const RateUsCard: React.FC = () => {
-  const [show, setShow] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [closing, setClosing] = useState(false);
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
+  const panel = useRef<HTMLDivElement>(null);
 
+  // Only for students who haven't reviewed (or put it off) yet.
   useEffect(() => {
     if (askedRecently()) return;
     let live = true;
+    let timer = 0;
     getMyReview()
-      .then((mine) => live && !mine && setShow(true))
+      .then((mine) => {
+        if (live && !mine) timer = window.setTimeout(() => setOpen(true), DELAY_MS);
+      })
       .catch(() => undefined);
     return () => {
       live = false;
+      window.clearTimeout(timer);
     };
   }, []);
 
-  if (!show) return null;
-
-  const later = () => {
-    try {
-      window.localStorage.setItem(LATER_KEY, String(Date.now()));
-    } catch {
-      /* fine: it just asks again next time */
+  /** Plays the closing animation, then removes the pop-up. */
+  const close = (remember: boolean) => {
+    if (remember) {
+      try {
+        window.localStorage.setItem(LATER_KEY, String(Date.now()));
+      } catch {
+        /* fine: it just asks again next time */
+      }
     }
-    setShow(false);
+    setClosing(true);
+    window.setTimeout(() => setOpen(false), 220);
   };
+
+  // While open: Esc closes, the page behind doesn't scroll, focus starts inside.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !busy && close(!sent);
+    window.addEventListener('keydown', onKey);
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    panel.current?.querySelector<HTMLElement>('button[role="radio"]')?.focus();
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = overflow;
+    };
+    // close reads the latest state; re-binding on `busy`/`sent` keeps it current.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, busy, sent]);
+
+  if (!open) return null;
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,61 +93,81 @@ export const RateUsCard: React.FC = () => {
       .finally(() => setBusy(false));
   };
 
-  if (sent) {
-    return (
-      <section className="rate-us is-sent" aria-live="polite">
-        <Heart size={26} aria-hidden />
-        <div>
-          <strong>Thank you!</strong>
-          <p>Your review helps other students find i-Tutor. It will appear on our website after a quick check.</p>
-        </div>
-      </section>
-    );
-  }
-
   const shown = hover || rating;
-  return (
-    <form className="rate-us" onSubmit={submit} aria-labelledby="rate-us-title">
-      <div className="rate-us__head">
-        <h2 id="rate-us-title">Enjoying i-Tutor? Rate us</h2>
-        <p>Tell other students what i-Tutor did for you. It takes 30 seconds.</p>
-      </div>
-      <div className="rate-us__stars" role="radiogroup" aria-label="Your rating" onMouseLeave={() => setHover(0)}>
-        {[1, 2, 3, 4, 5].map((n) => (
-          <button
-            key={n}
-            type="button"
-            role="radio"
-            aria-checked={rating === n}
-            aria-label={`${n} star${n > 1 ? 's' : ''}: ${WORDS[n]}`}
-            className={n <= shown ? 'is-on' : ''}
-            onMouseEnter={() => setHover(n)}
-            onClick={() => setRating(n)}
-          >
-            <Star size={32} aria-hidden />
-          </button>
-        ))}
-        <span className="rate-us__word">{WORDS[shown]}</span>
-      </div>
-      <textarea
-        className="rate-us__text"
-        value={text}
-        maxLength={400}
-        rows={3}
-        onChange={(e) => setText(e.target.value)}
-        placeholder="What do you like about i-Tutor? e.g. The explanations helped me understand concord."
-        aria-label="Your review"
-      />
-      {error && <p className="rate-us__error">{error}</p>}
-      <div className="rate-us__actions">
-        <button type="submit" className="ui-btn ui-btn--primary" disabled={busy}>
-          {busy ? 'Sending…' : 'Send review'}
+
+  return createPortal(
+    <div className={`rate-modal${closing ? ' is-closing' : ''}`} onMouseDown={(e) => e.target === e.currentTarget && !busy && close(!sent)}>
+      <div className="rate-modal__panel" ref={panel} role="dialog" aria-modal="true" aria-labelledby="rate-us-title">
+        <button type="button" className="rate-modal__close" onClick={() => close(!sent)} aria-label="Close" disabled={busy}>
+          <X size={20} aria-hidden />
         </button>
-        <button type="button" className="ui-btn ui-btn--ghost" onClick={later} disabled={busy}>
-          Not now
-        </button>
-        <small>{text.length}/400</small>
+
+        {sent ? (
+          <div className="rate-modal__thanks" aria-live="polite">
+            <span className="rate-modal__badge is-thanks">
+              <Heart size={28} aria-hidden />
+            </span>
+            <h2 id="rate-us-title">Thank you!</h2>
+            <p>Your review helps other students find i-Tutor. It will appear on our website after a quick check.</p>
+            <button type="button" className="ui-btn ui-btn--primary ui-btn--block" onClick={() => close(false)}>
+              Back to my result
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={submit}>
+            <span className="rate-modal__badge">
+              <Star size={26} aria-hidden />
+            </span>
+            <h2 id="rate-us-title">Enjoying i-Tutor?</h2>
+            <p className="rate-modal__lead">Rate us and tell other students what i-Tutor did for you. It takes 30 seconds.</p>
+
+            <div className="rate-us__stars" role="radiogroup" aria-label="Your rating" onMouseLeave={() => setHover(0)}>
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  role="radio"
+                  aria-checked={rating === n}
+                  aria-label={`${n} star${n > 1 ? 's' : ''}: ${WORDS[n]}`}
+                  className={n <= shown ? 'is-on' : ''}
+                  onMouseEnter={() => setHover(n)}
+                  onClick={() => {
+                    setRating(n);
+                    setError('');
+                  }}
+                >
+                  <Star size={34} aria-hidden />
+                </button>
+              ))}
+            </div>
+            <p className="rate-modal__word" aria-hidden>
+              {WORDS[shown] || 'Tap a star'}
+            </p>
+
+            <textarea
+              className="rate-us__text"
+              value={text}
+              maxLength={400}
+              rows={3}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="What do you like about i-Tutor? e.g. The explanations helped me understand concord."
+              aria-label="Your review"
+            />
+            <div className="rate-modal__count">{text.length}/400</div>
+            {error && <p className="rate-us__error">{error}</p>}
+
+            <div className="rate-modal__actions">
+              <button type="button" className="ui-btn ui-btn--ghost" onClick={() => close(true)} disabled={busy}>
+                Not now
+              </button>
+              <button type="submit" className="ui-btn ui-btn--primary" disabled={busy}>
+                {busy ? 'Sending…' : 'Send review'}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
-    </form>
+    </div>,
+    document.body,
   );
 };
