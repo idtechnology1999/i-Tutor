@@ -1477,7 +1477,7 @@
 
 .lp-footer__grid {
   display: grid;
-  grid-template-columns: 1.6fr repeat(3, 1fr);
+  grid-template-columns: 2fr repeat(2, 1fr);
   gap: 40px;
 }
 
@@ -1500,9 +1500,21 @@
   font-size: 0.75rem;
   font-weight: 500;
   color: var(--ink-2);
-  padding: 4px 10px;
   border: 1px solid var(--rule);
   border-radius: 99px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.lp-footer__subjects a {
+  display: block;
+  padding: 4px 10px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.lp-footer__subjects li:hover {
+  color: var(--ink);
+  border-color: currentColor;
 }
 
 .lp-footer h3 {
@@ -1613,7 +1625,7 @@
   }
 
   .lp-footer__grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .lp-footer__brand {
