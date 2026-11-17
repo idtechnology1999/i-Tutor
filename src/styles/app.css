@@ -4116,3 +4116,23 @@ body.cbt-active {
   .rate-modal__panel,
   .rate-modal .rate-us__stars button.is-on { animation: none !important; }
 }
+
+/* "Help me write" chips in the rating pop-up */
+.rate-help { margin: -4px 0 12px; text-align: left; }
+.rate-help__title { margin: 0 0 8px; font-size: 0.85rem; font-weight: 600; color: var(--ink-2); }
+.rate-help__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.rate-help__chips button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--rule-2);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.2s var(--spring, ease);
+}
+.rate-help__chips button:hover { border-color: var(--brand); color: var(--brand); }
+.rate-help__chips button:active { transform: scale(0.96); }
+.rate-help__chips button.is-on { border-color: var(--brand); background: var(--brand); color: #fff; }
