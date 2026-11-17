@@ -10,6 +10,7 @@ import {
 import {
   validateEmail,
   calculatePasswordStrength,
+  passwordProblem,
 } from '../../../utils/phone';
 import { AuthShell, FormField, PhotoAside } from './shared';
 import { useSiteStats } from '../../../lib/site-stats';
@@ -57,7 +58,7 @@ export const A04_SignUp: React.FC<Props> = ({
     () => calculatePasswordStrength(password),
     [password],
   );
-  const isPasswordValid = password.length >= 8 && strength.checks.hasNumberOrSymbol;
+  const isPasswordValid = !passwordProblem(password);
 
   const nameError =
     fullNameTouched && !isNameValid
@@ -69,7 +70,7 @@ export const A04_SignUp: React.FC<Props> = ({
 
   const passwordError =
     passwordTouched && !isPasswordValid
-      ? 'Use at least 8 characters, including a number or symbol.'
+      ? passwordProblem(password)
       : '';
 
   const consentError = consentTouched && !consent ? 'You need to accept the terms to continue.' : '';
@@ -211,7 +212,7 @@ export const A04_SignUp: React.FC<Props> = ({
         <FormField
           id="password"
           label="Password"
-          hint="8+ characters with a number or symbol"
+          hint="8+ characters. Any words or numbers you’ll remember."
           error={passwordError}
           valid={passwordTouched && isPasswordValid}
         >
@@ -260,14 +261,6 @@ export const A04_SignUp: React.FC<Props> = ({
                 <span className="meter__reqs">
                   <span className={password.length >= 8 ? 'is-met' : ''}>
                     {password.length >= 8 ? <CheckIcon size={11} /> : null}8+ chars
-                  </span>
-                  <span
-                    className={strength.checks.hasNumberOrSymbol ? 'is-met' : ''}
-                  >
-                    {strength.checks.hasNumberOrSymbol ? (
-                      <CheckIcon size={11} />
-                    ) : null}
-                    Number or symbol
                   </span>
                 </span>
               </p>

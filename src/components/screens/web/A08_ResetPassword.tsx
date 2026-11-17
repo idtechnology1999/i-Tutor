@@ -7,7 +7,7 @@ import {
   AlertCircleIcon,
   ShieldCheckIcon,
 } from '../../Icons';
-import { calculatePasswordStrength } from '../../../utils/phone';
+import { calculatePasswordStrength, isCommonPassword, passwordProblem } from '../../../utils/phone';
 import { AuthShell, FormField, TrustList } from './shared';
 
 interface Props {
@@ -20,13 +20,7 @@ interface Props {
 
 const RULES: { id: string; label: string; test: (value: string) => boolean }[] = [
   { id: 'length', label: 'At least 8 characters', test: (v) => v.length >= 8 },
-  { id: 'case', label: 'One uppercase letter', test: (v) => /[A-Z]/.test(v) },
-  { id: 'number', label: 'One number', test: (v) => /\d/.test(v) },
-  {
-    id: 'symbol',
-    label: 'One symbol or space',
-    test: (v) => /[^A-Za-z0-9]/.test(v),
-  },
+  { id: 'common', label: 'Not an easy one like 12345678', test: (v) => v.length > 0 && !isCommonPassword(v) },
 ];
 
 export const A08_ResetPassword: React.FC<Props> = ({
@@ -55,7 +49,7 @@ export const A08_ResetPassword: React.FC<Props> = ({
 
   const passwordError =
     touched.password && !allPassed
-      ? 'Your password does not meet all four requirements yet.'
+      ? passwordProblem(password)
       : '';
 
   const mismatch = touched.confirm && confirm.length > 0 && confirm !== password;
