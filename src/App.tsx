@@ -519,7 +519,7 @@ export function App() {
       )}
 
       {!isCbt && activeView !== 'home' && activeView !== 'page' && (
-        <footer className="app-footer">
+        <footer className={`app-footer${activeView === 'classroom' ? ' app-footer--desktop-only' : ''}`}>
           <div className="container app-footer__inner">
             <span>
               <strong>i-Tutor</strong> · {liveExamNames() || 'JAMB'} practice

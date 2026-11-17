@@ -369,6 +369,13 @@ a.site-nav__avatar.is-active {
   color: var(--ink);
 }
 
+/* The classroom on phones: the board and question box take the whole screen. */
+@media (max-width: 767px) {
+  .app-footer--desktop-only {
+    display: none;
+  }
+}
+
 /* =============================================================== Dashboard */
 
 .dash__hello {
