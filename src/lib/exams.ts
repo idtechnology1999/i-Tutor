@@ -41,7 +41,22 @@ export const BUILT_IN_EXAMS: ExamInfo[] = [
 
 /* ------------------------------------------------------------------ Store */
 
-let all: ExamInfo[] = BUILT_IN_EXAMS;
+/* Live: the list the server sent last time, so pages show the right exams at
+   once instead of the built-in list (every exam on) while the server answers. */
+const LIVE_KEY = 'itutor-exams-live';
+const lastLiveList = (): ExamInfo[] | null => {
+  if (!isLive) return null;
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(LIVE_KEY) ?? 'null') as ExamInfo[] | null;
+    return Array.isArray(saved) && saved.length ? saved : null;
+  } catch {
+    return null;
+  }
+};
+
+let all: ExamInfo[] = lastLiveList() ?? BUILT_IN_EXAMS;
+/** True once the real list is known (from the server, or saved from last visit). */
+let known = !isLive || all !== BUILT_IN_EXAMS;
 let version = 0;
 const listeners = new Set<() => void>();
 const changeHooks: Array<(exams: ExamInfo[]) => void> = [];
@@ -53,11 +68,15 @@ export function onExamsChange(hook: (exams: ExamInfo[]) => void) {
 }
 
 function setExams(next: ExamInfo[]) {
+  known = true;
   all = [...next].sort((a, b) => a.order - b.order);
   version += 1;
   for (const hook of changeHooks) hook(all);
   for (const l of listeners) l();
 }
+
+/** False while the live site still waits for the server's exam list (first visit only). */
+export const examsKnown = () => known;
 
 /** Every exam, switched on or off (students' pages show only the ones that are on). */
 export const allExams = () => all;
@@ -74,6 +93,9 @@ export const isBySchool = (id: string) => kindOf(id) === 'school';
 export const examLabel = (id: string) => (id === 'Practice' ? 'Practice' : (examInfo(id)?.label ?? id));
 /** "JAMB, WAEC and NECO": the switched-on exams, for page text. */
 export const liveExamNames = () => {
+  // Until the server answers, name no exam rather than every built-in one
+  // (pages then fall back to 'JAMB').
+  if (!known) return '';
   const names = liveExams().map((e) => e.label);
   return names.length <= 1 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 };
@@ -117,7 +139,14 @@ export async function loadExams() {
   if (!isLive) return setExams(demoExams());
   try {
     const exams = await api<ExamInfo[]>('/api/exams');
-    if (exams.length) setExams(exams);
+    if (exams.length) {
+      setExams(exams);
+      try {
+        window.localStorage.setItem(LIVE_KEY, JSON.stringify(exams));
+      } catch {
+        /* not kept when storage is blocked */
+      }
+    }
   } catch {
     /* keep the built-in list */
   }

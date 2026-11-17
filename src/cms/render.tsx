@@ -11,7 +11,7 @@ import {
   MessageSquareText,
 } from 'lucide-react';
 import { initMotion } from '../lib/motion';
-import { allExams, isLiveExam, liveExamNames, useExams } from '../lib/exams';
+import { allExams, examsKnown, isLiveExam, liveExamNames, useExams } from '../lib/exams';
 import { useScrollProgress } from '../lib/ui';
 import { CbtPreview, TutorPreview } from '../components/web/ProductPreviews';
 import { ServiceSection } from '../components/web/ServiceSection';
@@ -938,7 +938,8 @@ export const BlockList: React.FC<{ blocks: CmsBlock[] }> = ({ blocks }) => {
         .filter((b) => !b.hidden)
         .filter((b) => {
           const exam = examOfBlock(b);
-          return !exam || isLiveExam(exam);
+          // An exam's section waits for the real list, so switched-off exams never flash up.
+          return !exam || (examsKnown() && isLiveExam(exam));
         })
         .map((b) => (
           <BlockView key={b.id} block={b} />
