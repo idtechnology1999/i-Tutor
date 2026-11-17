@@ -133,7 +133,7 @@ export const AITutorDrawer: React.FC<Props> = ({
       sender: 'tutor',
       text: tutor
         ? `Hi ${studentName}, it’s ${tutor.name}, your personal tutor. Send me any question — or tap “Solve with ${tutor.name}” under a question — and we’ll work through it together.`
-        : `Hi ${studentName}! I'm your i-Tutor tutor. Ask me about any JAMB question in English, Maths, Physics or Chemistry. I'll guide you to the answer step by step. You can also ask me how to find anything on the site.`,
+        : `Hi ${studentName}! I'm your i-Tutor tutor. Ask me about any JAMB subject, from English and Maths to Economics and Government. I'll guide you to the answer step by step. You can also ask me how to find anything on the site.`,
     },
   ]);
   // Opened from Ask AI / Solve with…: the question and its explanation come
