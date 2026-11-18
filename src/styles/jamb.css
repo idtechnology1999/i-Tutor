@@ -815,3 +815,8 @@
   .pq-cbt__tools .pq-cbt__mode button { flex: none; min-height: 32px; padding: 0 12px; }
   .pq-cbt__search { flex: 1 1 0; min-width: 0; min-height: 40px; border-radius: 99px; }
 }
+
+/* Phones: past questions without the search box (desktop keeps it). */
+@media (max-width: 720px) {
+  .pq-cbt__search { display: none; }
+}
