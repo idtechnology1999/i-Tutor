@@ -44,6 +44,10 @@ interface Props {
   onUpgrade?: () => void;
   /** Swap the address without a new history entry: /exam while answering, /exam/result after. */
   onRoute?: (path: string) => void;
+  /** False when the site was opened straight on /exam (typed or reloaded): no new exam then. */
+  canStartNew?: boolean;
+  /** /exam opened directly with no exam to carry on: where to go instead (the dashboard). */
+  onNothingToResume?: () => void;
 }
 
 /** JAMB: English has 60 questions, every other subject 40, all in 2 hours (40 seconds each). */
@@ -259,7 +263,7 @@ const clearSession = () => {
 const secondsUntil = (deadline: number) => Math.max(0, Math.round((deadline - Date.now()) / 1000));
 const isOver = (s: Session) => s.submitted || secondsUntil(s.deadline) <= 0;
 
-export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, presetTopic, presetCourse, onSolve, askLabel, onUpgrade, onRoute }) => {
+export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, presetTopic, presetCourse, onSolve, askLabel, onUpgrade, onRoute, canStartNew = true, onNothingToResume }) => {
   const { questions: bank } = useCms();
   const ready = useQuestionsReady();
   // The paper is drawn once, when the bank is ready, so it doesn't reshuffle mid-exam.
@@ -324,6 +328,11 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
       setTimeLeft(secondsUntil(saved.deadline));
       setSubmitted(saved.submitted);
       recorded.current = saved.recorded;
+      return;
+    }
+    // Typed /exam (or a bookmark) with nothing to carry on: the dashboard, not a surprise new exam.
+    if (!canStartNew && onNothingToResume) {
+      onNothingToResume();
       return;
     }
     void start();

@@ -156,6 +156,13 @@ export function App() {
   const isAdmin = activeView === 'admin';
   const inApp = isAppView(activeView);
 
+  // The site was opened straight on /exam (typed, bookmarked or refreshed): with
+  // no unfinished exam to carry on, that goes to the dashboard, not a new exam.
+  // Exams started from a button inside the site are unaffected.
+  const [openedOnExam, setOpenedOnExam] = useState(isCbt);
+  useEffect(() => {
+    if (!isCbt) setOpenedOnExam(false);
+  }, [isCbt]);
   const goTo = (view: AppView) => navigate(pathForView(view));
 
   // Student pages need a signed-in student on the live site: visitors are sent
@@ -386,6 +393,8 @@ export function App() {
             onOpenTutor={openTutor}
             onUpgrade={() => goTo('upgrade')}
             onRoute={(to) => navigate(to, { replace: true })}
+            canStartNew={!openedOnExam}
+            onNothingToResume={() => navigate(pathForView('dashboard'), { replace: true })}
           />
         )}
 
