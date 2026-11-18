@@ -820,3 +820,8 @@
 @media (max-width: 720px) {
   .pq-cbt__search { display: none; }
 }
+
+/* Phones: Submit on its own line, set apart from Previous / Next. */
+@media (max-width: 720px) {
+  .jamb__nav .pq-cbt__submit { margin-top: 10px; }
+}

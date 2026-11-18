@@ -93,6 +93,8 @@ export const SyllabusView: React.FC<Props> = ({
   const [mode, setMode] = useState<CheckMode>(savedMode);
   const [picks, setPicks] = useState<Record<number, string>>({});
   const [reviewing, setReviewing] = useState(false);
+  // Submit asks first: on a phone it sits right under Previous / Next.
+  const [confirmSubmit, setConfirmSubmit] = useState(false);
   const threads = useTutorThreads({ tutor, firstName });
   const after = mode === 'after';
 
@@ -428,7 +430,7 @@ export const SyllabusView: React.FC<Props> = ({
                 Next <ChevronRight size={18} aria-hidden />
               </button>
               {after && (
-                <button type="button" className="jamb__btn pq-cbt__submit" onClick={() => setReviewing(true)} disabled={!pickedHere}>
+                <button type="button" className="jamb__btn pq-cbt__submit" onClick={() => setConfirmSubmit(true)} disabled={!pickedHere}>
                   <ClipboardCheck size={18} aria-hidden /> Submit &amp; review ({pickedHere}/{list.length})
                 </button>
               )}
@@ -456,6 +458,33 @@ export const SyllabusView: React.FC<Props> = ({
           </>
         )}
       </main>
+
+      {confirmSubmit && (
+        <div className="ui-overlay ui-overlay--center" onClick={() => setConfirmSubmit(false)}>
+          <div className="ui-dialog" role="alertdialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <h2>Submit and see your answers?</h2>
+            <p>
+              You answered <b>{pickedHere}</b> of {list.length} questions.
+              {list.length - pickedHere > 0 && ` ${list.length - pickedHere} not answered.`}
+            </p>
+            <div className="ui-dialog__actions">
+              <button type="button" className="ui-btn ui-btn--ghost" onClick={() => setConfirmSubmit(false)}>
+                Go back
+              </button>
+              <button
+                type="button"
+                className="ui-btn ui-btn--primary"
+                onClick={() => {
+                  setConfirmSubmit(false);
+                  setReviewing(true);
+                }}
+              >
+                Yes, submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
