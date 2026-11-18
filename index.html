@@ -60,5 +60,18 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <!-- Still showing the search-engine text after 20 s (very slow network or a
+         browser that can't run the site): say so, instead of a page that looks broken. -->
+    <script>
+      setTimeout(function () {
+        var p = document.querySelector('#root .prerender');
+        if (!p || document.getElementById('slow-note')) return;
+        var n = document.createElement('p');
+        n.id = 'slow-note';
+        n.style.cssText = 'margin:24px 0;padding:14px 16px;border-radius:12px;background:#fff1e4;color:#0b1f1e;font:15px/1.5 system-ui,sans-serif';
+        n.innerHTML = 'i-Tutor is taking long to open. Check your internet connection, then <a href="" style="color:#b8510a;font-weight:600">tap here to reload</a>. If it still does not open, update your browser or open the site in Google Chrome.';
+        p.insertBefore(n, p.firstChild);
+      }, 20000);
+    </script>
   </body>
 </html>
