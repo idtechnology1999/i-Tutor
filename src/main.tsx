@@ -17,11 +17,16 @@ import './styles/cms.css'
 import './styles/exam-review.css'
 import App from './App.tsx'
 import { reportErrors } from './lib/report-errors'
+import { watchForNewVersion } from './lib/stale-reload'
+import { ErrorScreen } from './components/ErrorScreen'
 
 reportErrors()
+watchForNewVersion()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <ErrorScreen>
+      <App />
+    </ErrorScreen>
   </StrictMode>,
 )

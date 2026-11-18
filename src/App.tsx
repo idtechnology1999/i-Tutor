@@ -18,12 +18,22 @@ import { examsOf, subjectsFor } from './lib/student-exams';
 import { logOut } from './services/auth';
 import { canUse, setCreditsPlan } from './services/credits';
 import type { SolveRequest } from './data/tutors';
+import { isChunkError, reloadForNewVersion } from './lib/stale-reload';
 
 /* Each page's code downloads when it's first opened, so the homepage (what
    most visitors see first) loads quickly on slow mobile data. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- any props, kept exact through M[K]
 const page = <K extends string, M extends Record<K, React.ComponentType<any>>>(load: () => Promise<M>, name: K) =>
-  lazy(() => load().then((m) => ({ default: m[name] })));
+  lazy(() =>
+    load().then(
+      (m) => ({ default: m[name] }),
+      (err) => {
+        // Code from an older version of the site (left open across an update): reload once.
+        if (isChunkError(err) && reloadForNewVersion()) return new Promise<never>(() => {});
+        throw err;
+      },
+    ),
+  );
 const DashboardView = page(() => import('./components/web/DashboardView'), 'DashboardView');
 const CBTExamView = page(() => import('./components/web/CBTExamView'), 'CBTExamView');
 const SyllabusView = page(() => import('./components/web/SyllabusView'), 'SyllabusView');

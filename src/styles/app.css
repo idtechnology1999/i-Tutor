@@ -4199,3 +4199,8 @@ body.cbt-active {
 .rate-help__chips button:hover { border-color: var(--brand); color: var(--brand); }
 .rate-help__chips button:active { transform: scale(0.96); }
 .rate-help__chips button.is-on { border-color: var(--brand); background: var(--brand); color: #fff; }
+
+/* Shown instead of a white screen when the page breaks (components/ErrorScreen). */
+.error-screen { min-height: 70vh; display: grid; place-content: center; justify-items: center; gap: 12px; padding: 24px 16px; text-align: center; }
+.error-screen h1 { font-size: 1.5rem; margin: 0; color: var(--ink, #0b1f1e); }
+.error-screen p { margin: 0 0 8px; color: var(--ink-2, #3d4f4e); }
