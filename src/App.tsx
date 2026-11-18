@@ -173,12 +173,15 @@ export function App() {
   useEffect(() => {
     if (!needsLogin || !authChecked || hasAccount) return;
     try {
-      window.sessionStorage.setItem(NEXT_KEY, window.location.pathname + window.location.search);
+      // A typed /exam isn't remembered: after signing up they land on the
+      // dashboard, not straight in an exam. (An exam button inside the site is.)
+      if (openedOnExam) window.sessionStorage.removeItem(NEXT_KEY);
+      else window.sessionStorage.setItem(NEXT_KEY, window.location.pathname + window.location.search);
     } catch {
       /* storage blocked: they land on the dashboard instead */
     }
     navigate(pathForView('signup'), { replace: true });
-  }, [needsLogin, authChecked, hasAccount, navigate]);
+  }, [needsLogin, authChecked, hasAccount, navigate, openedOnExam]);
   useEffect(() => {
     // Signed in and past sign-up/onboarding: back to where they were going.
     if (!hasAccount || isAccountFlowView(activeView)) return;
