@@ -339,7 +339,9 @@ export function App() {
   const cmsEnv: CmsEnv = {
     editing: false,
     run: (href) => {
-      if (href === 'action:cbt') return launchExam();
+      // "Start a free mock" on the public pages opens the dashboard, like Log in
+      // (visitors sign up first); the exam is started from there.
+      if (href === 'action:cbt') return goTo('dashboard');
       if (href === 'action:tutor') return openTutor();
       if (href.startsWith('action:')) return;
       if (/^(https?:|mailto:|tel:)/i.test(href)) {
