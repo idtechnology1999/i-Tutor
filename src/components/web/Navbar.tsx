@@ -33,9 +33,10 @@ interface Props {
    on phones. Plain words, one icon each. */
 /* `phone: false` keeps a tab off the phone tab bar, which only fits six
    items; Post-UTME stays one tap away on the dashboard. */
-const APP_TABS: { label: string; short: string; view: AppView; icon: typeof House; phone?: boolean }[] = [
+const APP_TABS: { label: string; short: string; view: AppView; icon: typeof House; phone?: boolean; goes?: AppView }[] = [
   { label: 'Home', short: 'Home', view: 'dashboard', icon: House },
-  { label: 'JAMB Exam', short: 'Exam', view: 'cbt', icon: ClipboardList },
+  // Opens the dashboard; the exam is started from there.
+  { label: 'JAMB Exam', short: 'Exam', view: 'cbt', goes: 'dashboard', icon: ClipboardList },
   { label: 'Past questions', short: 'Questions', view: 'syllabus', icon: BookOpenCheck },
   { label: 'Classroom', short: 'Class', view: 'classroom', icon: GraduationCap },
   { label: 'Post-UTME', short: 'Post-UTME', view: 'postutme', icon: Landmark, phone: false },
@@ -162,7 +163,7 @@ export const Navbar: React.FC<Props> = ({
               {APP_TABS.filter(tabOn).map((tab) => (
                 <RouteLink
                   key={tab.view}
-                  view={tab.view}
+                  view={tab.goes ?? tab.view}
                   active={activeView === tab.view}
                   className="site-nav__link"
                 >
@@ -207,8 +208,8 @@ export const Navbar: React.FC<Props> = ({
 
         {/* Phone tab bar */}
         <nav className="tabbar" aria-label="Main">
-          {APP_TABS.filter((t) => tabOn(t) && t.phone !== false).map(({ view, short, icon: Icon }) => (
-            <RouteLink key={view} view={view} active={activeView === view} className="tabbar__item">
+          {APP_TABS.filter((t) => tabOn(t) && t.phone !== false).map(({ view, goes, short, icon: Icon }) => (
+            <RouteLink key={view} view={goes ?? view} active={activeView === view} className="tabbar__item">
               <Icon size={22} aria-hidden />
               <span>{short}</span>
             </RouteLink>
