@@ -521,7 +521,10 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
             </button>
             <div>
               <strong>{paper.title}</strong>
-              <span>i-Tutor CBT</span>
+              <span className="jamb__sub-desk">i-Tutor CBT</span>
+              <span className="jamb__sub-phone">
+                {answered} of {total} answered
+              </span>
             </div>
           </div>
           <div className="jamb__candidate">
@@ -546,6 +549,7 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
         </header>
 
         <nav className="jamb__subjects" aria-label="Subjects">
+          <span className="jamb__subjrow">
           {paper.subjects.map((s) => {
             const qs = paper.questions.filter((q) => q.subject === s);
             return (
@@ -557,9 +561,10 @@ export const CBTExamView: React.FC<Props> = ({ profile, onExit, presetSubject, p
               </button>
             );
           })}
+          </span>
           <span className="jamb__tools">
-            <button type="button" className={showCalculator ? 'is-on' : ''} onClick={() => setShowCalculator((v) => !v)} aria-pressed={showCalculator}>
-              <Calculator size={16} aria-hidden /> Calculator
+            <button type="button" aria-label="Calculator" className={showCalculator ? 'is-on' : ''} onClick={() => setShowCalculator((v) => !v)} aria-pressed={showCalculator}>
+              <Calculator size={16} aria-hidden /> <span className="jamb__toollabel">Calculator</span>
             </button>
           </span>
         </nav>

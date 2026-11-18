@@ -294,6 +294,7 @@ export const SyllabusView: React.FC<Props> = ({
         </header>
 
         <nav className="jamb__subjects pq-cbt__bar" aria-label="Subjects">
+          <span className="jamb__subjrow">
           {subjects.map((s) => {
             const qs = inYear.filter((x) => x.subject === s);
             return (
@@ -305,6 +306,7 @@ export const SyllabusView: React.FC<Props> = ({
               </button>
             );
           })}
+          </span>
           <span className="jamb__tools pq-cbt__tools">
             <span className="pq-cbt__mode" role="group" aria-label="When to check answers">
               <small>Check answers</small>

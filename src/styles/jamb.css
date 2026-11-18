@@ -136,7 +136,7 @@
   overflow-x: auto;
 }
 
-.jamb__subjects > button,
+.jamb__subjects > button, .jamb__subjrow > button,
 .jamb__tools button {
   flex: none;
   display: inline-flex;
@@ -154,20 +154,20 @@
   cursor: pointer;
 }
 
-.jamb__subjects > button small {
+.jamb__subjects > button small , .jamb__subjrow > button small {
   font-size: 0.75rem;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   color: var(--slate-500);
 }
 
-.jamb__subjects > button.is-on {
+.jamb__subjects > button.is-on , .jamb__subjrow > button.is-on {
   background: var(--teal-900);
   border-color: var(--teal-900);
   color: var(--white);
 }
 
-.jamb__subjects > button.is-on small {
+.jamb__subjects > button.is-on small , .jamb__subjrow > button.is-on small {
   color: var(--text-invert-soft);
 }
 
@@ -756,4 +756,62 @@
   .jamb__grid {
     display: none;
   }
+}
+
+/* Subject buttons sit in their own row so phones can scroll them sideways. */
+.jamb__subjrow { display: contents; }
+.jamb__sub-phone { display: none; }
+
+/* Phones: a compact, modern header for the exam and past questions --------- */
+@media (max-width: 720px) {
+  /* Top bar: title + one-line status, small clock pill, Submit. */
+  .jamb__top { gap: 8px 10px; padding: 10px 16px; }
+  .jamb__brand strong { font-size: 1rem; line-height: 1.25; }
+  .jamb__brand--exit { gap: 10px; }
+  .jamb__leave { min-height: 38px; width: 38px; padding: 0; justify-content: center; border-radius: 10px; }
+  .jamb__candidate { display: none; }
+  .jamb__sub-desk { display: none; }
+  .jamb__sub-phone { display: inline; }
+  .jamb__time { flex-direction: row; align-items: center; padding: 6px 10px; border-radius: 99px; }
+  .jamb__time small { display: none; }
+  .jamb__time strong { font-size: 1.05rem; }
+  .jamb__submit { min-height: 38px; padding: 0 14px; border-width: 1.5px; border-radius: 99px; background: #fff; color: var(--teal-900); font-size: 0.9rem; }
+
+  /* Subjects: one row of pills that scrolls sideways; tools beside or below. */
+  .jamb__subjects { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 0; overflow: visible; }
+  .jamb__subjrow {
+    display: flex;
+    flex: 1 1 0;
+    min-width: 0;
+    gap: 6px;
+    padding: 0 16px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .jamb__subjrow::-webkit-scrollbar { display: none; }
+  .jamb__subjrow > button { min-height: 36px; padding: 0 14px; border-radius: 99px; scroll-snap-align: start; font-size: 0.85rem; }
+  .jamb__tools { margin: 0; padding-right: 16px; }
+  .jamb__tools button { min-height: 36px; border-radius: 99px; }
+  /* Exam: the calculator is a round icon at the end of the subject row. */
+  .jamb .jamb__toollabel { display: none; }
+  .jamb__head .jamb__tools button { width: 36px; padding: 0; justify-content: center; }
+
+  /* Past questions: title + answered pill, then Exam / Year, then subjects,
+     then Check answers and search on one line. */
+  .pq-cbt__top { grid-template-columns: minmax(0, 1fr) auto; padding: 12px 16px; gap: 10px; }
+  .pq-cbt__top .jamb__brand span { display: none; }
+  .pq-cbt__picks { gap: 8px; }
+  .pq-cbt__picks .pq-cbt__exam { flex: 1 1 0; }
+  .pq-cbt__exam small { display: none; }
+  .pq-cbt__exam select { min-height: 40px; font-size: 0.95rem; }
+  .pq-cbt__score { flex-direction: row; align-items: baseline; gap: 6px; padding: 5px 12px; border-radius: 99px; }
+  .pq-cbt__score small { display: inline; }
+  .pq-cbt__score strong { font-size: 1rem; }
+  .pq-cbt__tools { width: 100%; flex-wrap: nowrap; gap: 8px; padding: 0 16px; }
+  .pq-cbt__mode { width: auto; flex: none; }
+  .pq-cbt__mode small { display: none; }
+  .pq-cbt__tools .pq-cbt__mode button { flex: none; min-height: 32px; padding: 0 12px; }
+  .pq-cbt__search { flex: 1 1 0; min-width: 0; min-height: 40px; border-radius: 99px; }
 }
