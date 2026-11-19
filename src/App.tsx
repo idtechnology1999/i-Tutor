@@ -220,6 +220,10 @@ export function App() {
     const [school, subject, year] = exam.kind === 'school' ? rest : ['', ...rest];
     return { exam: exam.id as ExamType, school: school || undefined, subject: subject || undefined, year: Number(year) || undefined };
   })();
+  // The profile page moved from /setup to /profile: old links show the new address.
+  useEffect(() => {
+    if (activeView === 'setup' && path.toLowerCase().replace(/\/+$/, '') === '/setup') navigate(pathForView('setup'), { replace: true });
+  }, [activeView, path, navigate]);
   // Post-UTME switched off: its pages go back to the home page.
   const postUtmeOff = !isLiveExam('Post-UTME');
   useEffect(() => {

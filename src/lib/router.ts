@@ -42,7 +42,7 @@ export const VIEW_PATHS: Record<AppView, string> = {
   cbt: '/exam',
   syllabus: '/syllabus',
   dashboard: '/dashboard',
-  setup: '/setup',
+  setup: '/profile',
   upgrade: '/upgrade',
   admin: '/admin',
   course: '/practice/course',
@@ -131,6 +131,8 @@ const ALIASES: Record<string, AppView> = {
   '/index.html': 'home',
   '/home': 'home',
   '/portal': 'dashboard',
+  // The profile page's old address.
+  '/setup': 'setup',
   '/premium': 'upgrade',
   '/courses': 'course',
   '/postutme': 'postutme',
