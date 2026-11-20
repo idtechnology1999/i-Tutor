@@ -6,6 +6,8 @@
    the same shape as `Lesson`, written by the model.
    -------------------------------------------------------------------------- */
 
+import { JAMB_SYLLABUS } from './jamb-syllabus';
+
 /** Board marker colours: title blue, formula black (boxed), example green,
     note red. `diagram` is drawn, `ask` stops the lesson for the student. */
 /** 'you': the student's own typed question, written on the board. */
@@ -48,24 +50,9 @@ export interface Lesson {
   check: LessonQuestion;
 }
 
-export const SYLLABUS: Record<string, string[]> = {
-  English: ['Concord', 'Word stress', 'Idioms and figurative language', 'Comprehension', 'Synonyms and antonyms', 'Vowel sounds'],
-  Mathematics: ['Indices', 'Quadratic equations', 'Logarithms', 'Simultaneous equations', 'Probability', 'Matrices'],
-  Physics: ['Motion in a straight line', "Ohm's law", 'Work, energy and power', 'Waves', 'Heat energy', 'Magnetism'],
-  Chemistry: ['The mole concept', 'Isomerism', 'Chemical bonding', 'Acids, bases and salts', 'Electrolysis', 'Rates of reaction'],
-  Biology: ['The cell', 'Photosynthesis', 'Genetics', 'Ecology', 'Respiration', 'Reproduction in plants'],
-  Economics: ['Demand and supply', 'Elasticity', 'Money and banking', 'Production'],
-  Government: ['Constitution', 'Arms of government', 'Federalism', 'Political parties'],
-  Literature: ['Figures of speech', 'Drama', 'Prose', 'Poetry'],
-  Geography: ['The solar system', 'Weather and climate', 'Rocks', 'Map reading'],
-  Commerce: ['Trade', 'Banking', 'Insurance', 'Transport'],
-  Accounting: ['Double entry', 'Trial balance', 'Final accounts', 'Bank reconciliation'],
-  'Agricultural Science': ['Soil', 'Crop production', 'Animal husbandry', 'Farm tools'],
-  'Further Mathematics': ['Binomial theorem', 'Vectors', 'Calculus'],
-  CRS: ['Creation', 'The patriarchs', 'The early church'],
-  IRS: ['The Qur’an', 'Hadith', 'Pillars of Islam'],
-  'Civic Education': ['Values', 'Citizenship', 'Human rights'],
-};
+/** The classroom teaches the topics of JAMB's current UTME syllabus (the same
+    list admins file questions under), in the syllabus's own order. */
+export const SYLLABUS: Record<string, string[]> = JAMB_SYLLABUS;
 
 /** Profile subject names → syllabus names ("English Language" → "English"). */
 export const syllabusSubject = (name: string) => (name === 'English Language' ? 'English' : name);
