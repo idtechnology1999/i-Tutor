@@ -99,8 +99,8 @@ const LINE_ACTIONS = [
 ] as const;
 
 export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUpgrade }) => {
-  // The student's own subjects (JAMB + WAEC/NECO), in syllabus order.
-  const mine = [...new Set([...profile.selectedSubjects, ...(profile.schoolCert?.subjects ?? [])].map(syllabusSubject))];
+  // The student's JAMB subjects (not their WAEC/NECO ones), in syllabus order.
+  const mine = [...new Set(profile.selectedSubjects.map(syllabusSubject))];
   const subjects = Object.keys(SYLLABUS).filter((s) => mine.includes(s));
   const teacher = tutor?.name ?? 'Your teacher';
 
@@ -126,7 +126,7 @@ export const ClassroomView: React.FC<Props> = ({ profile, isPremium, tutor, onUp
   const [chat, setChat] = useState<Chat[]>([
     {
       who: 'teacher',
-      text: `Hi ${profile.fullName.split(' ')[0]}, welcome to your classroom. I know your syllabus for ${subjects.join(', ') || 'your subjects'}. Pick a topic and press **Start lesson**, or type “teach me” and a topic. While I teach, tap anything on the board to ask me about it.`,
+      text: `Hi ${profile.fullName.split(' ')[0]}, welcome to your classroom. I know the JAMB syllabus for ${subjects.join(', ') || 'your subjects'}. Pick a topic and press **Start lesson**, or type “teach me” and a topic. While I teach, tap anything on the board to ask me about it.`,
     },
   ]);
   /** The last thing the teacher said needs the Subscribe/Renew button. */
