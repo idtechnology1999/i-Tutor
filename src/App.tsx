@@ -432,6 +432,7 @@ export function App() {
             onOpenTutor={openTutor}
             onUpgrade={() => goTo('upgrade')}
             onEditGoal={() => goTo('setup')}
+            onFinishSetup={() => goTo('track')}
             onOpenCourse={() => goTo('course')}
             onOpenPostUtme={() => goTo('postutme')}
             onStartPractice={launchCourseExam}

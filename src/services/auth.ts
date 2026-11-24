@@ -28,6 +28,12 @@ export async function verifyCode(phoneOrEmail: string, code: string): Promise<{ 
   return api('/api/auth/verify', { method: 'POST', body: { phoneOrEmail, code } });
 }
 
+/** The "Verify my email" link from an email: verifies and signs in. */
+export async function verifyLink(phoneOrEmail: string, token: string): Promise<{ profile?: UserProfile }> {
+  if (!isLive) return {};
+  return api('/api/auth/verify-link', { method: 'POST', body: { phoneOrEmail, token } });
+}
+
 export async function resendCode(phoneOrEmail: string) {
   if (!isLive) return;
   await api('/api/auth/resend', { method: 'POST', body: { phoneOrEmail } });

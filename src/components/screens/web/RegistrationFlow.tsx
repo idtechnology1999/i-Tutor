@@ -80,6 +80,12 @@ export const RegistrationFlow: React.FC<Props> = ({
   const [signingUp, setSigningUp] = useState(false);
   const [signUpError, setSignUpError] = useState('');
 
+  // Opened from the "Verify my email" button: /verify-email?account=…&token=…
+  const [{ linkAccount, linkToken }] = useState(() => {
+    const q = new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search);
+    return { linkAccount: q.get('account') ?? '', linkToken: q.get('token') ?? '' };
+  });
+
   const goHome = useCallback(() => onNavigate('home'), [onNavigate]);
 
   const enterOnboarding = useCallback(() => {
@@ -164,11 +170,12 @@ export const RegistrationFlow: React.FC<Props> = ({
       case 'otp':
         return (
           <A05_OTP
-            phoneOrEmail={pendingContact || profile.phoneOrEmail}
+            phoneOrEmail={pendingContact || linkAccount || profile.phoneOrEmail}
+            linkToken={linkToken}
             onChangeNumber={() => onNavigate('signup')}
             onVerified={() => {
               onUpdateProfile({
-                phoneOrEmail: pendingContact || profile.phoneOrEmail,
+                phoneOrEmail: pendingContact || linkAccount || profile.phoneOrEmail,
               });
               onAccountReady();
               enterOnboarding();

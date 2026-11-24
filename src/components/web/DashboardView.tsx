@@ -6,6 +6,7 @@ import {
   ArrowRight,
   BookOpenCheck,
   Check,
+  ClipboardCheck,
   Flame,
   MessageSquareText,
   Play,
@@ -36,6 +37,8 @@ interface Props {
   onOpenTutor: () => void;
   onUpgrade: () => void;
   onEditGoal: () => void;
+  /** Exam setup (onboarding), for students who haven't chosen their exam yet. */
+  onFinishSetup: () => void;
   onOpenCourse: () => void;
   /** The student's school's Post-UTME page. */
   onOpenPostUtme: () => void;
@@ -57,6 +60,9 @@ const TASKS = [
 const level = (pct: number) =>
   pct >= 80 ? { label: 'Strong', tone: 'good' } : pct >= 65 ? { label: 'Good', tone: 'ok' } : { label: 'Needs work', tone: 'weak' };
 
+/** No exam chosen yet, or JAMB chosen with no subjects (the server's nudges use the same rule). */
+const setupIncomplete = (p: UserProfile) => !p.exams?.length || (p.exams.includes('UTME') && !p.selectedSubjects.length);
+
 const greeting = () => {
   const h = new Date().getHours();
   return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
@@ -68,6 +74,7 @@ export const DashboardView: React.FC<Props> = ({
   onOpenSyllabus,
   onOpenTutor,
   onUpgrade,
+  onFinishSetup,
   onOpenCourse,
   onOpenPostUtme,
   onStartPractice,
@@ -139,6 +146,21 @@ export const DashboardView: React.FC<Props> = ({
           </button>
         }
       />
+
+      {setupIncomplete(profile) && (
+        <div className="setup-due" role="region" aria-label="Finish setting up">
+          <span className="setup-due__icon" aria-hidden>
+            <ClipboardCheck size={22} />
+          </span>
+          <div className="setup-due__body">
+            <strong>Continue setting up your account</strong>
+            <p>Choose your exam and subjects so i-Tutor can build your practice plan. It takes about a minute.</p>
+          </div>
+          <button type="button" className="setup-due__go" onClick={onFinishSetup}>
+            Set up my exam
+          </button>
+        </div>
+      )}
 
       <PushPrompt
         closable

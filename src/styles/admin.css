@@ -4164,3 +4164,5 @@
 .notif-tests li { padding: 8px 12px; border-radius: 10px; background: var(--mist, #f4f7f6); overflow-wrap: anywhere; }
 .notif-tests .is-bad { color: var(--bad, #c2352b); font-style: normal; }
 .notif-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.notif-card h2 { display: flex; align-items: center; gap: 8px; }
+.notif-actions .adm-btn { display: inline-flex; align-items: center; gap: 8px; }

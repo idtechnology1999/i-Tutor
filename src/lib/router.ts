@@ -148,6 +148,8 @@ const ALIASES: Record<string, AppView> = {
   '/sign-in': 'login',
   '/otp': 'otp',
   '/verify-code': 'otp',
+  // The "Verify my email" button in emails (Admin → Notifications).
+  '/verify-email': 'otp',
   '/password-reset': 'reset',
   '/track': 'track',
   '/subject': 'subjects',

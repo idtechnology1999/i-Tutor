@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { resendCode, verifyCode } from '../../../services/auth';
+import { resendCode, verifyCode, verifyLink } from '../../../services/auth';
 import { AlertCircleIcon, RefreshCwIcon } from '../../Icons';
 import { AuthShell, TrustList } from './shared';
 import { PushPrompt } from '../../web/PushPrompt';
@@ -8,11 +8,20 @@ interface Props {
   phoneOrEmail: string;
   onChangeNumber: () => void;
   onVerified: () => void;
+  /** From the "Verify my email" link: verifies straight away, no code needed. */
+  linkToken?: string;
   /** Simulated network conditions so the error states are reachable in review. */
   forcedState?: 'idle' | 'wrong' | 'expired';
 }
 
 const CODE_LENGTH = 6;
+
+/* A link works once, so the same check is shared if the screen mounts twice. */
+const linkChecks = new Map<string, Promise<unknown>>();
+const checkLink = (account: string, token: string) => {
+  if (!linkChecks.has(token)) linkChecks.set(token, verifyLink(account, token));
+  return linkChecks.get(token)!;
+};
 const RESEND_SECONDS = 30;
 
 const maskDestination = (value: string) => {
@@ -31,6 +40,7 @@ export const A05_OTP: React.FC<Props> = ({
   phoneOrEmail,
   onChangeNumber,
   onVerified,
+  linkToken = '',
   forcedState = 'idle',
 }) => {
   const [digits, setDigits] = useState<string[]>(() => Array(CODE_LENGTH).fill(''));
@@ -39,6 +49,27 @@ export const A05_OTP: React.FC<Props> = ({
   const [attempts, setAttempts] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const inputs = useRef<Array<HTMLInputElement | null>>([]);
+
+  const [linkState, setLinkState] = useState<'checking' | 'failed' | ''>(linkToken ? 'checking' : '');
+  const onVerifiedRef = useRef(onVerified);
+  useEffect(() => {
+    onVerifiedRef.current = onVerified;
+  });
+  useEffect(() => {
+    if (!linkToken || !phoneOrEmail) return;
+    let live = true;
+    checkLink(phoneOrEmail, linkToken)
+      .then(() => live && onVerifiedRef.current())
+      .catch((err: Error) => {
+        if (!live) return;
+        setLinkState('failed');
+        setError(`${err.message} Tap “Resend code” below.`);
+        setResendIn(0);
+      });
+    return () => {
+      live = false;
+    };
+  }, [linkToken, phoneOrEmail]);
 
   const code = digits.join('');
   const isComplete = code.length === CODE_LENGTH;
@@ -125,8 +156,14 @@ export const A05_OTP: React.FC<Props> = ({
       screen="otp"
       vars={{ digits: CODE_LENGTH, destination: maskDestination(phoneOrEmail) }}
       eyebrow="Verification"
-      title="Enter the email code"
-      lede={`We sent a ${CODE_LENGTH}-digit code to ${maskDestination(phoneOrEmail)}. It expires in 10 minutes.`}
+      title={linkState === 'checking' ? 'Verifying your email…' : 'Enter the email code'}
+      lede={
+        linkState === 'checking'
+          ? 'One moment while we confirm your email.'
+          : linkState === 'failed'
+            ? `Get a new ${CODE_LENGTH}-digit code for ${maskDestination(phoneOrEmail)} and enter it here.`
+            : `We sent a ${CODE_LENGTH}-digit code to ${maskDestination(phoneOrEmail)}. It expires in 10 minutes.`
+      }
       narrow
       aside={
         <div className="auth__panel">

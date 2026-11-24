@@ -4264,3 +4264,46 @@ body.cbt-active {
   .push-prompt { flex-wrap: wrap; }
   .push-prompt__go { order: 3; flex: 1 0 calc(100% - 50px); margin-left: 50px; }
 }
+
+/* Dashboard: "Continue setting up" until the student chooses their exam. */
+.setup-due {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 16px 0;
+  padding: 16px 16px 16px 18px;
+  border: 1px solid color-mix(in srgb, var(--orange, #e8741c) 40%, transparent);
+  border-radius: 16px;
+  background: var(--orange-tint, #fff1e4);
+  color: var(--ink, #0b1f1e);
+}
+.setup-due__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--orange-cta, #b8510a);
+  color: #fff;
+}
+.setup-due__body { flex: 1; min-width: 0; }
+.setup-due__body strong { display: block; font-size: 1.02rem; }
+.setup-due__body p { margin: 2px 0 0; font-size: 0.92rem; line-height: 1.45; color: var(--ink-2, #3d4f4e); }
+.setup-due__go {
+  flex: none;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 99px;
+  background: var(--orange-cta, #b8510a);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.setup-due__go:hover { background: var(--orange-cta-hover, #9a4307); }
+@media (max-width: 480px) {
+  .setup-due { flex-wrap: wrap; }
+  .setup-due__go { flex: 1 0 100%; }
+}
