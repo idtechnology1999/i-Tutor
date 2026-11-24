@@ -599,12 +599,23 @@ select.control__input {
 .otp__resend {
   display: flex;
   justify-content: center;
-  min-height: 20px;
+  align-items: center;
+  min-height: 44px;
 }
 
 .otp__countdown {
-  font-size: 0.6875rem;
-  color: var(--slate-500);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--slate-700, #334155);
+}
+
+.otp__resend .link-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 /* --- Confirmation --------------------------------------------------------- */
