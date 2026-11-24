@@ -359,6 +359,29 @@ export const JAMB_SYLLABUS: Record<string, string[]> = {
     'HIV/AIDS',
     'Interpersonal and inter-communal relationships',
   ],
+  History: [
+    'Historical method',
+    'Nigeria up to 1800',
+    'Nigeria 1800–1900',
+    'Colonial Nigeria',
+    'Post-independence Nigeria',
+    'West Africa',
+    'North and East Africa',
+    'Southern Africa',
+    'Africa and the world',
+  ],
+  'Computer Studies': [
+    'Basic computer concepts',
+    'History and classification of computers',
+    'Computer hardware',
+    'System software and operating systems',
+    'Application packages',
+    'Logic gates and number systems',
+    'Programming and problem solving',
+    'Databases and file management',
+    'Computer networks and the internet',
+    'Computer security and ethics',
+  ],
 };
 
 /** The JAMB topics for a subject (empty when none are listed). */

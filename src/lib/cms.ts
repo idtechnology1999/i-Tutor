@@ -40,6 +40,8 @@ export const CMS_SUBJECTS = [
   'CRS',
   'IRS',
   'Civic Education',
+  'History',
+  'Computer Studies',
 ] as const;
 export type CmsSubject = (typeof CMS_SUBJECTS)[number];
 

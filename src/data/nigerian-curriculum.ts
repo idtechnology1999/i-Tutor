@@ -35,6 +35,8 @@ export const JAMB_SUBJECTS: SubjectItem[] = [
   { id: 'crs', name: 'CRS', label: 'Christian Religious Studies', note: 'Law, religion and the arts.', category: 'arts' },
   { id: 'irs', name: 'IRS', label: 'Islamic Religious Studies', note: 'Law, Islamic studies and the arts.', category: 'arts' },
   { id: 'civic', name: 'Civic Education', note: 'Social sciences and the arts.', category: 'arts' },
+  { id: 'hist', name: 'History', note: 'History, law, international relations and the arts.', category: 'arts' },
+  { id: 'comp', name: 'Computer Studies', note: 'Computer science, IT and engineering courses.', category: 'core' },
 ];
 
 const SUBJECT_ALIASES: Record<string, string> = {
@@ -51,6 +53,9 @@ const SUBJECT_ALIASES: Record<string, string> = {
   'general mathematics': 'Mathematics',
   'agriculture': 'Agricultural Science',
   'further maths': 'Further Mathematics',
+  'computer science': 'Computer Studies',
+  computer: 'Computer Studies',
+  ict: 'Computer Studies',
 };
 
 /** A subject name as written elsewhere ("Literature in English") → the name students pick, or null if it isn't offered. */
