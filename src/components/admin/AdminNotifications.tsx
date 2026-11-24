@@ -9,7 +9,7 @@ import { PageHead } from './AdminApp';
    2. Verified but no exam chosen: "Continue setting up" by email, plus a pop-up
       where allowed (all, or one).
       They also see a "Continue setting up" card on their dashboard, and get
-      the pop-up automatically 1 hour after leaving (then once more).
+      the pop-up automatically 1 hour after leaving, then every day at 10 am until done.
    3. The automatic pop-ups switch, and any pop-up to one student. */
 
 type Mode = 'off' | 'test' | 'all';
@@ -188,8 +188,8 @@ export const AdminNotifications: React.FC<{ nav: AdminNav }> = () => {
             </h2>
             <p className="adm-muted">
               For verified students who haven’t chosen their exam. They get an email with a “Set up my exam” button that opens exam setup, plus a pop-up if they
-              allowed pop-ups ({data.noExamWithPush.toLocaleString()} of {data.noExam.toLocaleString()} have). They also see a “Continue setting up” card on their
-              dashboard until they finish. “Send to all” skips anyone emailed in the last 3 days ({data.noExamEmailable.toLocaleString()} will get it now).
+              allowed pop-ups ({data.noExamWithPush.toLocaleString()} of {data.noExam.toLocaleString()} have). They also get a “Continue setting up” box every time they
+              open their dashboard until they finish. “Send to all” skips anyone emailed in the last 3 days ({data.noExamEmailable.toLocaleString()} will get it now).
             </p>
             <Sender allLabel={`Send to all ${data.noExamEmailable.toLocaleString()}`} oneLabel="Send to this student" disabledAll={!data.noExamEmailable} status={popStatus} onSend={popupSetup} />
           </section>
@@ -197,7 +197,7 @@ export const AdminNotifications: React.FC<{ nav: AdminNav }> = () => {
           <section className="ui-card notif-card">
             <h2>Automatic pop-ups</h2>
             <p className="adm-muted">
-              “Continue setting up” (1 hour after leaving half-way, then once more, 8 am–8 pm only) and the 6 pm “you haven’t practised today” reminder. Now:{' '}
+              “Continue setting up” (1 hour after leaving half-way, then every day at 10 am until they finish, for up to 14 days; tapping it opens their dashboard) and the 6 pm “you haven’t practised today” reminder. Now:{' '}
               <strong>{data.mode === 'off' ? 'paused' : data.mode === 'all' ? 'on for every student' : 'test accounts only'}</strong>.
             </p>
             <div className="notif-actions">

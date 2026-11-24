@@ -63,6 +63,40 @@ const level = (pct: number) =>
 /** No exam chosen yet, or JAMB chosen with no subjects (the server's nudges use the same rule). */
 const setupIncomplete = (p: UserProfile) => !p.exams?.length || (p.exams.includes('UTME') && !p.selectedSubjects.length);
 
+/** Opens over the dashboard every visit until the exam is set up. "Later" closes it for this visit. */
+const SetupModal: React.FC<{ firstName: string; onGo: () => void; onLater: () => void }> = ({ firstName, onGo, onLater }) => {
+  const goRef = React.useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    goRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onLater();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onLater]);
+  return (
+    <div className="setup-modal" role="presentation" onClick={onLater}>
+      <div
+        className="setup-modal__box"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="setup-modal-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <span className="setup-modal__icon" aria-hidden>
+          <ClipboardCheck size={28} />
+        </span>
+        <h2 id="setup-modal-title">{firstName ? `${firstName}, continue setting up your exam` : 'Continue setting up your exam'}</h2>
+        <p>Choose your exam and subjects so i-Tutor can build your practice plan. It takes about a minute.</p>
+        <button ref={goRef} type="button" className="setup-modal__go" onClick={onGo}>
+          Set up my exam
+        </button>
+        <button type="button" className="setup-modal__later" onClick={onLater}>
+          Later
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const greeting = () => {
   const h = new Date().getHours();
   return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
@@ -110,6 +144,8 @@ export const DashboardView: React.FC<Props> = ({
     : [];
   const schoolSubjects = [...new Set(schoolQs.map((q) => q.subject))];
   const firstName = profile.fullName.split(' ')[0] || 'there';
+  const [showSetupModal, setShowSetupModal] = useState(true);
+  const closeSetupModal = React.useCallback(() => setShowSetupModal(false), []);
   // The predicted score once each subject has enough answers; until then the starting test's estimate.
   const predicted = prediction?.score ?? null;
   const projected = predicted ?? Math.round(160 + (profile.diagnosticScore / 100) * 200);
@@ -146,6 +182,10 @@ export const DashboardView: React.FC<Props> = ({
           </button>
         }
       />
+
+      {setupIncomplete(profile) && showSetupModal && (
+        <SetupModal firstName={profile.fullName.split(' ')[0] ?? ''} onGo={onFinishSetup} onLater={closeSetupModal} />
+      )}
 
       {setupIncomplete(profile) && (
         <div className="setup-due" role="region" aria-label="Finish setting up">
