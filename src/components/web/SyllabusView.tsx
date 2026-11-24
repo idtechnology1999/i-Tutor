@@ -57,6 +57,30 @@ interface Props {
 // Always offered, even before questions exist, so the layout stays familiar.
 const CORE_SUBJECTS = ['English', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Economics'];
 
+/** Questions shown per paper, like the real exam: English 60, every other subject 40. */
+const PAPER_SIZE = (subject: string) => (subject === 'English' ? 60 : 40);
+
+/** A number from 0 to 1 that is always the same for the same text and seed. */
+const rank = (text: string, seed: number) => {
+  let h = Math.floor(seed * 2 ** 31) ^ 2166136261;
+  for (let i = 0; i < text.length; i += 1) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
+  return ((h >>> 0) % 1_000_003) / 1_000_003;
+};
+
+/** Each subject's questions cut to its paper size: a random set for this
+    visit (the seed), kept in the paper's own order. */
+function paperSample<T extends { id: number; subject: string }>(qs: T[], seed: number): T[] {
+  const bySubject = new Map<string, T[]>();
+  for (const q of qs) bySubject.set(q.subject, [...(bySubject.get(q.subject) ?? []), q]);
+  const keep = new Set<number>();
+  for (const [subject, list] of bySubject) {
+    const size = PAPER_SIZE(subject);
+    const chosen = list.length <= size ? list : [...list].sort((a, b) => rank(String(a.id), seed) - rank(String(b.id), seed)).slice(0, size);
+    for (const q of chosen) keep.add(q.id);
+  }
+  return qs.filter((q) => keep.has(q.id));
+}
+
 export const SyllabusView: React.FC<Props> = ({
   initialExam,
   initialSchool,
@@ -87,6 +111,8 @@ export const SyllabusView: React.FC<Props> = ({
   const [year, setYear] = useState<number | null>(initialYear ?? null);
   const [searchQuery, setSearchQuery] = useState('');
   const [index, setIndex] = useState(0);
+  // A new random set of questions each time the page is opened.
+  const [drawSeed] = useState(() => Math.random());
   // The option the student tried for each question (During).
   const [tried, setTried] = useState<Record<number, string>>({});
   // After: answers kept to themselves until Submit & review.
@@ -115,7 +141,10 @@ export const SyllabusView: React.FC<Props> = ({
   // Always one year at a time (the latest unless one is picked), so one paper
   // is never mixed with another. Exams with no years yet show what there is.
   const shownYear = year !== null && years.includes(year) ? year : (years[0] ?? null);
-  const inYear = shownYear === null ? inExam : inExam.filter((q) => q.year === shownYear);
+  // Long papers (some years have 240 questions) are cut to the real exam's
+  // length: English 60, others 40. A fresh random set each visit, kept in paper
+  // order so a passage stays with its questions.
+  const inYear = paperSample(shownYear === null ? inExam : inExam.filter((q) => q.year === shownYear), drawSeed);
   // Only what the student registered for; exams without their own list show everything.
   const subjects = subjectsFor?.(exam) ?? [...new Set([...CORE_SUBJECTS, ...inExam.map((q) => q.subject)])];
   // A subject from an address is a slug ("english"): match it by slug too.
