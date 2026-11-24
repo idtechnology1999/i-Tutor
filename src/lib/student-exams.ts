@@ -80,7 +80,8 @@ export const onboardingSteps = (exams: StudentExam[]): OnboardingStep[] => {
     ...(utme || post ? (['institution'] as const) : []),
     'goals',
     'permissions',
-    'baseline',
+    // The placement test ('baseline') is no longer a sign-up step: it distracted
+    // students mid-registration. Its page still opens at /onboarding/baseline.
   ];
 };
 

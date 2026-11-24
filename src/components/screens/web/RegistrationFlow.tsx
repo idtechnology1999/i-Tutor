@@ -96,7 +96,8 @@ export const RegistrationFlow: React.FC<Props> = ({
   const exams = examsOf(profile);
   const steps = onboardingSteps(exams);
   const at = steps.indexOf(view as OnboardingStep);
-  const next = () => onNavigate(steps[Math.min(at + 1, steps.length - 1)]);
+  // After the last step, straight to the dashboard.
+  const next = () => (at >= steps.length - 1 ? onFinish() : onNavigate(steps[at + 1]));
   const back = () => onNavigate(at > 0 ? steps[at - 1] : 'signup');
 
   const toggleSubject = (name: string) =>
