@@ -22,7 +22,6 @@ import { A10_SubjectPicker } from './A10_SubjectPicker';
 import { A11_InstitutionCourse } from './A11_InstitutionCourse';
 import { A12_ExamDateGoals } from './A12_ExamDateGoals';
 import { A13_PermissionsPrimer } from './A13_PermissionsPrimer';
-import { A14_PlacementDiagnostic } from './A14_PlacementDiagnostic';
 import type { AppView } from '../../../lib/router';
 import { toggleJambSubject } from '../../../data/nigerian-curriculum';
 
@@ -39,7 +38,6 @@ type FlowView = Extract<
   | 'institution'
   | 'goals'
   | 'permissions'
-  | 'baseline'
 >;
 
 interface Props {
@@ -59,11 +57,10 @@ const ONBOARDING_VIEWS: FlowView[] = [
   'institution',
   'goals',
   'permissions',
-  'baseline',
 ];
 
 /**
- * Owns the A04–A14 sequence and keeps the candidate's answers in the shared
+ * Owns the A04–A13 sequence and keeps the candidate's answers in the shared
  * profile. Each screen stays presentational; this file holds the transitions,
  * the resume guard and the redirect back out of the flow.
  */
@@ -320,24 +317,8 @@ export const RegistrationFlow: React.FC<Props> = ({
                 })
                 .catch(() => onUpdateProfile({ notificationsEnabled: false }));
             }}
-            offlineCacheEnabled={profile.offlineCacheEnabled}
-            onChangeOfflineCache={(offlineCacheEnabled) =>
-              onUpdateProfile({ offlineCacheEnabled })
-            }
             onBack={back}
             onContinue={next}
-          />
-        );
-
-      case 'baseline':
-        return (
-          <A14_PlacementDiagnostic
-            subjectCount={profile.selectedSubjects.length}
-            trackLabel={examsLabel(examsOf(profile))}
-            targetScore={profile.targetScore}
-            onBack={back}
-            onStart={onFinish}
-            onSkip={onFinish}
           />
         );
 

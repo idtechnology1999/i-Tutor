@@ -1,12 +1,10 @@
 import React from 'react';
-import { BellIcon, CloudCheckIcon, CheckIcon, ShieldCheckIcon } from '../../Icons';
+import { BellIcon, CheckIcon, ShieldCheckIcon } from '../../Icons';
 import { OnboardingShell, StepActions } from './shared';
 
 interface Props {
   notificationsEnabled: boolean;
   onChangeNotifications: (enabled: boolean) => void;
-  offlineCacheEnabled: boolean;
-  onChangeOfflineCache: (enabled: boolean) => void;
   onContinue: () => void;
   onBack: () => void;
 }
@@ -62,20 +60,15 @@ const Toggle: React.FC<ToggleProps> = ({
 export const A13_PermissionsPrimer: React.FC<Props> = ({
   notificationsEnabled,
   onChangeNotifications,
-  offlineCacheEnabled,
-  onChangeOfflineCache,
   onContinue,
   onBack,
 }) => {
-  const enabledCount =
-    (notificationsEnabled ? 1 : 0) + (offlineCacheEnabled ? 1 : 0);
-
   return (
     <OnboardingShell
       screen="permissions"
       step={5}
-      title="Two settings that make i-Tutor work on a weak network"
-      lede="Both are optional and both can be changed later in Settings. Nothing here requires a payment card or a phone number."
+      title="Get study reminders on this phone"
+      lede="A short pop-up, like a message, when it’s time to practise. It’s free, optional and you can turn it off any time in your profile."
       aside={
         <div className="perm-summary">
           <h2 className="perm-summary__title">
@@ -88,7 +81,7 @@ export const A13_PermissionsPrimer: React.FC<Props> = ({
             </li>
             <li>
               <CheckIcon size={13} />
-              Offline papers are cached in your browser, not on our servers.
+              At most one study reminder a day.
             </li>
             <li>
               <CheckIcon size={13} />
@@ -108,29 +101,17 @@ export const A13_PermissionsPrimer: React.FC<Props> = ({
           icon={<BellIcon size={18} />}
           title="Study reminders"
           why="Stay on the study plan you just set."
-          detail="A daily nudge at the time you pick. Turn it off and nothing is sent."
+          detail="An evening pop-up on days you haven’t practised yet. Turn it off and nothing is sent."
           enabled={notificationsEnabled}
           onChange={onChangeNotifications}
-          badge="Recommended"
-        />
-        <Toggle
-          id="permOffline"
-          icon={<CloudCheckIcon size={18} />}
-          title="Offline question bank"
-          why="Practise on 2G, or with no data at all."
-          detail="Downloads the papers for your subjects to this device so they open without a connection."
-          enabled={offlineCacheEnabled}
-          onChange={onChangeOfflineCache}
           badge="Recommended"
         />
       </div>
 
       <p className="onboard__note">
-        {enabledCount === 2
-          ? 'Both enabled. i-Tutor will work even when the network does not.'
-          : enabledCount === 1
-            ? 'One enabled. You can turn the other on at any time from Settings.'
-            : 'Both off. Everything still works — it just needs a connection.'}
+        {notificationsEnabled
+          ? 'Reminders are on for this phone. You can turn them off any time in your profile.'
+          : 'Reminders are off. You can turn them on later from your dashboard or profile.'}
       </p>
 
       <StepActions onBack={onBack} backLabel="Back to study goal">
@@ -142,7 +123,7 @@ export const A13_PermissionsPrimer: React.FC<Props> = ({
           Not now
         </button>
         <button type="button" className="btn btn--primary" onClick={onContinue}>
-          Save and continue
+          Go to my dashboard
         </button>
       </StepActions>
     </OnboardingShell>

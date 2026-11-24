@@ -56,7 +56,7 @@ export const isSchoolCertValid = (value?: SchoolCert) =>
 
 /* ------------------------------------------------------------ Onboarding steps */
 
-export type OnboardingStep = 'track' | 'schoolcert' | 'subjects' | 'institution' | 'goals' | 'permissions' | 'baseline';
+export type OnboardingStep = 'track' | 'schoolcert' | 'subjects' | 'institution' | 'goals' | 'permissions';
 
 const STEP_LABEL: Record<OnboardingStep, string> = {
   track: 'Your exams',
@@ -64,8 +64,7 @@ const STEP_LABEL: Record<OnboardingStep, string> = {
   subjects: 'JAMB subjects',
   institution: 'School & course',
   goals: 'Date & goal',
-  permissions: 'Permissions',
-  baseline: 'Baseline',
+  permissions: 'Reminders',
 };
 
 /** Only the steps that apply to the exams chosen, in order. */
@@ -80,8 +79,6 @@ export const onboardingSteps = (exams: StudentExam[]): OnboardingStep[] => {
     ...(utme || post ? (['institution'] as const) : []),
     'goals',
     'permissions',
-    // The placement test ('baseline') is no longer a sign-up step: it distracted
-    // students mid-registration. Its page still opens at /onboarding/baseline.
   ];
 };
 

@@ -33,7 +33,6 @@ export type AppView =
   | 'institution'
   | 'goals'
   | 'permissions'
-  | 'baseline'
   // A page made in the CMS: every address the app doesn't know.
   | 'page';
 
@@ -59,7 +58,6 @@ export const VIEW_PATHS: Record<AppView, string> = {
   institution: '/onboarding/institution',
   goals: '/onboarding/goals',
   permissions: '/onboarding/permissions',
-  baseline: '/onboarding/baseline',
   page: '/page',
 };
 
@@ -74,8 +72,7 @@ export type AccountView =
   | 'subjects'
   | 'institution'
   | 'goals'
-  | 'permissions'
-  | 'baseline';
+  | 'permissions';
 
 const ACCOUNT_VIEWS: ReadonlySet<AppView> = new Set<AccountView>([
   'signup',
@@ -89,7 +86,6 @@ const ACCOUNT_VIEWS: ReadonlySet<AppView> = new Set<AccountView>([
   'institution',
   'goals',
   'permissions',
-  'baseline',
 ]);
 
 const APP_VIEWS: ReadonlySet<AppView> = new Set<AppView>([
@@ -105,7 +101,7 @@ const APP_VIEWS: ReadonlySet<AppView> = new Set<AppView>([
 /** Signed-in pages that share the app navigation (tab bar on phones). */
 export const isAppView = (view: AppView) => APP_VIEWS.has(view);
 
-/** True for the registration and onboarding sequence (A04–A14). */
+/** True for the registration and onboarding sequence (A04–A13). */
 export const isAccountFlowView = (view: AppView): view is AccountView =>
   ACCOUNT_VIEWS.has(view);
 
@@ -158,7 +154,9 @@ const ALIASES: Record<string, AppView> = {
   '/onboarding/waec': 'schoolcert',
   '/exam-date-goals': 'goals',
   '/notifications': 'permissions',
-  '/placement': 'baseline',
+  // The placement test was removed; its old addresses open the dashboard.
+  '/placement': 'dashboard',
+  '/onboarding/baseline': 'dashboard',
 };
 
 const normalise = (pathname: string) => {
@@ -183,7 +181,6 @@ const SCREEN_IDS: Record<string, AppView> = {
   a11_institution: 'institution',
   a12_goals: 'goals',
   a13_permissions: 'permissions',
-  a14_diagnostic: 'baseline',
   home_dashboard: 'dashboard',
 };
 

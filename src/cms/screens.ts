@@ -200,24 +200,13 @@ export const SCREENS: ScreenDef[] = [
   },
   {
     id: 'permissions',
-    label: 'Step 5 · Reminders and offline',
+    label: 'Step 5 · Reminders',
     group: 'Onboarding',
     path: '/onboarding/permissions',
     kind: 'onboard',
     defaults: {
-      title: 'Two settings that make i-Tutor work on a weak network',
-      lede: 'Both are optional and both can be changed later in Settings. Nothing here requires a payment card or a phone number.',
-    },
-  },
-  {
-    id: 'baseline',
-    label: 'Step 6 · Placement test',
-    group: 'Onboarding',
-    path: '/onboarding/baseline',
-    kind: 'onboard',
-    defaults: {
-      title: 'One last step: a short placement test',
-      lede: 'Twenty questions across your subjects. It is the fastest way for i-Tutor to know which topics to show you first — and which ones to leave alone for now.',
+      title: 'Get study reminders on this phone',
+      lede: 'A short pop-up, like a message, when it’s time to practise. It’s free, optional and you can turn it off any time in your profile.',
     },
   },
   {

@@ -6,7 +6,8 @@ import { PageHead } from './AdminApp';
 
 /* Admin → Notifications (backend routes/admin/notifications.ts).
    1. Not verified: email a one-tap "Verify my email" link (all, or one student).
-   2. Verified but no exam chosen: a pop-up "Choose your exam" (all, or one).
+   2. Verified but no exam chosen: "Continue setting up" by email, plus a pop-up
+      where allowed (all, or one).
       They also see a "Continue setting up" card on their dashboard, and get
       the pop-up automatically 1 hour after leaving (then once more).
    3. The automatic pop-ups switch, and any pop-up to one student. */
@@ -22,6 +23,7 @@ interface Overview {
   unverifiedEmailable: number;
   noExam: number;
   noExamWithPush: number;
+  noExamEmailable: number;
 }
 
 type Status = { ok?: string; error?: string; busy?: boolean };
@@ -103,20 +105,17 @@ export const AdminNotifications: React.FC<{ nav: AdminNav }> = () => {
   };
 
   const popupSetup = (to: 'all' | 'one', account: string) => {
+    if (to === 'all' && !window.confirm(`Email “Continue setting up” to ${data?.noExamEmailable ?? 0} students who haven’t chosen their exam?`)) return;
     setPopStatus({ busy: true });
-    api<{ sent: number; notAllowed: number }>('/api/admin/notifications/setup-popup', { method: 'POST', body: { to, account } })
+    api<{ emailed: number }>('/api/admin/notifications/setup-popup', { method: 'POST', body: { to, account } })
       .then((r) => {
-        if (to === 'one') {
-          setPopStatus(
-            r.sent
-              ? { ok: 'Pop-up sent. They’ll also see “Continue setting up” on their dashboard.' }
-              : { ok: 'They haven’t allowed notifications on their phone, so no pop-up. They’ll still see “Continue setting up” on their dashboard.' },
-          );
-        } else {
-          setPopStatus({
-            ok: `Pop-up sent to ${r.sent} students.${r.notAllowed ? ` ${r.notAllowed} haven’t allowed notifications; they’ll see “Continue setting up” on their dashboard.` : ''}`,
-          });
-        }
+        setPopStatus({
+          ok:
+            to === 'one'
+              ? 'Sent by email (and as a pop-up if they allowed it). The email may land in spam.'
+              : `Sending to ${r.emailed} students now, by email and as a pop-up where allowed. It can take a few minutes.`,
+        });
+        void load();
       })
       .catch((err: Error) => setPopStatus({ error: err.message }));
   };
@@ -185,14 +184,14 @@ export const AdminNotifications: React.FC<{ nav: AdminNav }> = () => {
 
           <section className="ui-card notif-card">
             <h2>
-              <BellRing size={20} aria-hidden /> Pop-up: “Continue setting up”
+              <BellRing size={20} aria-hidden /> Email + pop-up: “Continue setting up”
             </h2>
             <p className="adm-muted">
-              For verified students who haven’t chosen their exam. Tapping the pop-up opens exam setup directly. Every one of them also sees a “Continue setting up”
-              card on their dashboard until they finish, and gets this pop-up automatically 1 hour after leaving (then once more 2 days later).{' '}
-              {data.noExamWithPush.toLocaleString()} of {data.noExam.toLocaleString()} have allowed pop-ups.
+              For verified students who haven’t chosen their exam. They get an email with a “Set up my exam” button that opens exam setup, plus a pop-up if they
+              allowed pop-ups ({data.noExamWithPush.toLocaleString()} of {data.noExam.toLocaleString()} have). They also see a “Continue setting up” card on their
+              dashboard until they finish. “Send to all” skips anyone emailed in the last 3 days ({data.noExamEmailable.toLocaleString()} will get it now).
             </p>
-            <Sender allLabel={`Send pop-up to all ${data.noExam.toLocaleString()}`} oneLabel="Send pop-up" disabledAll={!data.noExam} status={popStatus} onSend={popupSetup} />
+            <Sender allLabel={`Send to all ${data.noExamEmailable.toLocaleString()}`} oneLabel="Send to this student" disabledAll={!data.noExamEmailable} status={popStatus} onSend={popupSetup} />
           </section>
 
           <section className="ui-card notif-card">

@@ -12,7 +12,6 @@ export type ScreenId =
   | 'A11_INSTITUTION'
   | 'A12_GOALS'
   | 'A13_PERMISSIONS'
-  | 'A14_DIAGNOSTIC'
   | 'DIAGNOSTIC_QUIZ'
   | 'HOME_DASHBOARD';
 

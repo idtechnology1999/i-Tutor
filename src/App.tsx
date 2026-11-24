@@ -136,8 +136,7 @@ const TITLES: Record<AppView, string> = {
   subjects: 'Step 2 · Subjects — i-Tutor',
   institution: 'Step 3 · Institution & course — i-Tutor',
   goals: 'Step 4 · Exam date & goal — i-Tutor',
-  permissions: 'Step 5 · Reminders & offline — i-Tutor',
-  baseline: 'Step 6 · Placement test — i-Tutor',
+  permissions: 'Step 5 · Reminders — i-Tutor',
   page: 'i-Tutor',
 };
 
