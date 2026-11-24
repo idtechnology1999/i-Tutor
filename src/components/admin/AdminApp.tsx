@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { loadAdminExams, useExams } from '../../lib/exams';
 import {
   ArrowUpRight,
+  BellRing,
   BookOpenCheck,
   ClipboardList,
   GraduationCap,
@@ -40,6 +41,7 @@ import { AdminTeam } from './AdminTeam';
 import { AdminAdmins } from './AdminAdmins';
 import { AdminAiUsage } from './AdminAiUsage';
 import { AdminReports } from './AdminReports';
+import { AdminNotifications } from './AdminNotifications';
 import { AdminAuth, AdminChangePassword } from './AdminAuth';
 import { adminLogout, currentAdminAccount } from '../../services/admin-auth';
 import type { AdminAccount } from '../../services/admin-auth';
@@ -60,6 +62,7 @@ export type Section =
   | 'users'
   | 'ai'
   | 'reports'
+  | 'notifications'
   | 'team'
   | 'admins'
   | 'settings';
@@ -107,6 +110,7 @@ const NAV: Array<{ id: Section; label: string; icon: typeof LayoutDashboard }> =
   { id: 'users', label: 'Users', icon: UsersRound },
   { id: 'ai', label: 'AI usage', icon: Sparkles },
   { id: 'reports', label: 'Reports', icon: ClipboardList },
+  { id: 'notifications', label: 'Notifications', icon: BellRing },
   { id: 'team', label: 'Team', icon: UserRoundCog },
   { id: 'admins', label: 'Admins', icon: ShieldCheck },
   { id: 'settings', label: 'Settings', icon: Settings },
@@ -126,6 +130,7 @@ const SECTION_PATH: Record<Section, string> = {
   users: '/admin/users',
   ai: '/admin/ai-usage',
   reports: '/admin/reports',
+  notifications: '/admin/notifications',
   team: '/admin/team',
   admins: '/admin/admins',
   settings: '/admin/settings',
@@ -345,6 +350,7 @@ export const AdminApp: React.FC<{
         {section === 'users' && <AdminUsers nav={nav} mode={mode} />}
         {section === 'ai' && <AdminAiUsage nav={nav} />}
         {section === 'reports' && <AdminReports nav={nav} me={account ?? null} />}
+        {section === 'notifications' && <AdminNotifications nav={nav} />}
         {section === 'team' && <AdminTeam nav={nav} />}
         {section === 'admins' && account && isSuper && <AdminAdmins nav={nav} me={account} />}
         {section === 'settings' && <AdminSettings nav={nav} mode={mode} />}

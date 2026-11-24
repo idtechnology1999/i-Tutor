@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { PushPrompt } from './PushPrompt';
 import { useCredits } from '../../services/credits';
 import { CreditCard } from './CreditRing';
 import {
@@ -137,6 +138,12 @@ export const DashboardView: React.FC<Props> = ({
             Start a practice exam
           </button>
         }
+      />
+
+      <PushPrompt
+        closable
+        title="Turn on study reminders"
+        text="Get a short pop-up on this device when it’s time to practise, like a message. Free, and you can turn it off any time."
       />
 
       {exams.length > 1 && (

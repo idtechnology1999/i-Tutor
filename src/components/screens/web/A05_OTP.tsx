@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { resendCode, verifyCode } from '../../../services/auth';
 import { AlertCircleIcon, RefreshCwIcon } from '../../Icons';
 import { AuthShell, TrustList } from './shared';
+import { PushPrompt } from '../../web/PushPrompt';
 
 interface Props {
   phoneOrEmail: string;
@@ -212,6 +213,11 @@ export const A05_OTP: React.FC<Props> = ({
         <p className="auth__switch">
           Check your inbox and promotions folder for the message.
         </p>
+
+        <PushPrompt
+          title="Get a reminder if you don’t finish"
+          text="If the code is slow to arrive, we’ll send a pop-up to this phone so you can come back and finish."
+        />
       </div>
     </AuthShell>
   );

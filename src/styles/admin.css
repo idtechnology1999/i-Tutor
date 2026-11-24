@@ -4148,3 +4148,19 @@
 .rvx-empty { color: var(--ink-3); }
 .prices__group { margin: 18px 0 8px; font-size: 0.95rem; color: var(--ink); }
 .prices__unit { color: var(--ink-3); font-size: 0.8rem; white-space: nowrap; }
+
+/* Admin → Notifications */
+.notif-card { display: grid; gap: 14px; padding: 18px 20px; margin-bottom: 16px; }
+.notif-card h2 { margin: 0; font-size: 1.1rem; }
+.notif-card .adm-muted { margin: 0; }
+.notif-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.notif-mode { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--rule-2, #dfe7e6); border-radius: 12px; cursor: pointer; background: #fff; }
+.notif-mode.is-on { border-color: var(--brand, #0e3b3a); box-shadow: 0 0 0 1px var(--brand, #0e3b3a) inset; }
+.notif-mode input { margin-top: 4px; accent-color: var(--brand, #0e3b3a); }
+.notif-mode strong { display: block; }
+.notif-mode small { color: var(--ink-3, #5c6d6c); font-size: 0.85rem; }
+.notif-accounts { min-height: 80px; padding: 10px 12px; resize: vertical; font: inherit; }
+.notif-tests { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 0.9rem; }
+.notif-tests li { padding: 8px 12px; border-radius: 10px; background: var(--mist, #f4f7f6); overflow-wrap: anywhere; }
+.notif-tests .is-bad { color: var(--bad, #c2352b); font-style: normal; }
+.notif-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }

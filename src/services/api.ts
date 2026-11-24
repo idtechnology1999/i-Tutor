@@ -35,11 +35,14 @@ if (import.meta.env.DEV) {
 /** A failed request, with the server's message when it sent one. */
 export class ApiError extends Error {
   status: number;
+  /** The server's whole reply, for errors that carry more than a message. */
+  data: Record<string, unknown>;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, data: Record<string, unknown> = {}) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.data = data;
   }
 }
 
@@ -69,7 +72,7 @@ export async function api<T>(path: string, { method = 'GET', body, headers, time
     const data = isJson ? await res.json() : null;
     if (!res.ok) {
       const message = (data as { error?: string } | null)?.error ?? `Request failed (${res.status}).`;
-      throw new ApiError(res.status, message);
+      throw new ApiError(res.status, message, (data ?? {}) as Record<string, unknown>);
     }
     return data as T;
   } catch (error) {

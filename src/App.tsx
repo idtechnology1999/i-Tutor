@@ -16,6 +16,7 @@ import { loadProfile, saveProfile } from './services/profile';
 import { isLive } from './services/api';
 import { examsOf, subjectsFor } from './lib/student-exams';
 import { logOut } from './services/auth';
+import { refreshPush, turnOffPush } from './services/push';
 import { canUse, setCreditsPlan } from './services/credits';
 import type { SolveRequest } from './data/tutors';
 import { isChunkError, reloadForNewVersion } from './lib/stale-reload';
@@ -317,6 +318,8 @@ export function App() {
         if (me) {
           setProfile(me);
           setHasAccount(true);
+          // A browser that allowed reminders (perhaps before verifying) stays linked to this account.
+          void refreshPush();
         }
       })
       .finally(() => setAuthChecked(true));
@@ -496,6 +499,8 @@ export function App() {
             onUpdateProfile={handleUpdateProfile}
             onUpgrade={() => goTo('upgrade')}
             onLogOut={() => {
+              // A shared phone or café computer must not keep getting this student's reminders.
+              void turnOffPush();
               logOut().catch(() => {
                 /* signed out locally either way */
               });

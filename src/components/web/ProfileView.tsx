@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { examsLabel, examsOf } from '../../lib/student-exams';
 import { ArrowLeft, BadgeCheck, Bell, GraduationCap, LockOpen, LogOut, PencilLine, Target } from 'lucide-react';
 import { setReminders, useProgress } from '../../services/progress';
+import { PushPrompt } from './PushPrompt';
 import type { UserProfile } from '../../types';
 import { SetupWizardView } from './SetupWizardView';
 import { AboutYouCard } from './AboutYouCard';
@@ -140,6 +141,12 @@ export const ProfileView: React.FC<Props> = ({ profile, onUpdateProfile, onUpgra
             <span>{progress.remindersOn !== false ? 'On' : 'Off'}</span>
           </button>
         </section>
+      )}
+      {progress?.synced && progress.remindersOn !== false && (
+        <PushPrompt
+          title="Get reminders on this device"
+          text="Reminders come as pop-ups, like a message. Turn them on for this phone or computer."
+        />
       )}
 
       <button type="button" className="ui-btn ui-btn--ghost profile__logout" onClick={onLogOut}>

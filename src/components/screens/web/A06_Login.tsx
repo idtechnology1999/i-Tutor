@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { logIn } from '../../../services/auth';
+import { setPendingPushToken } from '../../../services/push';
 import { isLive } from '../../../services/api';
 import type { ApiError } from '../../../services/api';
 import {
@@ -16,6 +17,8 @@ import { AuthShell, FormField, PhotoAside } from './shared';
 interface Props {
   onBack: () => void;
   onSuccess: () => void;
+  /** The account exists but isn't verified: go to the code screen. */
+  onNeedsCode?: (phoneOrEmail: string) => void;
   onForgotPassword: () => void;
   onSignUpInstead: () => void;
   onBiometricAuth: () => void;
@@ -26,6 +29,7 @@ const MAX_ATTEMPTS = 5;
 export const A06_Login: React.FC<Props> = ({
   onBack,
   onSuccess,
+  onNeedsCode,
   onForgotPassword,
   onSignUpInstead,
   onBiometricAuth,
@@ -65,6 +69,12 @@ export const A06_Login: React.FC<Props> = ({
     logIn(validation.formatted, password)
       .then(() => onSuccess())
       .catch((err: ApiError) => {
+        // Right password, account not verified yet: a new code was sent, so open the code screen.
+        if (err.status === 403 && err.data?.needsCode && onNeedsCode) {
+          setPendingPushToken(typeof err.data.pushToken === 'string' ? err.data.pushToken : undefined);
+          onNeedsCode(typeof err.data.phoneOrEmail === 'string' ? err.data.phoneOrEmail : validation.formatted);
+          return;
+        }
         if (err.status === 401) failAttempt();
         setServerError(err.message);
       })

@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { signUp } from '../../../services/auth';
+import { turnOffPush, turnOnPush } from '../../../services/push';
 import {
   examsLabel,
   examsOf,
@@ -189,6 +190,11 @@ export const RegistrationFlow: React.FC<Props> = ({
               onAccountReady();
               onFinish();
             }}
+            onNeedsCode={(contact) => {
+              setPendingContact(contact);
+              onUpdateProfile({ phoneOrEmail: contact });
+              onNavigate('otp');
+            }}
           />
         );
 
@@ -292,9 +298,20 @@ export const RegistrationFlow: React.FC<Props> = ({
         return (
           <A13_PermissionsPrimer
             notificationsEnabled={profile.notificationsEnabled}
-            onChangeNotifications={(notificationsEnabled) =>
-              onUpdateProfile({ notificationsEnabled })
-            }
+            onChangeNotifications={(notificationsEnabled) => {
+              // The switch asks the browser to allow pop-ups; it stays off if they say no.
+              if (!notificationsEnabled) {
+                void turnOffPush();
+                onUpdateProfile({ notificationsEnabled: false });
+                return;
+              }
+              onUpdateProfile({ notificationsEnabled: true });
+              turnOnPush()
+                .then((state) => {
+                  if (state !== 'on' && state !== 'unsupported') onUpdateProfile({ notificationsEnabled: false });
+                })
+                .catch(() => onUpdateProfile({ notificationsEnabled: false }));
+            }}
             offlineCacheEnabled={profile.offlineCacheEnabled}
             onChangeOfflineCache={(offlineCacheEnabled) =>
               onUpdateProfile({ offlineCacheEnabled })

@@ -1,5 +1,6 @@
 import { api, demoDelay, isLive } from './api';
 import type { UserProfile } from '../types';
+import { setPendingPushToken } from './push';
 
 /* Accounts: sign-up with a one-time code, login, password reset.
    Demo mode accepts any valid-looking input, as the screens always have. */
@@ -13,7 +14,9 @@ export interface SignUpInput {
 /** Creates the account and emails a 6-digit code. */
 export async function signUp(input: SignUpInput) {
   if (!isLive) return demoDelay(400);
-  await api('/api/auth/signup', { method: 'POST', body: input });
+  const res = await api<{ pushToken?: string } | null>('/api/auth/signup', { method: 'POST', body: input });
+  // Lets the code screen turn on reminders before the account is verified.
+  setPendingPushToken(res?.pushToken);
 }
 
 /** Confirms the code; the backend starts the session (httpOnly cookie). */

@@ -4204,3 +4204,63 @@ body.cbt-active {
 .error-screen { min-height: 70vh; display: grid; place-content: center; justify-items: center; gap: 12px; padding: 24px 16px; text-align: center; }
 .error-screen h1 { font-size: 1.5rem; margin: 0; color: var(--ink, #0b1f1e); }
 .error-screen p { margin: 0 0 8px; color: var(--ink-2, #3d4f4e); }
+
+/* "Turn on reminders" card (components/web/PushPrompt.tsx). */
+.push-prompt {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 16px 0;
+  padding: 14px 14px 14px 16px;
+  border: 1px solid var(--line, #e2e9e8);
+  border-radius: 16px;
+  background: var(--brand-tint, #e6f0ef);
+  color: var(--ink, #0b1f1e);
+}
+.push-prompt.is-done { background: var(--paper, #fff); }
+.push-prompt__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--brand, #0e3b3a);
+  color: #fff;
+}
+.push-prompt__body { flex: 1; min-width: 0; }
+.push-prompt__body strong { display: block; font-size: 0.98rem; }
+.push-prompt__body p { margin: 2px 0 0; font-size: 0.9rem; line-height: 1.45; color: var(--ink-2, #3d4f4e); }
+.push-prompt__error { color: var(--bad, #c2352b) !important; }
+.push-prompt__go {
+  flex: none;
+  align-self: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 99px;
+  background: var(--brand, #0e3b3a);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.push-prompt__go:hover { background: var(--brand-2, #145351); }
+.push-prompt__go:disabled { opacity: 0.7; cursor: default; }
+.push-prompt__close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-2, #3d4f4e);
+  cursor: pointer;
+}
+@media (max-width: 480px) {
+  .push-prompt { flex-wrap: wrap; }
+  .push-prompt__go { order: 3; flex: 1 0 calc(100% - 50px); margin-left: 50px; }
+}
