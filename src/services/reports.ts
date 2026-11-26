@@ -121,6 +121,26 @@ export interface UsersReport {
   students?: Array<{ name: string; contact: string; verified: boolean; plan: string; exams: string; course: string; school: string; joined: string; lastActive: string }>;
 }
 
+export interface EngagementDayRow {
+  date: string;
+  activeStudents: number;
+  activeMinutes: number;
+  avgMinutesPerActiveStudent: number;
+  signIns: number;
+  practiceAttempts: number;
+  questionsAnswered: number;
+  accuracy: number | null;
+  aiRequests: number;
+}
+
+export interface EngagementReport {
+  generatedAt: string;
+  from: string;
+  to: string;
+  totals: Omit<EngagementDayRow, 'date'>;
+  days: EngagementDayRow[];
+}
+
 export interface ReportMap {
   logs: LogsReport;
   logins: LoginsReport;
@@ -128,6 +148,7 @@ export interface ReportMap {
   system: SystemReport;
   day: DayReport;
   users: UsersReport;
+  engagement: EngagementReport;
 }
 export type ReportName = keyof ReportMap;
 

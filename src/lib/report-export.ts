@@ -1,4 +1,4 @@
-import type { ContentReport, DayReport, LoginsReport, LogRow, LogsReport, ReportMap, ReportName, SubjectCoverage, SystemReport, UsersReport } from '../services/reports';
+import type { ContentReport, DayReport, EngagementDayRow, EngagementReport, LoginsReport, LogRow, LogsReport, ReportMap, ReportName, SubjectCoverage, SystemReport, UsersReport } from '../services/reports';
 
 /* Turning a report into a file: a PDF (a styled page printed by the
    browser: "Save as PDF") or a CSV that opens in Excel. Charts are plain SVG,
@@ -446,6 +446,33 @@ export function reportPdf<K extends ReportName>(name: K, data: ReportMap[K], ctx
         `<h2>Day by day</h2>${dayTable(d.days)}`;
       return { title, html: page(title, sub, body, ctx.by) };
     }
+    case 'engagement': {
+      const d = data as EngagementReport;
+      const t = d.totals;
+      const title = 'Student engagement report';
+      const sub = `${longDay(d.from)} to ${longDay(d.to)}`;
+      const days = [...d.days].reverse();
+      const series: Series[] = [
+        { name: 'Active students', values: days.map((x) => x.activeStudents), color: CHART_COLORS.teal },
+        { name: 'Active minutes', values: days.map((x) => x.activeMinutes), color: CHART_COLORS.amber },
+      ];
+      const body =
+        `<h2>How students used i-Tutor</h2>` +
+        stats([
+          ['Active students', t.activeStudents],
+          ['Active time', `${Math.round((t.activeMinutes / 60) * 10) / 10} h`],
+          ['Minutes per active student', t.avgMinutesPerActiveStudent],
+          ['New sign-ins', t.signIns],
+          ['Practice sessions', t.practiceAttempts],
+          ['Questions answered', t.questionsAnswered],
+          ['Answer accuracy', t.accuracy === null ? '–' : `${t.accuracy}%`],
+          ['AI questions', t.aiRequests],
+        ]) +
+        `<p class="muted small">Active time counts only while a signed-in student has i-Tutor open and visible.</p>` +
+        `<div class="chart">${barChartSvg(days.map((x) => x.date.slice(5).split('-').reverse().join('/')), series, { height: 200 })}${legendHtml(series)}</div>` +
+        `<h2>Day by day</h2>${engagementTable(d.days)}`;
+      return { title, html: page(title, sub, body, ctx.by) };
+    }
     case 'day': {
       const d = data as DayReport;
       const s = d.summary;
@@ -542,6 +569,23 @@ const dayTable = (rows: SystemReport['days']) =>
     ['Date', 'New students', 'Payments', 'Money', 'Questions added', 'Practice', 'AI requests', 'Admin actions'],
     rows.map((x) => [esc(longDay(x.date)), x.newStudents, x.payments, esc(naira(x.revenueNaira)), x.questionsAdded, x.practiceSessions, x.aiRequests, x.adminActions]),
     [1, 2, 3, 4, 5, 6, 7],
+  );
+
+const engagementTable = (rows: EngagementDayRow[]) =>
+  table(
+    ['Date', 'Active students', 'Active minutes', 'Min/student', 'Sign-ins', 'Practice', 'Answered', 'Accuracy', 'AI questions'],
+    rows.map((x) => [
+      esc(longDay(x.date)),
+      x.activeStudents,
+      x.activeMinutes,
+      x.avgMinutesPerActiveStudent,
+      x.signIns,
+      x.practiceAttempts,
+      x.questionsAnswered,
+      esc(x.accuracy === null ? '–' : `${x.accuracy}%`),
+      x.aiRequests,
+    ]),
+    [1, 2, 3, 4, 5, 6, 7, 8],
   );
 
 /** Prints a report page from a hidden frame: the browser offers "Save as PDF". */
@@ -664,6 +708,25 @@ export function reportCsv<K extends ReportName>(name: K, data: ReportMap[K], ctx
         [],
         ['Date', 'New students', 'Payments', 'Money (NGN)', 'Questions added', 'Practice sessions', 'Students who practised', 'AI requests', 'AI cost (NGN)', 'Admin actions', 'Admin sign-ins'],
         ...d.days.map((x) => [x.date, x.newStudents, x.payments, x.revenueNaira, x.questionsAdded, x.practiceSessions, x.activeStudents, x.aiRequests, x.aiNaira, x.adminActions, x.signIns]),
+      ];
+    }
+    case 'engagement': {
+      const d = data as EngagementReport;
+      const t = d.totals;
+      return [
+        ['i-Tutor student engagement report', `${d.from} to ${d.to}`],
+        [],
+        ['Active students', t.activeStudents],
+        ['Active minutes', t.activeMinutes],
+        ['Minutes per active student', t.avgMinutesPerActiveStudent],
+        ['New sign-ins', t.signIns],
+        ['Practice sessions', t.practiceAttempts],
+        ['Questions answered', t.questionsAnswered],
+        ['Answer accuracy (%)', t.accuracy ?? ''],
+        ['AI questions', t.aiRequests],
+        [],
+        ['Date', 'Active students', 'Active minutes', 'Min/student', 'Sign-ins', 'Practice sessions', 'Questions answered', 'Accuracy (%)', 'AI questions'],
+        ...d.days.map((x) => [x.date, x.activeStudents, x.activeMinutes, x.avgMinutesPerActiveStudent, x.signIns, x.practiceAttempts, x.questionsAnswered, x.accuracy ?? '', x.aiRequests]),
       ];
     }
     case 'day': {

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CalendarDays, FileSpreadsheet, FileText, History, LoaderCircle, LogIn, MonitorCog, RefreshCw, UsersRound, BookOpenCheck } from 'lucide-react';
+import { Activity, CalendarDays, FileSpreadsheet, FileText, History, LoaderCircle, LogIn, MonitorCog, RefreshCw, UsersRound, BookOpenCheck } from 'lucide-react';
 import { isLive } from '../../services/api';
 import { downloadReport, loadReport } from '../../services/reports';
 import type { LogRow, ReportMap, ReportName, SubjectCoverage } from '../../services/reports';
@@ -40,7 +40,7 @@ import { ConfirmDialog } from './AdminSystem';
    joining and paying. Everyone can look; every download (PDF or Excel)
    needs the super admin password. */
 
-type Tab = 'logs' | 'logins' | 'content' | 'system' | 'day' | 'users';
+type Tab = 'logs' | 'logins' | 'content' | 'system' | 'day' | 'users' | 'engagement';
 
 const TABS: Array<{ id: Tab; label: string; icon: typeof History }> = [
   { id: 'logs', label: 'Log history', icon: History },
@@ -49,6 +49,7 @@ const TABS: Array<{ id: Tab; label: string; icon: typeof History }> = [
   { id: 'system', label: 'System report', icon: MonitorCog },
   { id: 'day', label: 'Daily report', icon: CalendarDays },
   { id: 'users', label: 'Students', icon: UsersRound },
+  { id: 'engagement', label: 'Student engagement', icon: Activity },
 ];
 
 const TAB_KEY = 'itutor-admin-report-tab';
@@ -149,6 +150,7 @@ export const AdminReports: React.FC<{ nav: AdminNav; me: AdminAccount | null }> 
       )}
       {isLive && tab === 'day' && <DayTab ask={ask} day={day} onDay={setDay} />}
       {isLive && tab === 'users' && <UsersTab ask={ask} />}
+      {isLive && tab === 'engagement' && <EngagementTab ask={ask} />}
 
       {download && (
         <ConfirmDialog
@@ -771,6 +773,115 @@ const DayTab: React.FC<{ ask: Ask; day: string; onDay: (d: string) => void }> = 
           <section className="adm-card rep-card">
             <h2>What admins did</h2>
             <LogList rows={data.activity} timeOnly />
+          </section>
+        </>
+      )}
+    </>
+  );
+};
+
+const EngagementTab: React.FC<{ ask: Ask }> = ({ ask }) => {
+  const [from, setFrom] = useState(daysAgo(29));
+  const [to, setTo] = useState(today());
+  const options = { from, to };
+  const { data, error, busy, reload } = useReport('engagement', options);
+  const go = ask('engagement', options);
+  const preset = (n: number) => {
+    setFrom(daysAgo(n - 1));
+    setTo(today());
+  };
+  const days = data ? [...data.days].reverse() : [];
+  const t = data?.totals;
+  const acc = (n: number | null | undefined) => (n === null || n === undefined ? '–' : `${n}%`);
+  const hours = (minutes: number) => `${Math.round((minutes / 60) * 10) / 10} h`;
+  return (
+    <>
+      <Toolbar onPdf={() => go('pdf')} onCsv={() => go('csv')} onReload={reload} busy={busy} ready={Boolean(data)}>
+        <div className="adm-seg rep-seg" role="group" aria-label="Period">
+          {[7, 30, 90].map((n) => (
+            <button key={n} type="button" className={from === daysAgo(n - 1) && to === today() ? 'is-on' : ''} onClick={() => preset(n)}>
+              {n} days
+            </button>
+          ))}
+        </div>
+        <DateField label="From" value={from} onChange={setFrom} max={to} />
+        <DateField label="To" value={to} onChange={setTo} min={from} />
+      </Toolbar>
+      <Status busy={busy} error={error} empty={!data} />
+      {data && t && (
+        <>
+          <section className="adm-card rep-card">
+            <h2>How students used i-Tutor</h2>
+            <Stats
+              items={[
+                ['Active students', t.activeStudents],
+                ['Active time', hours(t.activeMinutes)],
+                ['Minutes per active student', t.avgMinutesPerActiveStudent],
+                ['New sign-ins', t.signIns],
+                ['Practice sessions', t.practiceAttempts],
+                ['Questions answered', t.questionsAnswered],
+                ['Answer accuracy', acc(t.accuracy)],
+                ['AI questions', t.aiRequests],
+              ]}
+            />
+            <p className="adm-muted rep-hint">Active time is counted only while a signed-in student has i-Tutor open and visible. Accuracy comes from saved practice answers.</p>
+          </section>
+          {days.length > 1 && (
+            <Chart
+              title="Students engaging each day"
+              labels={days.map((d) => d.date.slice(5).split('-').reverse().join('/'))}
+              series={[
+                { name: 'Active students', values: days.map((d) => d.activeStudents), color: CHART_COLORS.teal },
+                { name: 'Active minutes', values: days.map((d) => d.activeMinutes), color: CHART_COLORS.amber },
+              ]}
+              height={220}
+            />
+          )}
+          {days.length > 1 && (
+            <Chart
+              title="Practice and AI activity each day"
+              labels={days.map((d) => d.date.slice(5).split('-').reverse().join('/'))}
+              series={[
+                { name: 'Practice sessions', values: days.map((d) => d.practiceAttempts), color: CHART_COLORS.green },
+                { name: 'AI questions', values: days.map((d) => d.aiRequests), color: CHART_COLORS.amber },
+              ]}
+              height={220}
+            />
+          )}
+          <section className="adm-card rep-card">
+            <h2>Day by day</h2>
+            <div className="rep-table-wrap">
+              <table className="rep-table rep-days">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th className="n">Active students</th>
+                    <th className="n">Active time</th>
+                    <th className="n">Min/student</th>
+                    <th className="n">Sign-ins</th>
+                    <th className="n">Practice</th>
+                    <th className="n">Answered</th>
+                    <th className="n">Accuracy</th>
+                    <th className="n">AI questions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.days.map((d) => (
+                    <tr key={d.date}>
+                      <td className="rep-when">{longDay(d.date)}</td>
+                      <td className="n">{num(d.activeStudents)}</td>
+                      <td className="n">{num(d.activeMinutes)}</td>
+                      <td className="n">{d.avgMinutesPerActiveStudent}</td>
+                      <td className="n">{num(d.signIns)}</td>
+                      <td className="n">{num(d.practiceAttempts)}</td>
+                      <td className="n">{num(d.questionsAnswered)}</td>
+                      <td className="n">{acc(d.accuracy)}</td>
+                      <td className="n">{num(d.aiRequests)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </section>
         </>
       )}

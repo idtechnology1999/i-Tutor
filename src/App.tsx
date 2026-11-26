@@ -16,6 +16,7 @@ import { loadProfile, saveProfile } from './services/profile';
 import { isLive } from './services/api';
 import { examsOf, subjectsFor } from './lib/student-exams';
 import { logOut } from './services/auth';
+import { startEngagementTracking } from './services/engagement';
 import { refreshPush, turnOffPush } from './services/push';
 import { canUse, setCreditsPlan } from './services/credits';
 import type { SolveRequest } from './data/tutors';
@@ -336,6 +337,11 @@ export function App() {
     // The admin loads its own copy (drafts too) when an admin signs in.
     if (!window.location.pathname.startsWith('/admin')) void syncQuestions('student');
   }, []);
+
+  useEffect(() => {
+    if (!isLive || !hasAccount || isAdmin) return;
+    return startEngagementTracking();
+  }, [hasAccount, isAdmin]);
 
   const activatePremium = () => {
     if (isLive) {
