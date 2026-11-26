@@ -12,7 +12,7 @@ import {
   LockIcon,
 } from '../../Icons';
 import { validateEmail } from '../../../utils/phone';
-import { AuthShell, FormField, PhotoAside } from './shared';
+import { AuthShell, FormField, GoogleSignInButton, PhotoAside } from './shared';
 
 interface Props {
   onBack: () => void;
@@ -22,6 +22,9 @@ interface Props {
   onForgotPassword: () => void;
   onSignUpInstead: () => void;
   onBiometricAuth: () => void;
+  onGoogle: (credential: string) => void;
+  googleBusy?: boolean;
+  googleError?: string;
 }
 
 const MAX_ATTEMPTS = 5;
@@ -33,6 +36,9 @@ export const A06_Login: React.FC<Props> = ({
   onForgotPassword,
   onSignUpInstead,
   onBiometricAuth,
+  onGoogle,
+  googleBusy = false,
+  googleError,
 }) => {
   const [identifier, setIdentifier] = useState('');
   const [identifierTouched, setIdentifierTouched] = useState(false);
@@ -238,6 +244,15 @@ export const A06_Login: React.FC<Props> = ({
         >
           {submitting ? 'Logging in…' : 'Log in'}
         </button>
+
+        {googleError ? (
+          <div className="form-banner is-error" role="alert">
+            <AlertCircleIcon size={16} />
+            <span>{googleError}</span>
+          </div>
+        ) : null}
+        <div className="auth__divider">or</div>
+        <GoogleSignInButton mode="login" busy={googleBusy} onCredential={onGoogle} />
 
         {/* Demo only: it signs in without a check. With a backend this needs
             passkeys (WebAuthn) first, so it's hidden — see BACKEND_CONTRACT. */}

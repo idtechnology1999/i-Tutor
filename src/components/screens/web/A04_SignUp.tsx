@@ -12,7 +12,7 @@ import {
   calculatePasswordStrength,
   passwordProblem,
 } from '../../../utils/phone';
-import { AuthShell, FormField, PhotoAside } from './shared';
+import { AuthShell, FormField, GoogleSignInButton, PhotoAside } from './shared';
 import { useSiteStats } from '../../../lib/site-stats';
 
 interface Props {
@@ -23,6 +23,9 @@ interface Props {
   loadingMessage?: string;
   /** Message from the server when sign-up fails. */
   serverError?: string;
+  onGoogle: (credential: string) => void;
+  googleBusy?: boolean;
+  googleError?: string;
 }
 
 export const A04_SignUp: React.FC<Props> = ({
@@ -32,6 +35,9 @@ export const A04_SignUp: React.FC<Props> = ({
   isLoading = false,
   loadingMessage,
   serverError,
+  onGoogle,
+  googleBusy = false,
+  googleError,
 }) => {
   // Real counts from the question bank for the photo panel (null while loading).
   const stats = useSiteStats();
@@ -307,6 +313,15 @@ export const A04_SignUp: React.FC<Props> = ({
         >
           {isLoading ? loadingMessage || 'Sending your code…' : 'Create account'}
         </button>
+
+        {googleError ? (
+          <div className="form-banner is-error" role="alert">
+            <AlertCircleIcon size={16} />
+            <span>{googleError}</span>
+          </div>
+        ) : null}
+        <div className="auth__divider">or</div>
+        <GoogleSignInButton mode="signup" busy={googleBusy} onCredential={onGoogle} />
 
         <p className="auth__switch">
           Email verification follows on the next screen.

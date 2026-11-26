@@ -31,3 +31,6 @@ dist-ssr
 !.env.development
 !.env.production
 !.env.live
+
+# Google OAuth downloads (contain the client secret)
+client_secret*.json

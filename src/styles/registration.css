@@ -95,6 +95,34 @@
   color: var(--slate-500);
 }
 
+.auth__divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: var(--fs-xs);
+  color: var(--slate-500);
+}
+
+.auth__divider::before,
+.auth__divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.google-button {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  justify-content: center;
+}
+
+.google-button[aria-busy='true'] {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
 .auth__foot {
   margin-top: 22px;
   padding-top: 18px;
@@ -1955,6 +1983,14 @@ select.control__input {
 
   .auth__main {
     padding: 22px 18px;
+  }
+
+  /* Sign-up on phones: drop the helper lines ("Takes under a minute…",
+     "Code will be emailed", "Email verification follows…"). */
+  .auth[data-screen='signup'] .auth__lede,
+  .auth[data-screen='signup'] .form-field__hint,
+  .auth[data-screen='signup'] .auth__switch {
+    display: none;
   }
 
   .otp__box {

@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { signUp } from '../../../services/auth';
+import { googleSignIn, signUp } from '../../../services/auth';
 import { turnOffPush, turnOnPush } from '../../../services/push';
 import {
   examsLabel,
@@ -76,6 +76,8 @@ export const RegistrationFlow: React.FC<Props> = ({
   const [pendingContact, setPendingContact] = useState('');
   const [signingUp, setSigningUp] = useState(false);
   const [signUpError, setSignUpError] = useState('');
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const [googleError, setGoogleError] = useState('');
 
   // Opened from the "Verify my email" button: /verify-email?account=…&token=…
   const [{ linkAccount, linkToken }] = useState(() => {
@@ -88,6 +90,20 @@ export const RegistrationFlow: React.FC<Props> = ({
   const enterOnboarding = useCallback(() => {
     onNavigate('track');
   }, [onNavigate]);
+
+  const handleGoogle = (credential: string) => {
+    setGoogleBusy(true);
+    setGoogleError('');
+    googleSignIn(credential)
+      .then(({ profile, isNew }) => {
+        onUpdateProfile({ fullName: profile.fullName, phoneOrEmail: profile.phoneOrEmail });
+        onAccountReady();
+        if (isNew) enterOnboarding();
+        else onFinish();
+      })
+      .catch((err: Error) => setGoogleError(err.message))
+      .finally(() => setGoogleBusy(false));
+  };
 
   // Steps that apply to the exams chosen; next/back follow this list.
   const exams = examsOf(profile);
@@ -162,6 +178,9 @@ export const RegistrationFlow: React.FC<Props> = ({
             }}
             isLoading={signingUp}
             serverError={signUpError}
+            onGoogle={handleGoogle}
+            googleBusy={googleBusy}
+            googleError={googleError}
           />
         );
 
@@ -200,6 +219,9 @@ export const RegistrationFlow: React.FC<Props> = ({
               onUpdateProfile({ phoneOrEmail: contact });
               onNavigate('otp');
             }}
+            onGoogle={handleGoogle}
+            googleBusy={googleBusy}
+            googleError={googleError}
           />
         );
 

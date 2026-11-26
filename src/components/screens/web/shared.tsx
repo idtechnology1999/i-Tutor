@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { OnboardingStepsContext } from './onboarding-context';
 import { screenText, useScreenText } from '../../../cms/screens';
+import { googleClientId, googleEnabled } from '../../../services/auth';
 import { image as readImage, imageStyle, mediaSrc } from '../../../cms/read';
 import {
   CheckIcon,
@@ -52,6 +53,114 @@ export const FormField: React.FC<FormFieldProps> = ({
   </div>
 );
 
+interface GoogleCredentialResponse {
+  credential?: string;
+  error?: string;
+}
+
+interface GoogleIdentity {
+  initialize(options: {
+    client_id: string;
+    callback: (response: GoogleCredentialResponse) => void;
+    ux_mode: 'popup' | 'redirect';
+  }): void;
+  renderButton(
+    parent: HTMLElement,
+    options: {
+      theme: 'outline';
+      size: 'large';
+      width: number;
+      text: 'signin_with' | 'signup_with';
+    },
+  ): void;
+}
+
+type GoogleWindow = Window & { google?: { accounts: { id: GoogleIdentity } } };
+
+let googleScript: Promise<void> | null = null;
+
+function loadGoogleScript(): Promise<void> {
+  if ((window as GoogleWindow).google?.accounts?.id) return Promise.resolve();
+  if (googleScript) return googleScript;
+
+  googleScript = new Promise<void>((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>('script[data-google-identity]');
+    if (existing) {
+      existing.addEventListener('load', () => resolve(), { once: true });
+      existing.addEventListener('error', () => {
+        googleScript = null;
+        reject(new Error('Google sign-in could not load. Try again.'));
+      }, { once: true });
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.dataset.googleIdentity = 'true';
+    script.onload = () => resolve();
+    script.onerror = () => {
+      googleScript = null;
+      reject(new Error('Google sign-in could not load. Try again.'));
+    };
+    document.head.appendChild(script);
+  });
+  return googleScript;
+}
+
+export const GoogleSignInButton: React.FC<{
+  mode: 'signup' | 'login';
+  busy?: boolean;
+  onCredential: (credential: string) => void;
+}> = ({ mode, busy = false, onCredential }) => {
+  const holder = useRef<HTMLDivElement>(null);
+  const credentialHandler = useRef(onCredential);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    credentialHandler.current = onCredential;
+  }, [onCredential]);
+
+  useEffect(() => {
+    if (!googleEnabled || !googleClientId) return;
+    let cancelled = false;
+    void loadGoogleScript()
+      .then(() => {
+        const identity = (window as GoogleWindow).google?.accounts?.id;
+        if (cancelled || !identity || !holder.current) return;
+        identity.initialize({
+          client_id: googleClientId,
+          ux_mode: 'popup',
+          callback: (response) => {
+            if (response.error) setError('Google sign-in was cancelled. Try again.');
+            else if (response.credential) credentialHandler.current(response.credential);
+            else setError('Google sign-in did not return an account. Try again.');
+          },
+        });
+        identity.renderButton(holder.current, {
+          theme: 'outline',
+          size: 'large',
+          width: 320,
+          text: mode === 'signup' ? 'signup_with' : 'signin_with',
+        });
+      })
+      .catch((err: Error) => {
+        if (!cancelled) setError(err.message);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mode]);
+
+  if (!googleEnabled || !googleClientId) return null;
+  return (
+    <>
+      <div ref={holder} className="google-button" aria-busy={busy ? 'true' : undefined} />
+      {error ? <p className="form-field__error" role="alert">{error}</p> : null}
+    </>
+  );
+};
+
 interface AuthShellProps {
   eyebrow: string;
   title: string;
@@ -89,7 +198,7 @@ export const AuthShell: React.FC<AuthShellProps> = ({
   const cms = useScreenText(screen);
   const shownLede = screenText(cms.lede, lede ?? '', vars);
   return (
-    <div className={`auth${photo ? ' auth--photo' : ''}`}>
+    <div className={`auth${photo ? ' auth--photo' : ''}`} data-screen={screen}>
       <div className="auth__frame">
         <div className="auth__main">
           <header className={`auth__head${narrow ? ' auth__head--narrow' : ''}`}>

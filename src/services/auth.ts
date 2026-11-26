@@ -47,6 +47,20 @@ export async function logIn(phoneOrEmail: string, password: string): Promise<{ p
   return api('/api/auth/login', { method: 'POST', body: { phoneOrEmail, password } });
 }
 
+const GOOGLE_CLIENT_ID = (import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '').trim();
+
+export const googleClientId = GOOGLE_CLIENT_ID;
+export const googleEnabled = isLive && GOOGLE_CLIENT_ID !== '';
+
+export interface GoogleAuthResult {
+  profile: UserProfile;
+  isNew: boolean;
+}
+
+export async function googleSignIn(credential: string): Promise<GoogleAuthResult> {
+  return api('/api/auth/google', { method: 'POST', body: { credential } });
+}
+
 /** Always "succeeds" so nobody can probe which accounts exist. */
 export async function requestPasswordReset(phoneOrEmail: string) {
   if (!isLive) return demoDelay(700);

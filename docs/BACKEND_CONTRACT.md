@@ -43,6 +43,7 @@ Shared types live in the frontend and can be copied to the backend:
 | `POST /api/auth/verify` | `{ phoneOrEmail, code }` | `{ profile? }` + session cookie | `/verify` |
 | `POST /api/auth/resend` | `{ phoneOrEmail }` | `204` | `/verify` "Resend" |
 | `POST /api/auth/login` | `{ phoneOrEmail, password }` | `{ profile? }` + session cookie. `401` = wrong details | `/login` |
+| `POST /api/auth/google` | `{ credential }` — Google ID token | `{ profile, isNew }` + session cookie; verified email links to an existing account | Sign-up / login button |
 | `POST /api/auth/forgot` | `{ phoneOrEmail }` | `204` **always**, even if no account (don't reveal who's registered) | `/forgot-password` |
 | `POST /api/auth/reset` | `{ phoneOrEmail, code, password }` | `204`; sign out other sessions | `/reset-password` |
 | `POST /api/auth/logout` | — | `204` | Profile → Log out |
